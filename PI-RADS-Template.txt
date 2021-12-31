@@ -1,0 +1,46 @@
+PI-RADS Report Template 
+
+INDICATION: (including the date and value of serum PSA level and any prior biopsy type- TRUS, 
+FUSION, IN BORE, date and results), prior therapy (Radiation, Hormones) 
+
+TECHNIQUE: (state it is PI-RADS-compliant; explicit description of field strength, coils used, route and 
+rate of IV contrast administration, and pulse sequence parameters is recommended) 
+
+COMPARISON: 
+
+FINDINGS: 
+Size: L x W x H cm or V cubic cm (with inclusion of PSA density) 
+Quality 
+Hemorrhage: 
+Peripheral zone: 
+Transition zone: 
+
+Lesion (s) in rank order of severity (highest score- to lowest score, then by size) 
+#1: 
+Location: use PI-RADS SECTOR LABEL and IMAGE SERIES/NUMBER 
+Size: 
+T2: 
+DWI: 
+DCE: 
+Prostate margin: (no involvement, indeterminate, or definite extraprostatic extension) 
+Lesion overall PI-RADS category: 
+
+Extra-prostatic extension: 
+Neurovascular bundles: Distance from index lesion or any PI-RADS 4/5 lesion to NVB’s 
+Seminal vesicles: 
+Lymph nodes 
+Other pelvic organs: 
+
+IMPRESSION: 
+
+Overall PI-RADS category 
+(listing of PI-RADS categories) 
+
+
+PI-RADS® v2.1 Assessment Categories 
+
+PI-RADS 1 – Very low (clinically significant cancer is highly unlikely to be present) 
+PI-RADS 2 – Low (clinically significant cancer is unlikely to be present) 
+PI-RADS 3 – Intermediate (the presence of clinically significant cancer is equivocal) 
+PI-RADS 4 – High (clinically significant cancer is likely to be present) 
+PI-RADS 5 – Very high (clinically significant cancer is highly likely to be present) 
