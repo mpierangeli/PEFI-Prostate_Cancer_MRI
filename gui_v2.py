@@ -1,6 +1,7 @@
 from tkinter import *
 from PIL import Image,ImageTk
 from tkinter import filedialog
+import pydicom
 
 
 def img_selector():
@@ -21,7 +22,9 @@ root = Tk()
 root.title("Software de Prueba PEFI 2022")
 root.geometry("640x640")
 filepath = "images\original.png"
-ima = ImageTk.PhotoImage(Image.open(filepath))
+#ima = ImageTk.PhotoImage(Image.open(filepath))
+full_dicom = pydicom.dcmread(filepath)
+ima = full_dicom.pixel_array
 
 
 btn_1 = Button(root, text="Selección Imágen",command=img_selector)
