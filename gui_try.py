@@ -24,7 +24,7 @@ while 1:
     
 
     reply = buttonbox("Es la imagen correcta??", image="images\original.png", choices=["Si","No"])
-    if reply=="Yes":
+    if reply=="Si":
         if ccbox("Quiere generar el reporte automático?"):
             report_gen.generator(full_dicom)
             if ccbox("Desea ingresar una nueva imágen?","Reporte generado exitosamente"):
