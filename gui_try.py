@@ -21,7 +21,6 @@ while 1:
 
     plt.hist(img.flatten(),bins=100,log=True,histtype="stepfilled")
     plt.savefig("images\histograma.png")
-    
 
     reply = buttonbox("Es la imagen correcta??", image="images\original.png", choices=["Si","No"])
     if reply=="Si":
