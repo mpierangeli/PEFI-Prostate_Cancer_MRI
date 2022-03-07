@@ -22,15 +22,15 @@ root = Tk()
 root.title("Software de Prueba PEFI 2022")
 root.geometry("640x640")
 filepath = "images\original.png"
-#ima = ImageTk.PhotoImage(Image.open(filepath))
-full_dicom = pydicom.dcmread(filepath)
-ima = full_dicom.pixel_array
+ima = ImageTk.PhotoImage(Image.open(filepath))
 
+frame1 = Frame(root)
+frame1.grid(column=0)
 
 btn_1 = Button(root, text="Selección Imágen",command=img_selector)
 btn_1.grid(row=0,column=1)
 
-venta = Label(image=ima)
+venta = Label(frame1,image=ima)
 venta.grid(row=1,column=0)
 
 btn_2 = Button(root, text="Aplicar efecto",command=efecter)
