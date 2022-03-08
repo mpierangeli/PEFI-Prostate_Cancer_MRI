@@ -7,7 +7,7 @@ def draw_line(event):
     x, y = event.x, event.y
     if cv.old_coords:
         x1, y1 = cv.old_coords
-        cv.create_line(x, y, x1, y1,tags="dibujos")
+        cv.create_line(x, y, x1, y1,tags="dibujos",fill="red")
     cv.old_coords = x,y
 
 def clear_app(event):
@@ -27,13 +27,19 @@ def img_selector(num):
 
 def zoom_app(event):
     global zoom
+    global pepe
     zoom+=round(event.delta/120)
+    if zoom>20:
+        zoom = 20
     if zoom<1:
         zoom = 1
-    print(f"zoom: {zoom}")
-
-
-
+    #x = cv.canvasx(event.x)
+    #y = cv.canvasy(event.y)
+    #factor = (1+0.001*zoom) ** event.delta
+    #factor = zoom 
+    cv.scale(ALL, 560/2, 560/2, (1+0.1*round(event.delta/120)), (1+0.1*round(event.delta/120)))
+    pepe = ImageTk.PhotoImage(Image.open("images\original.png").resize((50*zoom,50*zoom)))
+    cv.itemconfig(cv_ima,image=pepe)
 
 #MAIN WINDOW SETUP
 zoom = 1
@@ -55,7 +61,7 @@ r_frame.grid(row=0, column=1, padx=10, pady=10)
 
 # DIBUJAR EN CANVAS
 
-cv = Canvas(r_frame, width=550,height=560)
+cv = Canvas(r_frame, width=560,height=560)
 cv.grid(row=0,column=0, padx=5, pady=5)
 cv.old_coords = None
 
@@ -70,6 +76,6 @@ Button(tool_bar, text="Clear",command = canvas_clear).grid(row=2, column=0, padx
 Button(tool_bar, text="Insert Image",command = lambda: img_selector(1)).grid(row=3, column=0, padx=5, pady=5)
 Button(tool_bar, text="Insert Image2",command = lambda: img_selector(2)).grid(row=4, column=0, padx=5, pady=5)
 mm = ImageTk.PhotoImage(Image.open("images\original.png"))
-cv_ima = cv.create_image(100,100,anchor=NW,image=mm)
+cv_ima = cv.create_image(560/2, 560/2, anchor=CENTER, image=mm, tags="foto")
 
 root.mainloop()
