@@ -74,7 +74,7 @@ b3 = Button(l_frame, text="IMG2",font=("Roboto",12),command = lambda: img_select
 
 # DIBUJAR EN CANVAS
 
-cv = Canvas(r_frame, width=600,height=550,bg="#666",bd=0,relief=FLAT)
+cv = Canvas(r_frame, width=600,height=550,bg="#666",highlightthickness=0)
 cv.grid(row=0,column=0, padx=25, pady=25)
 cv.old_coords = None
 
