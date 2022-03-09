@@ -1,7 +1,6 @@
-from itertools import count
 from tkinter import *
 from PIL import Image,ImageTk
-from tkinter import filedialog
+#from tkinter import filedialog
 
 def draw_line(event):
     x, y = event.x, event.y
@@ -70,7 +69,7 @@ b2 = Button(l_frame, text="IMG1",font=("Roboto",12),command = lambda: img_select
 b3 = Button(l_frame, text="IMG2",font=("Roboto",12),command = lambda: img_selector(2), relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=4, column=0,pady=10)
 
 brushSize = IntVar(l_frame, value=1)
-brushSlider = Scale(l_frame, from_=1,to=10,variable=brushSize).grid(row=5,column=0)
+brushSlider = Scale(l_frame, from_=1,to=10,variable=brushSize,bg="#555",activebackground="#2DD",fg="#FFF",orient=HORIZONTAL,label="Brush Size",width=30,troughcolor="#BBB",font=("Roboto",12)).grid(row=5,column=0,pady=10)
 
 
 # DIBUJAR EN CANVAS
