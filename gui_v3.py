@@ -9,11 +9,16 @@ def draw_line(event):
         cv.create_line(x, y, x1, y1,tags="dibujos",fill="red",width=brushSize.get(),smooth=True,capstyle=ROUND,joinstyle=ROUND)
     cv.old_coords = x,y
 
+def free_gen():
+    cv.bind('<B1-Motion>', draw_line)
+    cv.bind('<ButtonRelease-1>', clear_app)
+
 def clear_app(event):
     cv.old_coords = None
 
 def canvas_clear():
     cv.delete("dibujos")
+    cv.old_coords = None
 
 def img_selector(num):
     global pepe
@@ -23,7 +28,23 @@ def img_selector(num):
         pepe = ImageTk.PhotoImage(Image.open("images\\bordes.png"))
     cv.itemconfig(cv_ima,image=pepe)
 
+def start_square(event):
+    global x0, y0
+    x0, y0 = event.x, event.y
+    
+def finish_square(event):
+    x1, y1 = event.x, event.y
+    if x1 == x0 or y1 == y0:
+        print("NO SUELTE EL MOUSE")
+        return
+    cv.create_rectangle(x0,y0,x1,y1,outline="#FFF",tags="dibujos")
+    cv.old_coords = None
 
+def cuadra_gen():
+    cv.unbind('<B1-Motion>')
+    cv.bind('<Button-1>', start_square)
+    cv.bind('<ButtonRelease-1>', finish_square)
+    
 def zoom_app(event):
     global zoom
     global pepe
@@ -68,8 +89,12 @@ b1 = Button(l_frame, text="Clear Canvas",font=("Roboto",12),command = canvas_cle
 b2 = Button(l_frame, text="IMG1",font=("Roboto",12),command = lambda: img_selector(1), relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=3, column=0,pady=10)
 b3 = Button(l_frame, text="IMG2",font=("Roboto",12),command = lambda: img_selector(2), relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=4, column=0,pady=10)
 
+
+b4 = Button(l_frame, text="Pintar",font=("Roboto",12),command = free_gen, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=6, column=0,pady=10)
 brushSize = IntVar(l_frame, value=1)
 brushSlider = Scale(l_frame, from_=1,to=10,variable=brushSize,bg="#555",activebackground="#2DD",fg="#FFF",orient=HORIZONTAL,label="Brush Size",width=30,troughcolor="#BBB",font=("Roboto",12)).grid(row=5,column=0,pady=10)
+
+b5 = Button(l_frame, text="Selector",font=("Roboto",12),command = cuadra_gen, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=7, column=0,pady=10)
 
 
 # DIBUJAR EN CANVAS
@@ -78,16 +103,14 @@ cv = Canvas(r_frame, width=600,height=520,bg="#666",highlightthickness=0)
 cv.grid(row=0,column=0, padx=25, pady=25)
 cv.old_coords = None
 
-cv.bind('<B1-Motion>', draw_line)
-cv.bind('<ButtonRelease-1>', clear_app)
+#cv.bind('<B1-Motion>', draw_line)
+#cv.bind('<ButtonRelease-1>', clear_app)
 cv.bind("<MouseWheel>", zoom_app)
 
 zoom_info = StringVar(r_frame,value="Zoom = 100%")
 infolabel = Label(r_frame, textvariable=zoom_info,bg="#222",fg="#FFF",font=("Roboto",12)).grid(row=1,column=0)
 #mm = ImageTk.PhotoImage(Image.open("images\original.png"))
 #cv_ima = cv.create_image(560/2, 560/2, anchor=CENTER, image=mm, #tags="foto")
-
-
 
 
 root.mainloop()
