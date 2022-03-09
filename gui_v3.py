@@ -29,24 +29,22 @@ def zoom_app(event):
     global zoom
     global pepe
     zoom = round(zoom+event.delta/1200,1)
-    if zoom>2:
-        zoom = 2
-    if zoom<1:
-        zoom = 1
+    if zoom>2: zoom = 2
+    if zoom<1: zoom = 1
+    zoom_info.set(int(zoom*100))
     x = cv.canvasx(event.x)
     y = cv.canvasy(event.y)
     
     factor = 1+0.1*event.delta/120
-    print(factor)
-    #factor = zoom 
-    cv.scale(ALL, 560/2, 560/2, factor, factor)
+    #factor = zoom
+    if zoom != 1 and zoom !=2:
+        cv.scale(ALL, 650/2, 600/2, factor, factor)
     #pep = Image.open("images\original.png")
     #pepe = ImageTk.PhotoImage(pep.resize(round((pep.width+zoom)),round(pep.height+zoom)))
     #cv.itemconfig(cv_ima,image=pepe)
     #print (zoom)
 
 #MAIN WINDOW SETUP
-zoom = 1
 root = Tk()
 root.title("Software de Prueba PEFI 2022")
 root.maxsize(800, 600)
@@ -54,6 +52,7 @@ root.minsize(800, 600)
 
 root.config(bg="#2DD")
 root.iconbitmap("unsam.ico")
+zoom = 1
 
 
 #MAIN WINDOW DISPLAY
@@ -74,7 +73,7 @@ b3 = Button(l_frame, text="IMG2",font=("Roboto",12),command = lambda: img_select
 
 # DIBUJAR EN CANVAS
 
-cv = Canvas(r_frame, width=600,height=550,bg="#666",highlightthickness=0)
+cv = Canvas(r_frame, width=600,height=520,bg="#666",highlightthickness=0)
 cv.grid(row=0,column=0, padx=25, pady=25)
 cv.old_coords = None
 
@@ -82,6 +81,8 @@ cv.bind('<B1-Motion>', draw_line)
 cv.bind('<ButtonRelease-1>', clear_app)
 cv.bind("<MouseWheel>", zoom_app)
 
+zoom_info = IntVar(r_frame,value=100)
+infolabel = Label(r_frame, textvariable=zoom_info,bg="#222",fg="#FFF",font=("Roboto",12)).grid(row=1,column=0)
 #mm = ImageTk.PhotoImage(Image.open("images\original.png"))
 #cv_ima = cv.create_image(560/2, 560/2, anchor=CENTER, image=mm, #tags="foto")
 
