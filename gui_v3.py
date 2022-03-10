@@ -2,7 +2,6 @@ from tkinter import *
 from PIL import Image,ImageTk
 #from tkinter import filedialog
 
-
 def clear_app(event):
     cv.old_coords = None
 
@@ -44,18 +43,14 @@ def temp_square(event):
 
 
 def cuadra_gen():
-    #cv.unbind('<B1-Motion>')
     cv.bind('<Button-1>', start_square)
     cv.bind('<B1-Motion>', temp_square)
     cv.bind('<ButtonRelease-1>', finish_square)
 
 def free_gen():
-
     cv.bind('<B1-Motion>', draw_line)
     cv.bind('<ButtonRelease-1>', clear_app)
 
-
-    
 def zoom_app(event):
     global zoom
     global pepe
@@ -82,7 +77,7 @@ root.minsize(800, 600)
 
 root.config(bg="#2DD")
 root.iconbitmap("unsam.ico")
-zoom = 1
+zoom = 1 #canvas empieza en 100%
 
 
 #MAIN WINDOW DISPLAY
@@ -99,27 +94,28 @@ l1 = Label(l_frame, text="MENU",bg="#FFF",font=("Roboto",20)).grid(row=0,column=
 b1 = Button(l_frame, text="Clear Canvas",font=("Roboto",12),command = canvas_clear, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=2, column=0,pady=10)
 b2 = Button(l_frame, text="IMG1",font=("Roboto",12),command = lambda: img_selector(1), relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=3, column=0,pady=10)
 b3 = Button(l_frame, text="IMG2",font=("Roboto",12),command = lambda: img_selector(2), relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=4, column=0,pady=10)
-
-
 b4 = Button(l_frame, text="Pintar",font=("Roboto",12),command = free_gen, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=6, column=0,pady=10)
+#---
 brushSize = IntVar(l_frame, value=1)
 brushSlider = Scale(l_frame, from_=1,to=10,variable=brushSize,bg="#555",activebackground="#2DD",fg="#FFF",orient=HORIZONTAL,label="Brush Size",width=30,troughcolor="#BBB",font=("Roboto",12)).grid(row=5,column=0,pady=10)
-
+#---
 b5 = Button(l_frame, text="Selector",font=("Roboto",12),command = cuadra_gen, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=7, column=0,pady=10)
 
 
-# DIBUJAR EN CANVAS
+# CANVAS
 
 cv = Canvas(r_frame, width=600,height=520,bg="#666",highlightthickness=0)
 cv.grid(row=0,column=0, padx=25, pady=25)
 cv.old_coords = None
 
-#cv.bind('<B1-Motion>', draw_line)
-#cv.bind('<ButtonRelease-1>', clear_app)
+# TECLAS DE CONTROL (algunas)
 cv.bind("<MouseWheel>", zoom_app)
 
+# PANEL DE INFO
 zoom_info = StringVar(r_frame,value="Zoom = 100%")
 infolabel = Label(r_frame, textvariable=zoom_info,bg="#222",fg="#FFF",font=("Roboto",12)).grid(row=1,column=0)
+
+
 #mm = ImageTk.PhotoImage(Image.open("images\original.png"))
 #cv_ima = cv.create_image(560/2, 560/2, anchor=CENTER, image=mm, #tags="foto")
 
