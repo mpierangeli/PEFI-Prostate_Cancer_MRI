@@ -6,15 +6,18 @@ def clear_app(event):
     cv.old_coords = None
 
 def canvas_clear():
-    cv.delete("dibujos")
+    cv.delete("dibujos","foto")
     cv.old_coords = None
 
 def img_selector(num):
     global pepe
     if num == 1:
         pepe = ImageTk.PhotoImage(Image.open("images\original.png"))
+        #print(pepe.height()) VER VER
     else:
         pepe = ImageTk.PhotoImage(Image.open("images\\bordes.png"))
+
+    cv_ima = cv.create_image(600/2, 520/2, anchor=CENTER, image=pepe, tags="foto")
     cv.itemconfig(cv_ima,image=pepe)
 
 def start_square(event):
@@ -60,9 +63,10 @@ def zoom_app(event):
     elif zoom<1: zoom = 1
     else: 
         factor = 1.001**event.delta
-        #x = cv.canvasx(event.x) 
-        #y = cv.canvasy(event.y)
-        cv.scale(ALL, 650/2, 600/2, factor, factor) # x e y, irian en origins, para zoomear donde apunto...
+        x = cv.canvasx(event.x) 
+        y = cv.canvasy(event.y)
+        cv.scale(ALL, x, y, factor, factor) # x e y, irian en origins, para zoomear donde apunto...
+        #cv.scale(ALL, 650/2, 600/2, factor, factor) # x e y, irian en origins, para zoomear donde apunto...
     zoom_info.set("Zoom = "+str(int(zoom*100))+"%")
    
     #pep = Image.open("images\original.png")
@@ -78,6 +82,7 @@ root.minsize(800, 600)
 root.config(bg="#2DD")
 root.iconbitmap("unsam.ico")
 zoom = 1 #canvas empieza en 100%
+
 
 
 #MAIN WINDOW DISPLAY
@@ -108,16 +113,13 @@ cv = Canvas(r_frame, width=600,height=520,bg="#666",highlightthickness=0)
 cv.grid(row=0,column=0, padx=25, pady=25)
 cv.old_coords = None
 
+
 # TECLAS DE CONTROL (algunas)
 cv.bind("<MouseWheel>", zoom_app)
 
 # PANEL DE INFO
 zoom_info = StringVar(r_frame,value="Zoom = 100%")
 infolabel = Label(r_frame, textvariable=zoom_info,bg="#222",fg="#FFF",font=("Roboto",12)).grid(row=1,column=0)
-
-
-#mm = ImageTk.PhotoImage(Image.open("images\original.png"))
-#cv_ima = cv.create_image(560/2, 560/2, anchor=CENTER, image=mm, #tags="foto")
 
 
 root.mainloop()
