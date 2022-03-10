@@ -2,16 +2,6 @@ from tkinter import *
 from PIL import Image,ImageTk
 #from tkinter import filedialog
 
-def draw_line(event):
-    x, y = event.x, event.y
-    if cv.old_coords:
-        x1, y1 = cv.old_coords
-        cv.create_line(x, y, x1, y1,tags="dibujos",fill="red",width=brushSize.get(),smooth=True,capstyle=ROUND,joinstyle=ROUND)
-    cv.old_coords = x,y
-
-def free_gen():
-    cv.bind('<B1-Motion>', draw_line)
-    cv.bind('<ButtonRelease-1>', clear_app)
 
 def clear_app(event):
     cv.old_coords = None
@@ -37,13 +27,34 @@ def finish_square(event):
     if x1 == x0 or y1 == y0:
         print("NO SUELTE EL MOUSE")
         return
-    cv.create_rectangle(x0,y0,x1,y1,outline="#FFF",tags="dibujos")
+    cv.create_rectangle(x0,y0,x1,y1,outline="#FFF",tags="dibujos",width=brushSize.get())
+    cv.delete("temp_line")
     cv.old_coords = None
 
+def draw_line(event):
+    x, y = event.x, event.y
+    if cv.old_coords:
+        x1, y1 = cv.old_coords
+        cv.create_line(x, y, x1, y1,tags="dibujos",fill="#F00",width=brushSize.get(),smooth=True,capstyle=ROUND,joinstyle=ROUND)
+    cv.old_coords = x,y
+
+def temp_square(event):
+    cv.delete("temp_line")
+    cv.create_line(x0,y0,event.x,event.y,fill="#DDD",dash=(3,),tags="temp_line")
+
+
 def cuadra_gen():
-    cv.unbind('<B1-Motion>')
+    #cv.unbind('<B1-Motion>')
     cv.bind('<Button-1>', start_square)
+    cv.bind('<B1-Motion>', temp_square)
     cv.bind('<ButtonRelease-1>', finish_square)
+
+def free_gen():
+
+    cv.bind('<B1-Motion>', draw_line)
+    cv.bind('<ButtonRelease-1>', clear_app)
+
+
     
 def zoom_app(event):
     global zoom
