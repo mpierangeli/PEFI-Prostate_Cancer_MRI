@@ -1,6 +1,8 @@
 from tkinter import *
 from PIL import Image,ImageTk
 from tkinter import filedialog
+import pydicom
+import cv2
 
 def clear_app(event):
     cv.old_coords = None
@@ -10,23 +12,29 @@ def canvas_clear():
     cv.old_coords = None
 
 def img_selector():
-    global ima_png_resized
-    global ima_png
+    global ima_resized
+    global ima_r
     filepath = filedialog.askopenfilename()
-    ima_png = Image.open(filepath)
-    aspect = ima_png.width/ima_png.height
-    if ima_png.width > ima_png.height:
-        ima_png_resized = ImageTk.PhotoImage(ima_png.resize((1400,int(1400/aspect)),Image.ANTIALIAS))
-    elif ima_png.width < ima_png.height:
-        ima_png_resized = ImageTk.PhotoImage(ima_png.resize((int(850*aspect),850),Image.ANTIALIAS))
+    full_dicom = pydicom.dcmread(filepath)
+    img = full_dicom.pixel_array
+    aspect = img.shape[0]/img.shape[1]
+
+    if img.shape[1] > img.shape[0]:
+        ima_r = cv2.resize(img,(1400,int(1400/aspect)))
+    elif img.shape[0] < img.shape[1]:
+        ima_r = cv2.resize(img,(int(850*aspect),850))
     else:
-        ima_png_resized = ImageTk.PhotoImage(ima_png.resize((850,int(850/aspect)),Image.ANTIALIAS))
-    WWW.set(ima_png_resized.width())
-    HHH.set(ima_png_resized.height())
+        ima_r = cv2.resize(img,(850,int(850/aspect)))
+
+    ima_resized = ImageTk.PhotoImage(image=Image.fromarray(ima_r))
+
+    WWW.set(ima_resized.width())
+    HHH.set(ima_resized.height())
+
     cv.config(width=WWW.get(), height=HHH.get())
     cv.grid(row=0,column=0, padx=(1450-WWW.get())/2, pady=(900-HHH.get())/2)
-    cv_ima = cv.create_image(WWW.get()/2, HHH.get()/2, anchor=CENTER, image=ima_png_resized, tags="foto")
-    cv.itemconfig(cv_ima,image=ima_png_resized)
+    cv_ima = cv.create_image(WWW.get()/2, HHH.get()/2, anchor=CENTER, image=ima_resized, tags="foto")
+    cv.itemconfig(cv_ima,image=ima_resized)
 
 def start_square(event):
     global x0, y0
@@ -66,20 +74,17 @@ def crop_ima():
 
 def zoom_app(event):
     global zoom
-    global ima_png_zoomed
+    global ima_zoomed
     zoom = round(zoom+0.1*event.delta/120,1)
     if zoom>2: zoom = 2
     elif zoom<1: zoom = 1
     else: 
         cv.delete("foto")
-        #factor = 1.001**event.delta
-        #cv.scale(ALL, WWW.get()/2, HHH.get()/2, factor, factor) # x e y, irian en origins, para zoomear donde apunto..
-        #x = cv.canvasx(event.x) 
-        #y = cv.canvasy(event.y)
-        #cv.scale(ALL, x, y, factor, factor) # x e y, irian en origins, para zoomear donde apunto...
-        ima_png_zoomed = ImageTk.PhotoImage(ima_png.resize((int(ima_png_resized.width()*zoom),int(ima_png_resized.height()*zoom)),Image.ANTIALIAS))
-        cv_ima = cv.create_image(WWW.get()/2, HHH.get()/2, anchor=CENTER, image=ima_png_zoomed, tags="foto")
-        cv.itemconfig(cv_ima,image=ima_png_zoomed)
+
+        ima_z = cv2.resize(ima_r,(int(ima_r.shape[1]*zoom),int(ima_r.shape[0]*zoom)))
+        ima_zoomed = ImageTk.PhotoImage(image=Image.fromarray(ima_z))
+        cv_ima = cv.create_image(WWW.get()/2, HHH.get()/2, anchor=CENTER, image=ima_zoomed, tags="foto")
+        cv.itemconfig(cv_ima,image=ima_zoomed)
     zoom_info.set("Zoom = "+str(int(zoom*100))+"%")
     
 #MAIN WINDOW SETUP
