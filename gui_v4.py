@@ -1,5 +1,4 @@
 from tkinter import *
-from turtle import position
 from PIL import Image,ImageTk
 from tkinter import filedialog
 
@@ -7,15 +6,19 @@ def clear_app(event):
     cv.old_coords = None
 
 def canvas_clear():
-    cv.delete("dibujos","foto")
+    cv.delete("dibujos")
     cv.old_coords = None
 
 def img_selector():
     global ima_png_resized
+    global ima_png
     filepath = filedialog.askopenfilename()
     ima_png = Image.open(filepath)
-    #aspect = ima_png.width/ima_png.height
-    ima_png_resized = ImageTk.PhotoImage(ima_png.resize((int(ima_png.width*1.2),int(ima_png.height*1.2)),Image.ANTIALIAS))
+    aspect = ima_png.width/ima_png.height
+    if ima_png.width >= ima_png.height:
+        ima_png_resized = ImageTk.PhotoImage(ima_png.resize((580,int(580/aspect)),Image.ANTIALIAS))
+    else:
+        ima_png_resized = ImageTk.PhotoImage(ima_png.resize((int(580*aspect),580),Image.ANTIALIAS))
     WWW.set(ima_png_resized.width())
     HHH.set(ima_png_resized.height())
     cv.config(width=WWW.get(), height=HHH.get())
@@ -59,20 +62,22 @@ def free_gen():
 
 def zoom_app(event):
     global zoom
-    global pepe
+    global ima_png_zoomed
     zoom = round(zoom+0.1*event.delta/120,1)
     if zoom>2: zoom = 2
     elif zoom<1: zoom = 1
     else: 
-        factor = 1.001**event.delta
-        cv.scale(ALL, WWW.get()/2, HHH.get()/2, factor, factor) # x e y, irian en origins, para zoomear donde apunto...
-        #cv.scale(ALL, 650/2, 600/2, factor, factor) # x e y, irian en origins, para zoomear donde apunto...
+        cv.delete("foto")
+        #factor = 1.001**event.delta
+        #cv.scale(ALL, WWW.get()/2, HHH.get()/2, factor, factor) # x e y, irian en origins, para zoomear donde apunto..
+        #x = cv.canvasx(event.x) 
+        #y = cv.canvasy(event.y)
+        #cv.scale(ALL, x, y, factor, factor) # x e y, irian en origins, para zoomear donde apunto...
+        ima_png_zoomed = ImageTk.PhotoImage(ima_png.resize((int(ima_png_resized.width()*zoom),int(ima_png_resized.height()*zoom)),Image.ANTIALIAS))
+        cv_ima = cv.create_image(WWW.get()/2, HHH.get()/2, anchor=CENTER, image=ima_png_zoomed, tags="foto")
+        cv.itemconfig(cv_ima,image=ima_png_zoomed)
     zoom_info.set("Zoom = "+str(int(zoom*100))+"%")
-   
-    #pep = Image.open("images\original.png")
-    #pepe = ImageTk.PhotoImage(pep.resize(round((pep.width+zoom)),round(pep.height+zoom)))
-    #cv.itemconfig(cv_ima,image=pepe)
-
+    
 #MAIN WINDOW SETUP
 root = Tk()
 root.title("Software de Prueba PEFI 2022")
@@ -120,7 +125,7 @@ cv.bind("<MouseWheel>", zoom_app)
 
 # PANEL DE INFO
 zoom_info = StringVar(r_frame,value="Zoom = 100%")
-#infolabel = Label(r_frame, textvariable=zoom_info,bg="#222",fg="#FFF",font=("Roboto",12)).grid(row=1,column=0)
+infolabel = Label(l_frame, textvariable=zoom_info,bg="#FFF",fg="#000",font=("Roboto",8)).grid(row=9,column=0,pady=10)
 
 
 root.mainloop()
