@@ -66,9 +66,13 @@ def cuadra_gen():
 
 def crop_ima():
     global ima_cropped
-    try:
-        ima_c = ima_z[y0:y1,x0:x1]
-    except:
+    x0c = int(x0 + (zoom-1)*WWW.get()/2)
+    y0c = int(y0 + (zoom-1)*HHH.get()/2)
+    x1c = int(x1 + (zoom-1)*WWW.get()/2)
+    y1c = int(y1 + (zoom-1)*HHH.get()/2)
+    if zoom != 1:
+        ima_c = ima_z[y0c:y1c,x0c:x1c]
+    else:
         ima_c = ima_r[y0:y1,x0:x1]
     ima_cropped = ImageTk.PhotoImage(image=Image.fromarray(ima_c))
 
