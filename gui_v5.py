@@ -43,17 +43,21 @@ def start_square(event):
     x0, y0 = event.x, event.y
     
 def finish_square(event):
+    global x1, y1
     x1, y1 = event.x, event.y
     if x1 == x0 or y1 == y0:
         print("NO SUELTE EL MOUSE")
         return
-    cv.create_rectangle(x0,y0,x1,y1,outline="#FFF",tags="dibujos",width=brushSize.get())
+    cv.create_rectangle(x0,y0,x1,y1,outline="#F00",tags="dibujos",width=brushSize.get())
     cv.delete("temp_line")
     cv.old_coords = None
 
 def temp_square(event):
     cv.delete("temp_line")
-    cv.create_line(x0,y0,event.x,event.y,fill="#DDD",dash=(3,),tags="temp_line")
+    cv.create_line(x0,y0,event.x,y0,fill="#F00",dash=(7,),tags="temp_line")
+    cv.create_line(x0,y0,x0,event.y,fill="#F00",dash=(7,),tags="temp_line")
+    cv.create_line(event.x,y0,event.x,event.y,fill="#F00",dash=(7,),tags="temp_line")
+    cv.create_line(x0,event.y,event.x,event.y,fill="#F00",dash=(7,),tags="temp_line")
 
 def cuadra_gen():
     cv.bind('<Button-1>', start_square)
@@ -61,11 +65,25 @@ def cuadra_gen():
     cv.bind('<ButtonRelease-1>', finish_square)
 
 def crop_ima():
-    pass
+    global ima_cropped
+    try:
+        ima_c = ima_z[y0:y1,x0:x1]
+    except:
+        ima_c = ima_r[y0:y1,x0:x1]
+    ima_cropped = ImageTk.PhotoImage(image=Image.fromarray(ima_c))
+
+    WWW.set(ima_cropped.width())
+    HHH.set(ima_cropped.height())
+
+    cv.config(width=WWW.get(), height=HHH.get())
+    cv.grid(row=0,column=0, padx=(1450-WWW.get())/2, pady=(900-HHH.get())/2)
+    cv_ima = cv.create_image(WWW.get()/2, HHH.get()/2, anchor=CENTER, image=ima_cropped, tags="foto")
+    cv.itemconfig(cv_ima,image=ima_cropped)
 
 def zoom_app(event):
     global zoom
     global ima_zoomed
+    global ima_z
     zoom = round(zoom+0.1*event.delta/120,1)
     if zoom>2: zoom = 2
     elif zoom<1: zoom = 1
