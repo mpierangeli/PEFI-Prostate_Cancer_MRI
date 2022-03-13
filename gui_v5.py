@@ -17,14 +17,15 @@ def img_selector():
     filepath = filedialog.askopenfilename()
     full_dicom = pydicom.dcmread(filepath)
     img = full_dicom.pixel_array
+    img = (img/img.max())*255
     aspect = img.shape[0]/img.shape[1]
 
-    if img.shape[1] > img.shape[0]:
-        ima_r = cv2.resize(img,(1400,int(1400/aspect)))
-    elif img.shape[0] < img.shape[1]:
-        ima_r = cv2.resize(img,(int(850*aspect),850))
+    if img.shape[0] > img.shape[1]:
+        ima_r = cv2.resize(img,(1200,int(1200/aspect)))
+    elif img.shape[1] < img.shape[0]:
+        ima_r = cv2.resize(img,(int(675*aspect),675))
     else:
-        ima_r = cv2.resize(img,(850,int(850/aspect)))
+        ima_r = cv2.resize(img,(675,int(675/aspect)))
 
     ima_resized = ImageTk.PhotoImage(image=Image.fromarray(ima_r))
 
@@ -38,6 +39,7 @@ def img_selector():
 
 def start_square(event):
     global x0, y0
+    cv.delete("dibujos")
     x0, y0 = event.x, event.y
     
 def finish_square(event):
@@ -49,13 +51,6 @@ def finish_square(event):
     cv.delete("temp_line")
     cv.old_coords = None
 
-def draw_line(event):
-    x, y = event.x, event.y
-    if cv.old_coords:
-        x1, y1 = cv.old_coords
-        cv.create_line(x, y, x1, y1,tags="dibujos",fill="#F00",width=brushSize.get(),smooth=True,capstyle=ROUND,joinstyle=ROUND)
-    cv.old_coords = x,y
-
 def temp_square(event):
     cv.delete("temp_line")
     cv.create_line(x0,y0,event.x,event.y,fill="#DDD",dash=(3,),tags="temp_line")
@@ -64,10 +59,6 @@ def cuadra_gen():
     cv.bind('<Button-1>', start_square)
     cv.bind('<B1-Motion>', temp_square)
     cv.bind('<ButtonRelease-1>', finish_square)
-
-def free_gen():
-    cv.bind('<B1-Motion>', draw_line)
-    cv.bind('<ButtonRelease-1>', clear_app)
 
 def crop_ima():
     pass
@@ -114,9 +105,8 @@ l1 = Label(l_frame, text="MENU",bg="#FFF",font=("Roboto",20)).grid(row=0,column=
 b1 = Button(l_frame, text="Clear Canvas",font=("Roboto",12),command = canvas_clear, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=2, column=0,pady=10)
 b2 = Button(l_frame, text="Select Image",font=("Roboto",12),command = img_selector, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=3, column=0,pady=10)
 b3 = Button(l_frame, text="Apply Gradient",font=("Roboto",12),command = img_selector, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=4, column=0,pady=10)
-b4 = Button(l_frame, text="Pintar",font=("Roboto",12),command = free_gen, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=5, column=0,pady=10)
-b5 = Button(l_frame, text="Selector",font=("Roboto",12),command = cuadra_gen, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=6, column=0,pady=10)
-b6 = Button(l_frame, text="Crop",font=("Roboto",12),command = crop_ima, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=7, column=0,pady=10)
+b4 = Button(l_frame, text="Selector",font=("Roboto",12),command = cuadra_gen, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=5, column=0,pady=10)
+b5 = Button(l_frame, text="Crop",font=("Roboto",12),command = crop_ima, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=6, column=0,pady=10)
 
 #---
 brushSize = IntVar(l_frame, value=1)
