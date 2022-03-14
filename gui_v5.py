@@ -3,9 +3,9 @@ from PIL import Image,ImageTk
 from tkinter import filedialog
 import pydicom
 import cv2
+from skimage.filters.rank import gradient
+from skimage.morphology import disk, erosion
 
-def clear_app(event):
-    cv.old_coords = None
 
 def canvas_clear():
     cv.delete("dibujos")
@@ -51,6 +51,7 @@ def finish_square(event):
     cv.create_rectangle(x0,y0,x1,y1,outline="#F00",tags="dibujos",width=brushSize.get())
     cv.delete("temp_line")
     cv.old_coords = None
+    root.config(cursor="arrow")
 
 def temp_square(event):
     cv.delete("temp_line")
@@ -60,6 +61,7 @@ def temp_square(event):
     cv.create_line(x0,event.y,event.x,event.y,fill="#F00",dash=(7,),tags="temp_line")
 
 def cuadra_gen():
+    root.config(cursor="tcross")
     cv.bind('<Button-1>', start_square)
     cv.bind('<B1-Motion>', temp_square)
     cv.bind('<ButtonRelease-1>', finish_square)
@@ -74,6 +76,9 @@ def crop_ima():
         ima_c = ima_z[y0c:y1c,x0c:x1c]
     else:
         ima_c = ima_r[y0:y1,x0:x1]
+    ima_c = ima_c.astype(int)
+    ima_c = gradient(ima_c, disk(2)) ## TRABAJAR SOBRE ESTO 
+    ima_c = erosion(ima_c)
     ima_cropped = ImageTk.PhotoImage(image=Image.fromarray(ima_c))
 
     WWW.set(ima_cropped.width())
