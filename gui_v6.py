@@ -1,14 +1,12 @@
 from tkinter import *
-from turtle import st
 from PIL import Image,ImageTk
 from tkinter import filedialog
 import pydicom
 import cv2
-import tempfile
+#import tempfile
 from skimage.filters.rank import gradient
 from skimage.morphology import disk, erosion
-from skimage import io
-from sklearn.metrics import log_loss
+#from skimage import io
 
 
 
@@ -26,20 +24,20 @@ def img_selector():
     aspect = img.shape[0]/img.shape[1]
 
     if img.shape[0] > img.shape[1]:
-        ima_r = cv2.resize(img,(1000,int(1000/aspect)))
+        ima_r = cv2.resize(img,(1000,int(1000/aspect))) #1000 = 1250*0.8 Width BASE
     elif img.shape[1] < img.shape[0]:
-        ima_r = cv2.resize(img,(int(675*aspect),675))
+        ima_r = cv2.resize(img,(int(720*aspect),720))   #720 = 900*0.8  Height BASE
     else:
-        ima_r = cv2.resize(img,(675,int(675/aspect)))
+        ima_r = cv2.resize(img,(720,720))
 
     ima_resized = ImageTk.PhotoImage(image=Image.fromarray(ima_r))
 
-    WWW.set(ima_resized.width())
-    HHH.set(ima_resized.height())
+    CV_W.set(ima_resized.width())
+    CV_H.set(ima_resized.height())
 
-    cv.config(width=WWW.get(), height=HHH.get())
-    cv.grid(row=0,column=0, padx=(1250-WWW.get())/2, pady=(900-HHH.get())/2)
-    cv_ima = cv.create_image(WWW.get()/2, HHH.get()/2, anchor=CENTER, image=ima_resized, tags="foto")
+    cv.config(width=CV_W.get(), height=CV_H.get())
+    cv.grid(row=0,column=0, padx=(RF_W.get()-CV_W.get())/2, pady=(RF_H.get()-CV_H.get())/2)
+    cv_ima = cv.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=ima_resized, tags="foto")
     cv.itemconfig(cv_ima,image=ima_resized)
 
 def start_square(event):
@@ -75,10 +73,10 @@ def crop_ima():
     global ima_cropped
     #global cont
     global ima_c_n
-    x0c = int(x0 + (zoom-1)*WWW.get()/2)
-    y0c = int(y0 + (zoom-1)*HHH.get()/2)
-    x1c = int(x1 + (zoom-1)*WWW.get()/2)
-    y1c = int(y1 + (zoom-1)*HHH.get()/2)
+    x0c = int(x0 + (zoom-1)*CV_W.get()/2)
+    y0c = int(y0 + (zoom-1)*CV_H.get()/2)
+    x1c = int(x1 + (zoom-1)*CV_W.get()/2)
+    y1c = int(y1 + (zoom-1)*CV_H.get()/2)
     if zoom != 1:
         ima_c = ima_z[y0c:y1c,x0c:x1c]
     else:
@@ -93,9 +91,13 @@ def crop_ima():
     #ima_c_n=ImageTk.PhotoImage(Image.open(temp_dir.name+"\ima_c_"+str(cont)+".png"))
     try:
         temp_ima.destroy()
+        l2.destroy()
     except:
         pass
-    temp_ima = Label(m_frame,image=ima_cropped).grid(row=1,column=0)
+    MF_W.set(int(ima_cropped.width()*1.1))
+    m_frame.config(width=MF_W.get())
+    l2 = Label(m_frame, text="INFO",bg="#AAA",font=("Roboto",10)).grid(row=0,column=0,pady=(10,20))
+    temp_ima = Label(m_frame,image=ima_cropped,borderwidth=0,bg="#AAA").grid(row=1,column=0,padx=(int((MF_W.get()-ima_cropped.width())/2)))
     #cont+=1
 
 def zoom_app(event):
@@ -110,14 +112,14 @@ def zoom_app(event):
 
         ima_z = cv2.resize(ima_r,(int(ima_r.shape[1]*zoom),int(ima_r.shape[0]*zoom)))
         ima_zoomed = ImageTk.PhotoImage(image=Image.fromarray(ima_z))
-        cv_ima = cv.create_image(WWW.get()/2, HHH.get()/2, anchor=CENTER, image=ima_zoomed, tags="foto")
+        cv_ima = cv.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=ima_zoomed, tags="foto")
         cv.itemconfig(cv_ima,image=ima_zoomed)
     zoom_info.set("Zoom = "+str(int(zoom*100))+"%")
     
 #MAIN WINDOW SETUP
 root = Tk()
 root.title("Software de Prueba PEFI 2022")
-root.maxsize(1600, 900)
+#root.maxsize(1600, 900)
 root.minsize(1600, 900)
 
 root.config(bg="#2DD")
@@ -129,13 +131,19 @@ zoom = 1 #canvas empieza en 100%
 
 
 #MAIN WINDOW DISPLAY
+
+MF_W = IntVar(root,value=0)
+MF_H = IntVar(root,value=900)
+RF_W = IntVar(root,value=1250)
+RF_H = IntVar(root,value=900)
+
 l_frame = Frame(root, width=130, height=900, background="#FFF")
 l_frame.grid(row=0, column=0,padx=(0,20))
 l_frame.grid_propagate(0)
-m_frame = Frame(root, width=200, height=900, background="#AAA")
+m_frame = Frame(root, width=MF_W.get(), height=MF_H.get(), background="#AAA")
 m_frame.grid(row=0, column=1)
 m_frame.grid_propagate(0)
-r_frame = Frame(root, width=1250, height=900, background="#222")
+r_frame = Frame(root, width=RF_W.get(), height=RF_H.get(), background="#222")
 r_frame.grid(row=0, column=2)
 r_frame.grid_propagate(0)
 
@@ -150,19 +158,19 @@ b4 = Button(l_frame, text="Crop",font=("Roboto",12),command = crop_ima, relief=F
 
 #---
 brushSize = IntVar(l_frame, value=1)
-brushSlider = Scale(l_frame, from_=1,to=10,variable=brushSize,bg="#555",activebackground="#2DD",fg="#FFF",orient=HORIZONTAL,label="Brush Size",width=20,troughcolor="#BBB",font=("Roboto",12)).grid(row=8,column=0,pady=10)
+#brushSlider = Scale(l_frame, from_=1,to=10,variable=brushSize,bg="#555",activebackground="#2DD",fg="#FFF",orient=HORIZONTAL,label="Brush Size",width=20,troughcolor="#BBB",font=("Roboto",12)).grid(row=8,column=0,pady=10)
 #---
 
 #IMPORTANT DATA
 
-l2 = Label(m_frame, text="SELECTED DATA INFO",bg="#AAA",font=("Roboto",12)).grid(row=0,column=0,pady=(10,20))
+
 
 # CANVAS
-WWW = IntVar(root,value=600)
-HHH = IntVar(root,value=600)
+CV_W = IntVar(root,value=600)
+CV_H = IntVar(root,value=600)
 
-cv = Canvas(r_frame, width=WWW.get(),height=HHH.get(),bg="#666",highlightthickness=0)
-cv.grid(row=0,column=0, padx=(1250-WWW.get())/2, pady=(900-HHH.get())/2)
+cv = Canvas(r_frame, width=CV_W.get(),height=CV_H.get(),bg="#666",highlightthickness=0)
+cv.grid(row=0,column=0, padx=(RF_W.get()-CV_W.get())/2, pady=(RF_H.get()-CV_H.get())/2)
 cv.old_coords = None
 
 # TECLAS DE CONTROL (algunas)
