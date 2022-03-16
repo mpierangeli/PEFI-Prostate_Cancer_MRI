@@ -91,11 +91,15 @@ def crop_ima():
     #ima_c_n=ImageTk.PhotoImage(Image.open(temp_dir.name+"\ima_c_"+str(cont)+".png"))
     try:
         temp_ima.destroy()
-        l2.destroy()
     except:
         pass
     MF_W.set(int(ima_cropped.width()*1.1))
+    #if MF_W.get() < 150 or MF_W.get() > 400:
+    #    RF_W.set(1450-MF_W.get())
+    #else:
     m_frame.config(width=MF_W.get())
+    RF_W.set(1450-MF_W.get())
+    cv.grid(row=0,column=0, padx=(RF_W.get()-CV_W.get())/2, pady=(RF_H.get()-CV_H.get())/2)
     l2 = Label(m_frame, text="INFO",bg="#AAA",font=("Roboto",10)).grid(row=0,column=0,pady=(10,20))
     temp_ima = Label(m_frame,image=ima_cropped,borderwidth=0,bg="#AAA").grid(row=1,column=0,padx=(int((MF_W.get()-ima_cropped.width())/2)))
     #cont+=1
@@ -119,7 +123,7 @@ def zoom_app(event):
 #MAIN WINDOW SETUP
 root = Tk()
 root.title("Software de Prueba PEFI 2022")
-#root.maxsize(1600, 900)
+root.maxsize(1600, 900)
 root.minsize(1600, 900)
 
 root.config(bg="#2DD")
@@ -134,7 +138,7 @@ zoom = 1 #canvas empieza en 100%
 
 MF_W = IntVar(root,value=0)
 MF_H = IntVar(root,value=900)
-RF_W = IntVar(root,value=1250)
+RF_W = IntVar(root,value=1450)
 RF_H = IntVar(root,value=900)
 
 l_frame = Frame(root, width=130, height=900, background="#FFF")
@@ -151,10 +155,10 @@ r_frame.grid_propagate(0)
 
 l1 = Label(l_frame, text="MENU",bg="#FFF",font=("Roboto",20)).grid(row=0,column=0,pady=(10,20))
 
-b1 = Button(l_frame, text="Clear Canvas",font=("Roboto",12),command = canvas_clear, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=2, column=0,pady=10)
-b2 = Button(l_frame, text="Select Image",font=("Roboto",12),command = img_selector, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=3, column=0,pady=10)
-b3 = Button(l_frame, text="Selector",font=("Roboto",12),command = cuadra_gen, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=4, column=0,pady=10)
-b4 = Button(l_frame, text="Crop",font=("Roboto",12),command = crop_ima, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=5, column=0,pady=10)
+b1 = Button(l_frame, text="Selección Imágen",font=("Roboto",11),command = img_selector, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=2, column=0,pady=10)
+b2 = Button(l_frame, text="Recortar",font=("Roboto",11),command = cuadra_gen, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=3, column=0,pady=10)
+b3 = Button(l_frame, text="Borrar Selección",font=("Roboto",11),command = canvas_clear, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=4, column=0,pady=10)
+b4 = Button(l_frame, text="Confirmar",font=("Roboto",11),command = crop_ima, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=5, column=0,pady=10)
 
 #---
 brushSize = IntVar(l_frame, value=1)
