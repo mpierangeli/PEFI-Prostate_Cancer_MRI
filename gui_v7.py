@@ -20,6 +20,10 @@ def img_selector():
     global ima_resized
     global ima_r
     global full_dicom
+    global img
+    global aspect
+    global pixel_info_static
+    global pixel_info_variable
     filepath = filedialog.askopenfilename()
     full_dicom = pydicom.dcmread(filepath)
     img = full_dicom.pixel_array
@@ -27,14 +31,21 @@ def img_selector():
     aspect = img.shape[0]/img.shape[1]
 
     if img.shape[0] > img.shape[1]:
-        ima_r = cv2.resize(img,(1000,int(1000/aspect))) #1000 = 1250*0.8 Width BASE
-    elif img.shape[1] < img.shape[0]:
-        ima_r = cv2.resize(img,(int(720*aspect),720))   #720 = 900*0.8  Height BASE
+        ima_r = cv2.resize(img,(1125,int(1125/aspect))) #1125 = 1250*0.9 Width BASE
+        pixel_info_static = img.shape[0]/1125
+    elif img.shape[0] < img.shape[1]:
+        ima_r = cv2.resize(img,(int(810*aspect),810))   #810 = 900*0.9  Height BASE
+        pixel_info_static = img.shape[1]/810
     else:
-        ima_r = cv2.resize(img,(720,720))
+        ima_r = cv2.resize(img,(810,810))
+        pixel_info_static = img.shape[0]/810
+
+    pixel_info_static = round(pixel_info_static,5)
+    pixel_info_variable = pixel_info_static
+    pixel_info.set("Pixel = "+str(pixel_info_static)+"mm")
 
     ima_resized = ImageTk.PhotoImage(image=Image.fromarray(ima_r))
-
+    
     try:
         m_frame.destroy()
     except:
@@ -65,11 +76,13 @@ def finish_square(event):
     root.config(cursor="arrow")
 
 def temp_square(event):
-    cv.delete("temp_line")
-    cv.create_line(x0,y0,event.x,y0,fill="#F00",dash=(7,),tags="temp_line")
-    cv.create_line(x0,y0,x0,event.y,fill="#F00",dash=(7,),tags="temp_line")
-    cv.create_line(event.x,y0,event.x,event.y,fill="#F00",dash=(7,),tags="temp_line")
-    cv.create_line(x0,event.y,event.x,event.y,fill="#F00",dash=(7,),tags="temp_line")
+    cv.delete("temp_line","temp_text")
+    cv.create_line(x0,y0,event.x,y0,fill="#A00",dash=(7,),tags="temp_line")
+    cv.create_line(x0,y0,x0,event.y,fill="#A00",dash=(7,),tags="temp_line")
+    cv.create_line(event.x,y0,event.x,event.y,fill="#A00",dash=(7,),tags="temp_line")
+    cv.create_line(x0,event.y,event.x,event.y,fill="#A00",dash=(7,),tags="temp_line")
+    cv.create_text((event.x+x0)/2,y0-10,text=str(abs(round(pixel_info_variable*(event.x-x0),3)))+"mm",fill="#F00",font=("Roboto", 9),tags="temp_text")
+    cv.create_text(x0+10,(event.y+y0)/2,text=str(abs(round(pixel_info_variable*(event.y-y0),3)))+"mm",fill="#F00",font=("Roboto", 9),tags="temp_text",angle=90)
 
 def cuadra_gen():
     root.config(cursor="tcross")
@@ -86,11 +99,11 @@ def gen_info():
     temp_ima = Label(m_frame,image=ima_cropped,borderwidth=0,bg="#AAA").grid(row=1,column=0,padx=(int((MF_W.get()-ima_cropped.width())/2)), pady=20)
     #IMPORTANT DATA
     # VER Q MOSTRAR EN EL PANEL DE INFO!!
-    i1 = Label(m_frame, text="Orig. Img. Size = "+str(CV_W.get())+"x"+str(CV_H.get()),bg="#AAA",font=("Roboto",9)).grid(row=2,column=0,pady=(0,10))
-    i2 = Label(m_frame, text="Crop. Img. Size = "+str(ima_cropped.width())+"x"+str(ima_cropped.height()),bg="#AAA",font=("Roboto",9)).grid(row=3,column=0,pady=(0,10))
-    i3 = Label(m_frame, text="Paciente = "+str(full_dicom[0x0010, 0x0010].value),bg="#AAA",font=("Roboto",9)).grid(row=4,column=0,pady=(0,10))
-    i4 = Label(m_frame, text="Area (en pixeles) = "+str(int(np.sum(out2)/(zoom**2))),bg="#AAA",font=("Roboto",9)).grid(row=5,column=0,pady=(0,10))
-        #                                           CORREGIR ESTO PARA TOMAR EN CUENTA EL RESIZE
+    i1 = Label(m_frame, text="Canvas Size = "+str(CV_W.get())+"x"+str(CV_H.get()),bg="#AAA",font=("Roboto",9)).grid(row=2,column=0,pady=(0,10))
+    i2 = Label(m_frame, text="Orig. Img. Size = "+str(img.shape[0])+"x"+str(img.shape[1]),bg="#AAA",font=("Roboto",9)).grid(row=3,column=0,pady=(0,10))
+    i3 = Label(m_frame, text="Crop. Img. Size = "+str(ima_cropped.width())+"x"+str(ima_cropped.height()),bg="#AAA",font=("Roboto",9)).grid(row=4,column=0,pady=(0,10))
+    i4 = Label(m_frame, text="Paciente = "+str(full_dicom[0x0010, 0x0010].value),bg="#AAA",font=("Roboto",9)).grid(row=5,column=0,pady=(0,10))
+    i5 = Label(m_frame, text="Área = "+str(int(np.sum(out2)/((zoom**2)*(aspect**2))))+"mm2",bg="#AAA",font=("Roboto",9)).grid(row=6,column=0,pady=(0,10))
 
 def crop_ima():
     global ima_cropped
@@ -136,6 +149,7 @@ def zoom_app(event):
     global ima_zoomed
     global ima_z
     zoom = round(zoom+0.1*event.delta/120,1)
+    
     if zoom>2: zoom = 2
     elif zoom<1: zoom = 1
     else: 
@@ -145,9 +159,9 @@ def zoom_app(event):
         ima_zoomed = ImageTk.PhotoImage(image=Image.fromarray(ima_z))
         cv_ima = cv.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=ima_zoomed, tags="foto")
         cv.itemconfig(cv_ima,image=ima_zoomed)
-
+    pixel_info_variable = round(pixel_info_static/zoom,5)
+    pixel_info.set("Pixel = "+str(pixel_info_variable)+"mm")
     zoom_info.set("Zoom = "+str(int(zoom*100))+"%")
-    cv.update()
     
 #MAIN WINDOW SETUP
 root = Tk()
@@ -206,7 +220,10 @@ cv.bind("<MouseWheel>", zoom_app)
 
 # PANEL DE INFO
 zoom_info = StringVar(l_frame,value="Zoom = 100%")
-infolabel = Label(l_frame, textvariable=zoom_info,bg="#FFF",fg="#000",font=("Roboto",8)).grid(row=9,column=0,pady=10)
+pixel_info = StringVar(l_frame,value="Pixel = 1mm")
+infolabel1 = Label(l_frame, textvariable=zoom_info,bg="#FFF",fg="#000",font=("Roboto",8)).grid(row=9,column=0,pady=10)
+infolabel2 = Label(l_frame, textvariable=pixel_info,bg="#FFF",fg="#000",font=("Roboto",8)).grid(row=10,column=0,pady=10)
+
 
 
 root.mainloop()
