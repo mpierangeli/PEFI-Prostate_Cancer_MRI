@@ -4,9 +4,11 @@ from tkinter import filedialog
 import pydicom
 import cv2
 #import tempfile
-from skimage.filters.rank import gradient
-from skimage.morphology import disk, erosion
 #from skimage import io
+from skimage.filters.rank import gradient
+from skimage.morphology import disk, erosion, opening
+from skimage.filters import threshold_otsu,threshold_minimum
+import numpy as np
 
 
 
@@ -32,6 +34,11 @@ def img_selector():
         ima_r = cv2.resize(img,(720,720))
 
     ima_resized = ImageTk.PhotoImage(image=Image.fromarray(ima_r))
+
+    try:
+        m_frame.destroy()
+    except:
+        pass
 
     CV_W.set(ima_resized.width())
     CV_H.set(ima_resized.height())
@@ -79,15 +86,16 @@ def gen_info():
     temp_ima = Label(m_frame,image=ima_cropped,borderwidth=0,bg="#AAA").grid(row=1,column=0,padx=(int((MF_W.get()-ima_cropped.width())/2)), pady=20)
     #IMPORTANT DATA
     # VER Q MOSTRAR EN EL PANEL DE INFO!!
-    i1 = Label(m_frame, text="Orig. Img. Size = "+str(CV_W.get())+"x"+str(CV_H.get()),bg="#AAA",font=("Roboto",8)).grid(row=2,column=0,pady=(0,10))
-    i2 = Label(m_frame, text="Crop. Img. Size = "+str(ima_cropped.width())+"x"+str(ima_cropped.height()),bg="#AAA",font=("Roboto",8)).grid(row=3,column=0,pady=(0,10))
-    i3 = Label(m_frame, text="Paciente = "+str(full_dicom[0x0010, 0x0010].value),bg="#AAA",font=("Roboto",8)).grid(row=4,column=0,pady=(0,10))
-
+    i1 = Label(m_frame, text="Orig. Img. Size = "+str(CV_W.get())+"x"+str(CV_H.get()),bg="#AAA",font=("Roboto",9)).grid(row=2,column=0,pady=(0,10))
+    i2 = Label(m_frame, text="Crop. Img. Size = "+str(ima_cropped.width())+"x"+str(ima_cropped.height()),bg="#AAA",font=("Roboto",9)).grid(row=3,column=0,pady=(0,10))
+    i3 = Label(m_frame, text="Paciente = "+str(full_dicom[0x0010, 0x0010].value),bg="#AAA",font=("Roboto",9)).grid(row=4,column=0,pady=(0,10))
+    i4 = Label(m_frame, text="Area (en pixeles) = "+str(int(np.sum(out2)/(zoom**2))),bg="#AAA",font=("Roboto",9)).grid(row=5,column=0,pady=(0,10))
+        #                                           CORREGIR ESTO PARA TOMAR EN CUENTA EL RESIZE
 
 def crop_ima():
     global ima_cropped
     #global cont
-    global ima_c_n
+    global out2
     x0c = int(x0 + (zoom-1)*CV_W.get()/2)
     y0c = int(y0 + (zoom-1)*CV_H.get()/2)
     x1c = int(x1 + (zoom-1)*CV_W.get()/2)
@@ -97,11 +105,14 @@ def crop_ima():
     else:
         ima_c = ima_r[y0:y1,x0:x1]
     #----------------------
-    ima_c = ima_c.astype(int)
-    ima_c = gradient(ima_c, disk(2)) ## TRABAJAR SOBRE ESTO 
-    ima_c = erosion(ima_c)
+    #ima_c = ima_c.astype(int)
+    tresh2 = threshold_minimum(ima_c)
+    out2 = ima_c > tresh2
+
+    #out2 = erosion(out2, disk(1))
+    out2 = opening(out2, disk(3))
     #---------------------
-    ima_cropped = ImageTk.PhotoImage(image=Image.fromarray(ima_c))
+    ima_cropped = ImageTk.PhotoImage(image=Image.fromarray(out2))
     #io.imsave(temp_dir.name+"\ima_c_"+str(cont)+".png",ima_c)
     #ima_c_n=ImageTk.PhotoImage(Image.open(temp_dir.name+"\ima_c_"+str(cont)+".png"))
     try:
@@ -136,6 +147,7 @@ def zoom_app(event):
         cv.itemconfig(cv_ima,image=ima_zoomed)
 
     zoom_info.set("Zoom = "+str(int(zoom*100))+"%")
+    cv.update()
     
 #MAIN WINDOW SETUP
 root = Tk()
