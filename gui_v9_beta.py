@@ -13,9 +13,13 @@ def windows_clear():
     cv.delete(ALL)
     try:
         m_frame.destroy()
+    except:
+        print("ERROR 1")
+    try: 
         img_num_sel.destroy()
     except:
-        pass
+        print("ERROR 2")
+
     cv.destroy()
     CV_W.set(600)
     CV_H.set(600)
@@ -31,11 +35,13 @@ def f_prueba(asd):
     global pixel_info_variable
 
     try:
+        m_frame.destroy()
         cv.destroy()
         CV_W.set(600)
         CV_H.set(600)
     except: 
         pass
+    
     canvas_creator()
 
     full_dicom = pydicom.dcmread(filepath[int(asd)-1])
@@ -68,16 +74,18 @@ def f_prueba(asd):
 def img_selector():
   
     global filepath
+    global img_num_sel
 
     filepath = filedialog.askopenfilenames()
     filepath = list(filepath)
+    try: 
+        img_num_sel.destroy()
+    except:
+        print("ERROR 3")
 
     f_prueba(0)
-
-    if len(filepath)>1:
-        img_num_sel = Scale(r_frame, from_=1,to=len(filepath),variable=img_num, command=f_prueba, bg="#666",activebackground="#2DD",fg="#FFF",orient=HORIZONTAL,width=15,length=30*len(filepath),bd=0,highlightbackground="#222",troughcolor="#222",font=("Roboto",12)).grid(row=1,column=0,pady=(5,0))
+    img_num_sel = Scale(r_frame, from_=1,to=len(filepath),variable=img_num, command=f_prueba, bg="#666",activebackground="#2DD",fg="#FFF",orient=HORIZONTAL,width=15,length=30*len(filepath),bd=0,highlightbackground="#222",troughcolor="#222",font=("Roboto",12)).grid(row=1,column=0,pady=(5,0))
         
-
 def start_square(event):
     global x0, y0
     cv.delete("dibujos")
@@ -157,7 +165,7 @@ def crop_ima():
     try:
         m_frame.destroy()
     except:
-        pass
+        print("ERROR 4")
     ima_c_size = int(ima_cropped.width()*1.1)
     if  ima_c_size > 200:
         MF_W.set(ima_c_size)
@@ -166,7 +174,7 @@ def crop_ima():
     gen_info()
     
     RF_W.set(1450-MF_W.get())
-    cv.grid(row=0,column=0, padx=(RF_W.get()-CV_W.get())/2, pady=(RF_H.get()-CV_H.get())/2)
+    cv.grid(row=0,column=0, padx=(RF_W.get()-CV_W.get())/2, pady=(((RF_H.get()-CV_H.get())/2),0))
     
 def zoom_app(event):
     global zoom
