@@ -34,13 +34,14 @@ def f_prueba(asd):
     global pixel_info_static
     global pixel_info_variable
 
-    try:
-        m_frame.destroy()
-        cv.destroy()
-        CV_W.set(600)
-        CV_H.set(600)
-    except: 
-        pass
+    if len(filepath)==1:
+        try:
+            m_frame.destroy()
+            cv.destroy()
+            CV_W.set(600)
+            CV_H.set(600)
+        except: 
+            print("ERROR 5")
     
     canvas_creator()
 
@@ -203,8 +204,7 @@ def canvas_creator():
     cv = Canvas(r_frame, width=CV_W.get(),height=CV_H.get(),bg="#666",highlightthickness=0)
     cv.grid(row=0,column=0, padx=(RF_W.get()-CV_W.get())/2, pady=(((RF_H.get()-CV_H.get())/2),0))
     cv.old_coords = None
-    cv.bind("<MouseWheel>", zoom_app)
-    
+    cv.bind("<MouseWheel>", zoom_app)   
 
 def menu_creator():
     global pixel_info, zoom_info
