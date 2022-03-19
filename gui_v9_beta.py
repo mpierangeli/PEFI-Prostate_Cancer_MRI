@@ -3,18 +3,25 @@ from PIL import Image,ImageTk
 from tkinter import filedialog
 import pydicom
 import cv2
-from skimage.filters.rank import gradient
+#from skimage.filters.rank import gradient
 from skimage.morphology import disk, erosion, opening
 from skimage.filters import threshold_otsu,threshold_minimum
 import numpy as np
 
 
+def windows_clear():
+    cv.delete(ALL)
+    try:
+        m_frame.destroy()
+        img_num_sel.destroy()
+    except:
+        pass
+    cv.destroy()
+    CV_W.set(600)
+    CV_H.set(600)
+    canvas_creator()
 
-def canvas_clear():
-    cv.delete("dibujos")
-    cv.old_coords = None
-
-def img_selector():
+def f_prueba(asd):
     global ima_resized
     global ima_r
     global full_dicom
@@ -22,12 +29,19 @@ def img_selector():
     global aspect
     global pixel_info_static
     global pixel_info_variable
-    filepath = filedialog.askopenfilename()
-    full_dicom = pydicom.dcmread(filepath)
+
+    try:
+        cv.destroy()
+        CV_W.set(600)
+        CV_H.set(600)
+    except: 
+        pass
+    canvas_creator()
+
+    full_dicom = pydicom.dcmread(filepath[int(asd)-1])
     img = full_dicom.pixel_array
     img = (img/img.max())*255
     aspect = img.shape[0]/img.shape[1]
-
     if img.shape[0] > img.shape[1]:
         ima_r = cv2.resize(img,(1125,int(1125/aspect))) #1125 = 1250*0.9 Width BASE
         pixel_info_static = img.shape[0]/1125
@@ -44,18 +58,25 @@ def img_selector():
 
     ima_resized = ImageTk.PhotoImage(image=Image.fromarray(ima_r))
     
-    try:
-        m_frame.destroy()
-    except:
-        pass
-
     CV_W.set(ima_resized.width())
     CV_H.set(ima_resized.height())
-
     cv.config(width=CV_W.get(), height=CV_H.get())
-    cv.grid(row=0,column=0, padx=(RF_W.get()-CV_W.get())/2, pady=(RF_H.get()-CV_H.get())/2)
+    cv.grid(row=0,column=0, padx=(RF_W.get()-CV_W.get())/2, pady=(((RF_H.get()-CV_H.get())/2),0))
     cv_ima = cv.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=ima_resized, tags="foto")
     cv.itemconfig(cv_ima,image=ima_resized)
+
+def img_selector():
+  
+    global filepath
+
+    filepath = filedialog.askopenfilenames()
+    filepath = list(filepath)
+
+    f_prueba(0)
+
+    if len(filepath)>1:
+        img_num_sel = Scale(r_frame, from_=1,to=len(filepath),variable=img_num, command=f_prueba, bg="#666",activebackground="#2DD",fg="#FFF",orient=HORIZONTAL,width=15,length=30*len(filepath),bd=0,highlightbackground="#222",troughcolor="#222",font=("Roboto",12)).grid(row=1,column=0,pady=(5,0))
+        
 
 def start_square(event):
     global x0, y0
@@ -102,7 +123,7 @@ def gen_info():
     i3 = Label(m_frame, text="Crop. Img. Size = "+str(ima_cropped.width())+"x"+str(ima_cropped.height()),bg="#AAA",font=("Roboto",9)).grid(row=4,column=0,pady=(0,10))
     i4 = Label(m_frame, text="Paciente = "+str(full_dicom[0x0010, 0x0010].value),bg="#AAA",font=("Roboto",9)).grid(row=5,column=0,pady=(0,10))
 
-    area = np.sum(out2)/(zoom**2) # corrijo el area por el zoom
+    area = np.sum(body_found)/(zoom**2) # corrijo el area por el zoom
     if aspect >= 1:
         area = area/((CV_W.get()/img.shape[0])**2) # corrijo el area por el resize truncado por W o aspect = 1
     else:
@@ -110,9 +131,17 @@ def gen_info():
     
     i5 = Label(m_frame, text="Área = "+str(int(area))+"mm2",bg="#AAA",font=("Roboto",9)).grid(row=6,column=0,pady=(0,10))
 
+def body_finder(ima_c):
+
+        tresh2 = threshold_minimum(ima_c)
+        out = ima_c > tresh2
+        out = opening(out, disk(3))
+
+        return out
+
 def crop_ima():
     global ima_cropped
-    global out2
+    global body_found
     x0c = int(x0 + (zoom-1)*CV_W.get()/2)
     y0c = int(y0 + (zoom-1)*CV_H.get()/2)
     x1c = int(x1 + (zoom-1)*CV_W.get()/2)
@@ -121,15 +150,10 @@ def crop_ima():
         ima_c = ima_z[y0c:y1c,x0c:x1c]
     else:
         ima_c = ima_r[y0:y1,x0:x1]
-    #----------------------
-    #ima_c = ima_c.astype(int)
-    tresh2 = threshold_minimum(ima_c)
-    out2 = ima_c > tresh2
 
-    #out2 = erosion(out2, disk(1))
-    out2 = opening(out2, disk(3))
-    #---------------------
-    ima_cropped = ImageTk.PhotoImage(image=Image.fromarray(out2*ima_c))
+    body_found = body_finder(ima_c)
+
+    ima_cropped = ImageTk.PhotoImage(image=Image.fromarray(body_found*ima_c))
     try:
         m_frame.destroy()
     except:
@@ -162,7 +186,33 @@ def zoom_app(event):
     pixel_info_variable = round(pixel_info_static/zoom,5)
     pixel_info.set("Pixel = "+str(pixel_info_variable)+"mm")
     zoom_info.set("Zoom = "+str(int(zoom*100))+"%")
+
+def canvas_creator():
+
+    global cv
+    global img_num_sel
+
+    cv = Canvas(r_frame, width=CV_W.get(),height=CV_H.get(),bg="#666",highlightthickness=0)
+    cv.grid(row=0,column=0, padx=(RF_W.get()-CV_W.get())/2, pady=(((RF_H.get()-CV_H.get())/2),0))
+    cv.old_coords = None
+    cv.bind("<MouseWheel>", zoom_app)
     
+
+def menu_creator():
+    global pixel_info, zoom_info
+    l1 = Label(l_frame, text="MENU",bg="#FFF",font=("Roboto",20)).grid(row=0,column=0,pady=(10,20))
+
+    b1 = Button(l_frame, text="Abrir Img.",font=("Roboto",11),command = img_selector, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=2, column=0,pady=10)
+    b2 = Button(l_frame, text="Recortar",font=("Roboto",11),command = cuadra_gen, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=3, column=0,pady=10)
+    
+    b3 = Button(l_frame, text="Procesar",font=("Roboto",11),command = crop_ima, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=4, column=0,pady=10)
+    b4 = Button(l_frame, text="Fresh Start",font=("Roboto",11),command = windows_clear, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=7, column=0,pady=10)
+
+    zoom_info = StringVar(l_frame,value="Zoom = 100%")
+    pixel_info = StringVar(l_frame,value="Pixel = 1mm")
+    infolabel1 = Label(l_frame, textvariable=zoom_info,bg="#FFF",fg="#000",font=("Roboto",8)).grid(row=5,column=0,pady=10)
+    infolabel2 = Label(l_frame, textvariable=pixel_info,bg="#FFF",fg="#000",font=("Roboto",8)).grid(row=6,column=0,pady=10)
+
 #MAIN WINDOW SETUP
 root = Tk()
 root.title("Software de Prueba PEFI 2022")
@@ -179,6 +229,9 @@ MF_W = IntVar(root,value=0)
 MF_H = IntVar(root,value=900)
 RF_W = IntVar(root,value=1450)
 RF_H = IntVar(root,value=900)
+CV_W = IntVar(root,value=600)
+CV_H = IntVar(root,value=600)
+img_num = IntVar(root, value=0)
 
 l_frame = Frame(root, width=130, height=900, background="#FFF")
 l_frame.grid(row=0, column=0,padx=(0,20))
@@ -188,31 +241,6 @@ r_frame = Frame(root, width=RF_W.get(), height=RF_H.get(), background="#222")
 r_frame.grid(row=0, column=2)
 r_frame.grid_propagate(0)
 
-#MENU
-
-l1 = Label(l_frame, text="MENU",bg="#FFF",font=("Roboto",20)).grid(row=0,column=0,pady=(10,20))
-
-b1 = Button(l_frame, text="Selección Imágen",font=("Roboto",11),command = img_selector, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=2, column=0,pady=10)
-b2 = Button(l_frame, text="Recortar",font=("Roboto",11),command = cuadra_gen, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=3, column=0,pady=10)
-b3 = Button(l_frame, text="Borrar Selección",font=("Roboto",11),command = canvas_clear, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=4, column=0,pady=10)
-b4 = Button(l_frame, text="Confirmar",font=("Roboto",11),command = crop_ima, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=5, column=0,pady=10)
-
-# CANVAS
-CV_W = IntVar(root,value=600)
-CV_H = IntVar(root,value=600)
-
-cv = Canvas(r_frame, width=CV_W.get(),height=CV_H.get(),bg="#666",highlightthickness=0)
-cv.grid(row=0,column=0, padx=(RF_W.get()-CV_W.get())/2, pady=(RF_H.get()-CV_H.get())/2)
-cv.old_coords = None
-
-# TECLAS DE CONTROL (algunas)
-cv.bind("<MouseWheel>", zoom_app)
-
-# PANEL DE INFO
-zoom_info = StringVar(l_frame,value="Zoom = 100%")
-pixel_info = StringVar(l_frame,value="Pixel = 1mm")
-infolabel1 = Label(l_frame, textvariable=zoom_info,bg="#FFF",fg="#000",font=("Roboto",8)).grid(row=9,column=0,pady=10)
-infolabel2 = Label(l_frame, textvariable=pixel_info,bg="#FFF",fg="#000",font=("Roboto",8)).grid(row=10,column=0,pady=10)
-
+menu_creator()
 
 root.mainloop()
