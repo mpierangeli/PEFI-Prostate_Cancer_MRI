@@ -23,16 +23,9 @@ def windows_clear():
     cv.destroy()
     CV_W.set(600)
     CV_H.set(600)
-    canvas_creator()
 
-def f_prueba(asd):
-    global ima_resized
-    global ima_r
-    global full_dicom
-    global img
-    global aspect
-    global pixel_info_static
-    global pixel_info_variable
+def ima_gen(num):
+    global ima_resized, ima_r, full_dicom, img, aspect, pixel_info_static, pixel_info_variable
 
     if len(filepath)==1:
         try:
@@ -45,7 +38,7 @@ def f_prueba(asd):
     
     canvas_creator()
 
-    full_dicom = pydicom.dcmread(filepath[int(asd)-1])
+    full_dicom = pydicom.dcmread(filepath[int(num)-1])
     img = full_dicom.pixel_array
     img = (img/img.max())*255
     aspect = img.shape[0]/img.shape[1]
@@ -74,8 +67,7 @@ def f_prueba(asd):
 
 def img_selector():
   
-    global filepath
-    global img_num_sel
+    global filepath, img_num_sel
 
     filepath = filedialog.askopenfilenames()
     filepath = list(filepath)
@@ -84,8 +76,8 @@ def img_selector():
     except:
         print("ERROR 3")
 
-    f_prueba(0)
-    img_num_sel = Scale(r_frame, from_=1,to=len(filepath),variable=img_num, command=f_prueba, bg="#666",activebackground="#2DD",fg="#FFF",orient=HORIZONTAL,width=15,length=30*len(filepath),bd=0,highlightbackground="#222",troughcolor="#222",font=("Roboto",12)).grid(row=1,column=0,pady=(5,0))
+    ima_gen(0)
+    img_num_sel = Scale(r_frame, from_=1,to=len(filepath),variable=img_num, command=ima_gen, bg="#666",activebackground="#2DD",fg="#FFF",orient=HORIZONTAL,width=15,length=30*len(filepath),bd=0,highlightbackground="#222",troughcolor="#222",font=("Roboto",12)).grid(row=1,column=0,pady=(5,0))
         
 def start_square(event):
     global x0, y0
@@ -119,7 +111,7 @@ def cuadra_gen():
     cv.bind('<ButtonRelease-1>', finish_square)
 
 def gen_info():
-    global m_frame
+    global m_frame, volumen
     m_frame = Frame(root, width=MF_W.get(), height=MF_H.get(), background="#AAA")
     m_frame.grid(row=0, column=1)
     m_frame.grid_propagate(0)
@@ -137,7 +129,11 @@ def gen_info():
         area = area/((CV_W.get()/img.shape[0])**2) # corrijo el area por el resize truncado por W o aspect = 1
     else:
         area = area/((CV_H.get()/img.shape[1])**2)  # corrijo el area por el resize truncado por H
-    
+    try:
+        volumen += area*1 #1 SUPONGO slice thinckness 1mm VER
+        vol_info.set("Volúmen = "+str(int(volumen))+"mm3")
+    except:
+        print("ERROR 10")
     i5 = Label(m_frame, text="Área = "+str(int(area))+"mm2",bg="#AAA",font=("Roboto",9)).grid(row=6,column=0,pady=(0,10))
 
 def body_finder(ima_c):
@@ -199,12 +195,22 @@ def zoom_app(event):
 def canvas_creator():
 
     global cv
-    global img_num_sel
 
     cv = Canvas(r_frame, width=CV_W.get(),height=CV_H.get(),bg="#666",highlightthickness=0)
     cv.grid(row=0,column=0, padx=(RF_W.get()-CV_W.get())/2, pady=(((RF_H.get()-CV_H.get())/2),0))
     cv.old_coords = None
     cv.bind("<MouseWheel>", zoom_app)   
+
+def vol_m():
+    global volumen, vol_info
+    volumen = 0
+    vol_info = StringVar(l_frame,value="Volúmen = 0 mm3")
+    infolabel3 = Label(l_frame, textvariable=vol_info,bg="#FFF",fg="#000",font=("Roboto",8)).grid(row=9,column=0,pady=10)
+
+    return
+
+def vol_a():
+    return
 
 def menu_creator():
     global pixel_info, zoom_info
@@ -212,14 +218,17 @@ def menu_creator():
 
     b1 = Button(l_frame, text="Abrir Img.",font=("Roboto",11),command = img_selector, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=2, column=0,pady=10)
     b2 = Button(l_frame, text="Recortar",font=("Roboto",11),command = cuadra_gen, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=3, column=0,pady=10)
-    
     b3 = Button(l_frame, text="Procesar",font=("Roboto",11),command = crop_ima, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=4, column=0,pady=10)
-    b4 = Button(l_frame, text="Fresh Start",font=("Roboto",11),command = windows_clear, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=7, column=0,pady=10)
+    b4 = Button(l_frame, text="Vol. Manual",font=("Roboto",11),command = vol_m, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=5, column=0,pady=10)
+    b5 = Button(l_frame, text="Vol. Automática",font=("Roboto",11),command = vol_a, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=6, column=0,pady=10)
+    b6 = Button(l_frame, text="Reiniciar",font=("Roboto",11),command = windows_clear, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=20, column=0,pady=(200,10))
 
     zoom_info = StringVar(l_frame,value="Zoom = 100%")
     pixel_info = StringVar(l_frame,value="Pixel = 1mm")
-    infolabel1 = Label(l_frame, textvariable=zoom_info,bg="#FFF",fg="#000",font=("Roboto",8)).grid(row=5,column=0,pady=10)
-    infolabel2 = Label(l_frame, textvariable=pixel_info,bg="#FFF",fg="#000",font=("Roboto",8)).grid(row=6,column=0,pady=10)
+    
+    infolabel1 = Label(l_frame, textvariable=zoom_info,bg="#FFF",fg="#000",font=("Roboto",8)).grid(row=7,column=0,pady=10)
+    infolabel2 = Label(l_frame, textvariable=pixel_info,bg="#FFF",fg="#000",font=("Roboto",8)).grid(row=8,column=0,pady=10)
+    
 
 #MAIN WINDOW SETUP
 root = Tk()
