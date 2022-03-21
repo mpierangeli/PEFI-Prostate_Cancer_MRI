@@ -54,19 +54,19 @@ def ima_gen(num):
     full_dicom = pydicom.dcmread(filepath[int(num)-1])
     img = full_dicom.pixel_array
     img = (img/img.max())*255
-    aspect = img.shape[0]/img.shape[1]
-    if img.shape[0] > img.shape[1]:
-        ima_r = cv2.resize(img,(1125,int(1125/aspect))) #1125 = 1250*0.9 Width BASE
-        pixel_info_static = img.shape[0]/1125
-    elif img.shape[0] < img.shape[1]:
-        ima_r = cv2.resize(img,(int(810*aspect),810))   #810 = 900*0.9  Height BASE
-        pixel_info_static = img.shape[1]/810
+    aspect = img.shape[1]/img.shape[0]
+    if aspect > 1:
+        ima_r = cv2.resize(img,(875,round(875/aspect))) #875 = 1250*0.8 0Width BASE
+        pixel_info_static = img.shape[1]/875
+    elif aspect < 1:
+        ima_r = cv2.resize(img,(round(720*aspect),720))   #720= 900*0.8  Height BASE
+        pixel_info_static = img.shape[0]/720
     else:
-        ima_r = cv2.resize(img,(810,810))
-        pixel_info_static = img.shape[0]/810
+        ima_r = cv2.resize(img,(720,720))
+        pixel_info_static = img.shape[0]/720
 
-    pixel_info_static = round(pixel_info_static,5)
-    pixel_info_variable = pixel_info_static
+    pixel_info_static = round(pixel_info_static*0.833,3) # 0.833 porq supongo pixel 0.833mm
+    pixel_info_variable = pixel_info_static*1
     pixel_info.set("Pixel = "+str(pixel_info_static)+"mm")
 
     ima_resized = ImageTk.PhotoImage(image=Image.fromarray(ima_r))
@@ -134,18 +134,15 @@ def gen_info():
     #IMPORTANT DATA
     # VER Q MOSTRAR EN EL PANEL DE INFO!!
     i1 = Label(m_frame, text="Canvas Size = "+str(CV_W.get())+"x"+str(CV_H.get()),bg="#AAA",font=("Roboto",9)).grid(row=2,column=0,pady=(0,10))
-    i2 = Label(m_frame, text="Orig. Img. Size = "+str(img.shape[0])+"x"+str(img.shape[1]),bg="#AAA",font=("Roboto",9)).grid(row=3,column=0,pady=(0,10))
+    i2 = Label(m_frame, text="Orig. Img. Size = "+str(img.shape[1])+"x"+str(img.shape[0]),bg="#AAA",font=("Roboto",9)).grid(row=3,column=0,pady=(0,10))
     i3 = Label(m_frame, text="Crop. Img. Size = "+str(ima_cropped.width())+"x"+str(ima_cropped.height()),bg="#AAA",font=("Roboto",9)).grid(row=4,column=0,pady=(0,10))
     i4 = Label(m_frame, text="Paciente = "+str(full_dicom[0x0010, 0x0010].value),bg="#AAA",font=("Roboto",9)).grid(row=5,column=0,pady=(0,10))
 
-    area = np.sum(body_found)/(zoom**2) # corrijo el area por el zoom
-    if aspect >= 1:
-        area = area/((CV_W.get()/img.shape[0])**2) # corrijo el area por el resize truncado por W o aspect = 1
-    else:
-        area = area/((CV_H.get()/img.shape[1])**2)  # corrijo el area por el resize truncado por H
+    area = np.sum(body_found)*(pixel_info_variable**2)/(zoom**2) # corrijo el area por el zoom
+
     try:
         volumen_aux += volumen
-        volumen += area*1 #1 SUPONGO slice thinckness 1mm VER
+        volumen += area*6 #1 SUPONGO slice thinckness 6mm VER
         vol_info.set("Volúmen = "+str(int(volumen))+"mm3")
     except:
         print("ERROR 10")
@@ -192,6 +189,7 @@ def zoom_app(event):
     global zoom
     global ima_zoomed
     global ima_z
+    global pixel_info_variable
     zoom = round(zoom+0.1*event.delta/120,1)
     
     if zoom>2: zoom = 2
@@ -203,7 +201,7 @@ def zoom_app(event):
         ima_zoomed = ImageTk.PhotoImage(image=Image.fromarray(ima_z))
         cv_ima = cv.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=ima_zoomed, tags="foto")
         cv.itemconfig(cv_ima,image=ima_zoomed)
-    pixel_info_variable = round(pixel_info_static/zoom,5)
+    pixel_info_variable = round(pixel_info_static/zoom,3)
     pixel_info.set("Pixel = "+str(pixel_info_variable)+"mm")
     zoom_info.set("Zoom = "+str(int(zoom*100))+"%")
 
@@ -250,7 +248,7 @@ def menu_creator():
     b6 = Button(l_frame, text="Reiniciar",font=("Roboto",11),command = windows_clear, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=20, column=0,pady=(200,10))
 
     zoom_info = StringVar(l_frame,value="Zoom = 100%")
-    pixel_info = StringVar(l_frame,value="Pixel = 1mm")
+    pixel_info = StringVar(l_frame,value="Pixel = 0.833mm")
     
     infolabel1 = Label(l_frame, textvariable=zoom_info,bg="#FFF",fg="#000",font=("Roboto",8)).grid(row=7,column=0,pady=10)
     infolabel2 = Label(l_frame, textvariable=pixel_info,bg="#FFF",fg="#000",font=("Roboto",8)).grid(row=8,column=0,pady=10)
