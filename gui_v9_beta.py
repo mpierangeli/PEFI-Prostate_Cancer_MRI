@@ -81,7 +81,7 @@ def img_selector():
         
 def start_square(event):
     global x0, y0
-    cv.delete("dibujos")
+    cv.delete("temp_lines","dibujos","temp_text")
     x0, y0 = event.x, event.y
     
 def finish_square(event):
@@ -111,7 +111,7 @@ def cuadra_gen():
     cv.bind('<ButtonRelease-1>', finish_square)
 
 def gen_info():
-    global m_frame, volumen
+    global m_frame, area, volumen, volumen_aux
     m_frame = Frame(root, width=MF_W.get(), height=MF_H.get(), background="#AAA")
     m_frame.grid(row=0, column=1)
     m_frame.grid_propagate(0)
@@ -130,6 +130,7 @@ def gen_info():
     else:
         area = area/((CV_H.get()/img.shape[1])**2)  # corrijo el area por el resize truncado por H
     try:
+        volumen_aux += volumen
         volumen += area*1 #1 SUPONGO slice thinckness 1mm VER
         vol_info.set("Volúmen = "+str(int(volumen))+"mm3")
     except:
@@ -201,16 +202,26 @@ def canvas_creator():
     cv.old_coords = None
     cv.bind("<MouseWheel>", zoom_app)   
 
-def vol_m():
-    global volumen, vol_info
-    volumen = 0
+def undo():
+    volumen = volumen_aux
+    vol_info.set("Volúmen = "+str(int(volumen))+"mm3")
+
+def cal_vol_m():
+    cal_vol(False)
+def cal_vol_a():
+    cal_vol(True)
+def cal_vol(flag):
+    global volumen, vol_info, volumen_aux
+    volumen = 0 
+    volumen_aux = 0
     vol_info = StringVar(l_frame,value="Volúmen = 0 mm3")
     infolabel3 = Label(l_frame, textvariable=vol_info,bg="#FFF",fg="#000",font=("Roboto",8)).grid(row=9,column=0,pady=10)
-
-    return
-
-def vol_a():
-    return
+    
+    if not flag:
+        pass
+        b7 = Button(l_frame, text="Deshacer",font=("Roboto",11),command = undo, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=10, column=0,pady=(0,10))
+    else:
+        pass
 
 def menu_creator():
     global pixel_info, zoom_info
@@ -219,8 +230,8 @@ def menu_creator():
     b1 = Button(l_frame, text="Abrir Img.",font=("Roboto",11),command = img_selector, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=2, column=0,pady=10)
     b2 = Button(l_frame, text="Recortar",font=("Roboto",11),command = cuadra_gen, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=3, column=0,pady=10)
     b3 = Button(l_frame, text="Procesar",font=("Roboto",11),command = crop_ima, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=4, column=0,pady=10)
-    b4 = Button(l_frame, text="Vol. Manual",font=("Roboto",11),command = vol_m, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=5, column=0,pady=10)
-    b5 = Button(l_frame, text="Vol. Automática",font=("Roboto",11),command = vol_a, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=6, column=0,pady=10)
+    b4 = Button(l_frame, text="Vol. Manual",font=("Roboto",11),command = cal_vol_m, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=5, column=0,pady=10)
+    b5 = Button(l_frame, text="Vol. Automática",font=("Roboto",11),command = cal_vol_a, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=6, column=0,pady=10)
     b6 = Button(l_frame, text="Reiniciar",font=("Roboto",11),command = windows_clear, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=20, column=0,pady=(200,10))
 
     zoom_info = StringVar(l_frame,value="Zoom = 100%")
