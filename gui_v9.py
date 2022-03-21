@@ -1,6 +1,7 @@
 from tkinter import *
 from PIL import Image,ImageTk
 from tkinter import filedialog
+from fsspec import Callback
 import pydicom
 import cv2
 #from skimage.filters.rank import gradient
@@ -10,17 +11,29 @@ import numpy as np
 
 
 def windows_clear():
-    cv.delete(ALL)
+    global l_frame,r_frame
     try:
         m_frame.destroy()
+        cv.destroy()
     except:
         print("ERROR 1")
-    try: 
-        img_num_sel.destroy()
-    except:
-        print("ERROR 2")
+    
+    l_frame.destroy()
+    r_frame.destroy()
 
-    cv.destroy()
+    RF_W.set(1450) 
+    RF_H.set(900)
+
+    l_frame = Frame(root, width=130, height=900, background="#FFF")
+    l_frame.grid(row=0, column=0,padx=(0,20))
+    l_frame.grid_propagate(0)
+
+    r_frame = Frame(root, width=RF_W.get(), height=RF_H.get(), background="#222")
+    r_frame.grid(row=0, column=2)
+    r_frame.grid_propagate(0)
+
+    menu_creator()
+
     CV_W.set(600)
     CV_H.set(600)
 
@@ -81,6 +94,7 @@ def img_selector():
         
 def start_square(event):
     global x0, y0
+    
     cv.delete("temp_lines","dibujos","temp_text")
     x0, y0 = event.x, event.y
     
@@ -220,7 +234,9 @@ def cal_vol(flag):
         pass
         b7 = Button(l_frame, text="Deshacer",font=("Roboto",11),command = undo, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=10, column=0,pady=(0,10))
     else:
-        pass
+        for n in range(len(filepath)):
+            ima_gen(n)
+            crop_ima()
 
 def menu_creator():
     global pixel_info, zoom_info
@@ -260,6 +276,7 @@ CV_W = IntVar(root,value=600)
 CV_H = IntVar(root,value=600)
 img_num = IntVar(root, value=0)
 
+global l_frame,r_frame
 l_frame = Frame(root, width=130, height=900, background="#FFF")
 l_frame.grid(row=0, column=0,padx=(0,20))
 l_frame.grid_propagate(0)
