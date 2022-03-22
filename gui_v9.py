@@ -1,7 +1,6 @@
 from tkinter import *
 from PIL import Image,ImageTk
 from tkinter import filedialog
-from fsspec import Callback
 import pydicom
 import cv2
 #from skimage.filters.rank import gradient
@@ -56,7 +55,7 @@ def ima_gen(num):
     img = (img/img.max())*255
     aspect = img.shape[1]/img.shape[0]
     if aspect > 1:
-        ima_r = cv2.resize(img,(875,round(875/aspect))) #875 = 1250*0.8 0Width BASE
+        ima_r = cv2.resize(img,(875,round(875/aspect))) #875 = 1250*0.8 Width BASE
         pixel_info_static = img.shape[1]/875
     elif aspect < 1:
         ima_r = cv2.resize(img,(round(720*aspect),720))   #720= 900*0.8  Height BASE
@@ -65,8 +64,8 @@ def ima_gen(num):
         ima_r = cv2.resize(img,(720,720))
         pixel_info_static = img.shape[0]/720
 
-    pixel_info_static = round(pixel_info_static*0.833,3) # 0.833 porq supongo pixel 0.833mm
-    pixel_info_variable = pixel_info_static*1
+    pixel_info_static = round(pixel_info_static*0.8333,2) # 0.8333 porq distancia entre pixeles 0.8333 en x e y
+    pixel_info_variable = pixel_info_static*1 # para cuando creo zoom
     pixel_info.set("Pixel = "+str(pixel_info_static)+"mm")
 
     ima_resized = ImageTk.PhotoImage(image=Image.fromarray(ima_r))
@@ -115,8 +114,8 @@ def temp_square(event):
     cv.create_line(x0,y0,x0,event.y,fill="#A00",dash=(7,),tags="temp_line")
     cv.create_line(event.x,y0,event.x,event.y,fill="#A00",dash=(7,),tags="temp_line")
     cv.create_line(x0,event.y,event.x,event.y,fill="#A00",dash=(7,),tags="temp_line")
-    cv.create_text((event.x+x0)/2,y0-10,text=str(abs(round(pixel_info_variable*(event.x-x0),3)))+"mm",fill="#F00",font=("Roboto", 9),tags="temp_text")
-    cv.create_text(x0-10,(event.y+y0)/2,text=str(abs(round(pixel_info_variable*(event.y-y0),3)))+"mm",fill="#F00",font=("Roboto", 9),tags="temp_text",angle=90)
+    cv.create_text((event.x+x0)/2,y0-10,text=str(abs(round(pixel_info_variable*(event.x-x0),2)))+"mm",fill="#F00",font=("Roboto", 9),tags="temp_text")
+    cv.create_text(x0-10,(event.y+y0)/2,text=str(abs(round(pixel_info_variable*(event.y-y0),2)))+"mm",fill="#F00",font=("Roboto", 9),tags="temp_text",angle=90)
 
 def cuadra_gen():
     root.config(cursor="tcross")
@@ -138,11 +137,11 @@ def gen_info():
     i3 = Label(m_frame, text="Crop. Img. Size = "+str(ima_cropped.width())+"x"+str(ima_cropped.height()),bg="#AAA",font=("Roboto",9)).grid(row=4,column=0,pady=(0,10))
     i4 = Label(m_frame, text="Paciente = "+str(full_dicom[0x0010, 0x0010].value),bg="#AAA",font=("Roboto",9)).grid(row=5,column=0,pady=(0,10))
 
-    area = np.sum(body_found)*(pixel_info_variable**2)/(zoom**2) # corrijo el area por el zoom
+    area = np.sum(body_found)*(pixel_info_variable**2)
 
     try:
         volumen_aux += volumen
-        volumen += area*6 #1 SUPONGO slice thinckness 6mm VER
+        volumen += area*(5+0.06*5/2) #1 SUPONGO slice thinckness 5mm + space between (factor de 6% de ST) VER
         vol_info.set("Volúmen = "+str(int(volumen))+"mm3")
     except:
         print("ERROR 10")
@@ -201,7 +200,7 @@ def zoom_app(event):
         ima_zoomed = ImageTk.PhotoImage(image=Image.fromarray(ima_z))
         cv_ima = cv.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=ima_zoomed, tags="foto")
         cv.itemconfig(cv_ima,image=ima_zoomed)
-    pixel_info_variable = round(pixel_info_static/zoom,3)
+    pixel_info_variable = round(pixel_info_static/zoom,2)
     pixel_info.set("Pixel = "+str(pixel_info_variable)+"mm")
     zoom_info.set("Zoom = "+str(int(zoom*100))+"%")
 
