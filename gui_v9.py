@@ -122,7 +122,7 @@ def cuadra_gen():
     cv.bind('<ButtonRelease-1>', finish_square)
 
 def gen_info():
-    global m_frame, area, volumen, volumen_aux, ST
+    global m_frame, area, volumen, volumen_memo, ST
     m_frame = Frame(root, width=MF_W.get(), height=MF_H.get(), background="#AAA")
     m_frame.grid(row=0, column=1)
     m_frame.grid_propagate(0)
@@ -139,9 +139,9 @@ def gen_info():
     i6 = Label(m_frame, text="Slice Thickness = "+str(ST)+"mm",bg="#AAA",font=("Roboto",9)).grid(row=7,column=0,pady=(0,10))
     area = np.sum(body_found)*(pixel_info_variable**2)
     i7 = Label(m_frame, text="Área = "+str(round(area/100,2))+"cm2",bg="#AAA",font=("Roboto",9)).grid(row=8,column=0,pady=(0,10))
-
+    
     try:
-        volumen_aux += volumen
+        volumen_memo.append(volumen)
         volumen += area*ST
         vol_info.set("Volúmen = "+str(round(volumen/1000,2))+"ml")
     except:
@@ -210,17 +210,25 @@ def canvas_creator():
     cv.bind("<MouseWheel>", zoom_app)   
 
 def undo():
-    volumen = volumen_aux
-    vol_info.set("Volúmen = "+str(int(volumen))+"mm3")
+    global memo_cont, volumen
+    if memo_cont > -len(volumen_memo):
+        memo_cont -=1
+        volumen = volumen_memo[memo_cont]
+    else:
+        return
+    
+    vol_info.set("Volúmen = "+str(round(volumen/1000,2))+"ml")
 
 def cal_vol_m():
     cal_vol(False)
 def cal_vol_a():
     cal_vol(True)
 def cal_vol(flag):
-    global volumen, volumen_aux, infolabel3
+    global volumen, volumen_aux, volumen_memo, infolabel3, memo_cont
     volumen = 0 
     volumen_aux = 0
+    volumen_memo = []
+    memo_cont = 0
     try:
         infolabel3.destroy()
     except:
@@ -269,8 +277,8 @@ CV_W = IntVar(root,value=600)
 CV_H = IntVar(root,value=600)
 img_num = IntVar(root, value=0)
 zoom_info = StringVar(root,value="Zoom = 100%")
-pixel_info = StringVar(root,value="Pixel = 0.833mm")
-vol_info = StringVar(root,value="Volúmen = 0 mm3")
+pixel_info = StringVar(root,value="Pixel = ?")
+vol_info = StringVar(root,value="Volúmen = ?")
 
 #MAIN WINDOW DISPLAY
 l_frame = Frame(root, width=130, height=900, background="#FFF")
