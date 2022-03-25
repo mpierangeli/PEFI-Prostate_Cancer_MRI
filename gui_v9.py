@@ -97,7 +97,6 @@ def start_square(event):
     
     cv.delete("temp_lines","dibujos","temp_text")
     x0, y0 = event.x, event.y
-    
 def finish_square(event):
     global x1, y1
     x1, y1 = event.x, event.y
@@ -108,7 +107,6 @@ def finish_square(event):
     cv.delete("temp_line")
     cv.old_coords = None
     root.config(cursor="arrow")
-
 def temp_square(event):
     cv.delete("temp_line","temp_text")
     cv.create_line(x0,y0,event.x,y0,fill="#A00",dash=(7,),tags="temp_line")
@@ -117,14 +115,13 @@ def temp_square(event):
     cv.create_line(x0,event.y,event.x,event.y,fill="#A00",dash=(7,),tags="temp_line")
     cv.create_text((event.x+x0)/2,y0-10,text=str(abs(round(pixel_info_variable*(event.x-x0),2)))+"mm",fill="#F00",font=("Roboto", 9),tags="temp_text")
     cv.create_text(x0-10,(event.y+y0)/2,text=str(abs(round(pixel_info_variable*(event.y-y0),2)))+"mm",fill="#F00",font=("Roboto", 9),tags="temp_text",angle=90)
-
-def cuadra_gen():
+def square_gen():
     root.config(cursor="tcross")
     cv.bind('<Button-1>', start_square)
     cv.bind('<B1-Motion>', temp_square)
     cv.bind('<ButtonRelease-1>', finish_square)
 
-def gen_info():
+def info_gen():
     global m_frame, area, volumen, volumen_memo, ST
     m_frame = Frame(root, width=MF_W.get(), height=MF_H.get(), background="#AAA")
     m_frame.grid(row=0, column=1)
@@ -158,7 +155,7 @@ def body_finder(ima_c):
 
         return out
 
-def crop_ima():
+def crop_app():
     global ima_cropped, body_found, x0, y0, x1, y1
     x0 = int(x0 + int((zoom-1)*CV_W.get()/2))
     y0 = int(y0 + int((zoom-1)*CV_H.get()/2))
@@ -178,7 +175,7 @@ def crop_ima():
         MF_W.set(ima_c_size)
     else:
         MF_W.set(200)
-    gen_info()
+    info_gen()
     
     RF_W.set(1450-MF_W.get())
     cv.grid(row=0,column=0, padx=(RF_W.get()-CV_W.get())/2, pady=(((RF_H.get()-CV_H.get())/2),0))
@@ -242,15 +239,15 @@ def cal_vol(flag):
     else:
         for n in range(len(filepath)):
             ima_gen(n)
-            crop_ima()
+            crop_app()
 
 def menu_creator():
 
     l1 = Label(l_frame, text="MENU",bg="#FFF",font=("Roboto",20)).grid(row=0,column=0,pady=(10,20))
 
     b1 = Button(l_frame, text="Abrir Img.",font=("Roboto",11),command = img_selector, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=2, column=0,pady=10)
-    b2 = Button(l_frame, text="Recortar",font=("Roboto",11),command = cuadra_gen, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=3, column=0,pady=10)
-    b3 = Button(l_frame, text="Procesar",font=("Roboto",11),command = crop_ima, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=4, column=0,pady=10)
+    b2 = Button(l_frame, text="Recortar",font=("Roboto",11),command = square_gen, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=3, column=0,pady=10)
+    b3 = Button(l_frame, text="Procesar",font=("Roboto",11),command = crop_app, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=4, column=0,pady=10)
     b4 = Button(l_frame, text="Vol. Manual",font=("Roboto",11),command = cal_vol_m, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=5, column=0,pady=10)
     b5 = Button(l_frame, text="Vol. Automático",font=("Roboto",11),command = cal_vol_a, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=6, column=0,pady=10)
     b6 = Button(l_frame, text="Reiniciar",font=("Roboto",11),command = windows_clear, relief=FLAT, bg="#555",fg="#FFF",activebackground="#555",activeforeground="#2DD",bd=0,height=2,width=15,justify=CENTER).grid(row=20, column=0,pady=(200,10))
@@ -267,7 +264,6 @@ root.minsize(1600, 900)
 
 root.config(bg="#2DD")
 root.iconbitmap("unsam.ico")
-zoom = 1 #canvas empieza en 100%
 
 # GLOBAL VARIABLES
 MF_W = IntVar(root,value=0)
@@ -280,6 +276,7 @@ img_num = IntVar(root, value=0)
 zoom_info = StringVar(root,value="Zoom = 100%")
 pixel_info = StringVar(root,value="Pixel = ?")
 vol_info = StringVar(root,value="Volúmen = ?")
+zoom = 1 #zoom empieza en 100%
 
 #MAIN WINDOW DISPLAY
 l_frame = Frame(root, width=130, height=900, background="#FFF")
