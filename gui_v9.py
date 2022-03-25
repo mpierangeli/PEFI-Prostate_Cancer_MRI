@@ -10,7 +10,7 @@ import numpy as np
 
 
 def windows_clear():
-    global l_frame,r_frame
+    global l_frame,r_frame, volumen,volumen_memo, memo_cont
     try:
         m_frame.destroy()
         cv.destroy()
@@ -22,6 +22,9 @@ def windows_clear():
 
     RF_W.set(1450) 
     RF_H.set(900)
+    volumen_memo = []
+    volumen = 0
+    memo_cont = 0
 
     l_frame = Frame(root, width=130, height=900, background="#FFF")
     l_frame.grid(row=0, column=0,padx=(0,20))
@@ -157,7 +160,6 @@ def body_finder(ima_c):
 
 def crop_ima():
     global ima_cropped, body_found, x0, y0, x1, y1
-
     x0 = int(x0 + int((zoom-1)*CV_W.get()/2))
     y0 = int(y0 + int((zoom-1)*CV_H.get()/2))
     x1 = int(x1 + int((zoom-1)*CV_W.get()/2))
@@ -224,9 +226,8 @@ def cal_vol_m():
 def cal_vol_a():
     cal_vol(True)
 def cal_vol(flag):
-    global volumen, volumen_aux, volumen_memo, infolabel3, memo_cont
+    global volumen, volumen_memo, infolabel3, memo_cont
     volumen = 0 
-    volumen_aux = 0
     volumen_memo = []
     memo_cont = 0
     try:
