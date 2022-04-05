@@ -5,6 +5,7 @@ from tkinter import filedialog
 import pydicom
 import cv2
 import numpy as np
+import math
 
 
 def windows_creator():
@@ -116,16 +117,28 @@ def start_ruler(event):
     cv.delete("temp_ruler","medicion","temp_text")
     x0, y0 = event.x, event.y
 def temp_ruler(event):
+    
     cv.delete("temp_ruler","temp_text")
-    cv.create_line(x0,y0,event.x,event.y,fill="#A00",dash=(7,),tags="temp_ruler")
-    cv.create_text((event.x+x0)/2,(event.y+y0)/2,text=str(abs(round(px_info_var*(event.x-x0),2)))+"mm",fill="#F00",font=("Roboto", 9),tags="temp_text")
+    cv.create_line(x0,y0,event.x,event.y,fill="#1BB",dash=(3,),tags="temp_ruler")
+    dx = event.x-x0
+    dy = event.y-y0
+    ang = abs(math.degrees(math.atan((-dy)/(-dx+1e-6))))
+    a = 10
+    b = 10
+    if int(dx) == 0: b -= 10
+    elif int(dy) == 0: a -= 10
+    elif dx*dy > 0: 
+        ang = -ang
+        a -= 20
+
+    cv.create_text((event.x+x0)/2+a,(event.y+y0)/2+b,text=str(abs(round(px_info_var*(math.sqrt(dx**2+dy**2)),1)))+"mm",fill="#2CC",font=("Roboto", 9),tags="temp_text",angle=ang)
 def finish_ruler(event):
     global x1, y1
     x1, y1 = event.x, event.y
-    if x1 == x0 or y1 == y0:
+    if x1 == x0 and y1 == y0:
         print("NO SUELTE EL MOUSE")
         return
-    cv.create_line(x0,y0,x1,y1,fill="#F00",tags="medicion")
+    cv.create_line(x0,y0,x1,y1,fill="#2CC",tags="medicion")
     cv.delete("temp_ruler")
     cv.old_coords = None
     root.config(cursor="arrow")
