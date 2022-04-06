@@ -86,8 +86,16 @@ def temp_square(event):
     cv.create_line(x0,y0,x0,event.y,fill="#A00",dash=(7,),tags="temp_square")
     cv.create_line(event.x,y0,event.x,event.y,fill="#A00",dash=(7,),tags="temp_square")
     cv.create_line(x0,event.y,event.x,event.y,fill="#A00",dash=(7,),tags="temp_square")
-    cv.create_text((event.x+x0)/2,y0-10,text=str(abs(round(px_info_var*(event.x-x0),2)))+"mm",fill="#F00",font=("Roboto", 9),tags="temp_text_s")
-    cv.create_text(x0-10,(event.y+y0)/2,text=str(abs(round(px_info_var*(event.y-y0),2)))+"mm",fill="#F00",font=("Roboto", 9),tags="temp_text_s",angle=90)
+    dx = event.x-x0
+    dy = event.y-y0
+    a = 0
+    b = 0
+    if dx>0: a = -10
+    else: a = 10
+    if dy>0: b = -10
+    else: b = 10
+    cv.create_text((event.x+x0)/2,y0+b,text=str(abs(round(px_info_var*dx,2)))+"mm",fill="#F00",font=("Roboto", 9),tags="temp_text_s")
+    cv.create_text(x0+a,(event.y+y0)/2,text=str(abs(round(px_info_var*dy,2)))+"mm",fill="#F00",font=("Roboto", 9),tags="temp_text_s",angle=90)
 def finish_square(event):
     global x1, y1
     x1, y1 = event.x, event.y
