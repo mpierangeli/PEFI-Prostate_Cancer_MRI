@@ -1,4 +1,3 @@
-from ast import Return
 from tkinter import *
 from PIL import Image,ImageTk
 from tkinter import filedialog
