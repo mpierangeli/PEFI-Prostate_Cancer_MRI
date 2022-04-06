@@ -63,17 +63,13 @@ def canvas_creator():
     cv4.grid(row=1,column=1,padx=(5,0),pady=(5,0))
     cv4.old_coords = None
 
-    cv1.bind("<Enter>",lambda event, arg=1: focus_cv(event,arg))
-    cv2.bind("<Enter>",lambda event, arg=2: focus_cv(event,arg))
-    cv3.bind("<Enter>",lambda event, arg=3: focus_cv(event,arg))
-    cv4.bind("<Enter>",lambda event, arg=4: focus_cv(event,arg))
-
+    cv1.bind("<Enter>",lambda event, arg=cv1: focus_cv(event,arg))
+    cv2.bind("<Enter>",lambda event, arg=cv2: focus_cv(event,arg))
+    cv3.bind("<Enter>",lambda event, arg=cv3: focus_cv(event,arg))
+    cv4.bind("<Enter>",lambda event, arg=cv4: focus_cv(event,arg))
 def focus_cv(event,arg):
-    global focused_cv, cv
-    if arg == 1: cv = cv1
-    elif arg == 2: cv = cv2
-    elif arg == 3: cv = cv3
-    elif arg == 4: cv = cv4
+    global cv
+    cv = arg
 
 ## HERRAMIENTAS
 def square_gen():
