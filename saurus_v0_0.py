@@ -48,17 +48,18 @@ def menu_creator():
 
 def canvas_creator():
     global cv1,cv2,cv3,cv4
-
-    cv1 = Canvas(main_frame, width=int(MF_W.get()/2)-5,height=int(MF_H.get()/2)-5,bg="#666",highlightthickness=0)
+    CV_W.set(int(MF_W.get()/2)-5)
+    CV_H.set(int(MF_H.get()/2)-5)
+    cv1 = Canvas(main_frame, width=CV_W.get(),height=CV_H.get(),bg="#666",highlightthickness=0)
     cv1.grid(row=0,column=0,padx=(0,5),pady=(0,5))
     cv1.old_coords = None
-    cv2 = Canvas(main_frame, width=int(MF_W.get()/2)-5,height=int(MF_H.get()/2)-5,bg="#666",highlightthickness=0)
+    cv2 = Canvas(main_frame, width=CV_W.get(),height=CV_H.get(),bg="#666",highlightthickness=0)
     cv2.grid(row=0,column=1,padx=(5,0),pady=(0,5))
     cv2.old_coords = None
-    cv3 = Canvas(main_frame, width=int(MF_W.get()/2)-5,height=int(MF_H.get()/2)-5,bg="#666",highlightthickness=0)
+    cv3 = Canvas(main_frame, width=CV_W.get(),height=CV_H.get(),bg="#666",highlightthickness=0)
     cv3.grid(row=1,column=0,padx=(0,5),pady=(5,0))
     cv3.old_coords = None
-    cv4 = Canvas(main_frame, width=int(MF_W.get()/2)-5,height=int(MF_H.get()/2)-5,bg="#666",highlightthickness=0)
+    cv4 = Canvas(main_frame, width=CV_W.get(),height=CV_H.get(),bg="#666",highlightthickness=0)
     cv4.grid(row=1,column=1,padx=(5,0),pady=(5,0))
     cv4.old_coords = None
 
@@ -66,9 +67,61 @@ def canvas_creator():
     cv2.bind("<Enter>",lambda event, arg=cv2: focus_cv(event,arg))
     cv3.bind("<Enter>",lambda event, arg=cv3: focus_cv(event,arg))
     cv4.bind("<Enter>",lambda event, arg=cv4: focus_cv(event,arg))
+
+    root.bind("<MouseWheel>", slice_selection)  
+    patient_loader()
+
 def focus_cv(event,arg):
     global cv
     cv = arg
+
+def slice_selection(event):
+    global slice_num
+    if event.delta > 0 and slice_num < len(axiales)-1: slice_num+=1
+    elif event.delta < 0 and slice_num > 0: slice_num-=1
+    set_img(slice_num)
+
+def patient_loader():
+    global filepaths, axiales, coronales, slice_num, factor
+
+    filepaths = filedialog.askopenfilenames()
+    filepaths = list(filepaths)
+    slice_num = 0
+    #-------------------------------------------------
+    #GENERO PLANO CORONAL CON IMAGENES T2 (VER COMO SELECCIONAR ESAS EN PARTICULAR)
+    init_dcm = pydicom.dcmread(filepaths[0])
+    init_img = init_dcm.pixel_array
+
+    axiales = np.zeros((len(filepaths),init_img.shape[0],init_img.shape[1]))
+    factor = 6 #factor = ancho de corte / ancho de pixel => cantidad de pixeles por tajo
+    coronales  =  np.zeros((axiales.shape[1],factor*axiales.shape[0],axiales.shape[2]))
+    max = 0
+    for n, dcm in enumerate(filepaths):
+        full_dicom = pydicom.dcmread(dcm)
+        new_max = full_dicom[0x0028,0x0107].value
+        if new_max > max: max = new_max
+        img = full_dicom.pixel_array
+        axiales[n] = img
+    for n in range(len(axiales)):
+        axiales[n] = (axiales[n]/max)*255
+
+    for p in range(axiales.shape[1]): # por cada fila de las axiales -> profundidad de la coronal
+        for i in range(axiales.shape[0]): # por cada imagen axial -> altura de la coronal
+            for j in range(factor): # por ancho de tomo axial, repito misma muestra
+                coronales[p,i*factor+j] = axiales[i,p,:]
+    #------------------------------------------------
+    set_img(slice_num)
+
+def set_img(num):
+    global cv,cv1,cv2,cv3,cv4,axial_t2,coronal_t2
+    axial_t2 = ImageTk.PhotoImage(image=Image.fromarray(axiales[num]))
+    coronal_t2 = ImageTk.PhotoImage(image=Image.fromarray(coronales[150]))
+    
+    cv1.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=axial_t2, tags="axial_t2")
+    cv2.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=coronal_t2, tags="coronal_t2")
+    cv2.delete("slice_marker")
+    cv2.create_line(CV_W.get()/2-coronal_t2.width()/2, num*factor+CV_H.get()/2-coronal_t2.height()/2, coronal_t2.width()/2+CV_W.get()/2, num*factor+CV_H.get()/2-coronal_t2.height()/2, fill="#2DD", tags="slice_marker")
+    cv2.create_line(CV_W.get()/2-coronal_t2.width()/2, (num+1)*factor+CV_H.get()/2-coronal_t2.height()/2, coronal_t2.width()/2+CV_W.get()/2, (num+1)*factor+CV_H.get()/2-coronal_t2.height()/2, fill="#2DD", tags="slice_marker")
 
 ## HERRAMIENTAS
 def square_gen():
@@ -195,6 +248,8 @@ root.iconbitmap("unsam.ico")
 # GLOBAL VARIABLES
 MF_W = IntVar(value=1600)
 MF_H = IntVar(value=880)
+CV_W = IntVar(value=0)
+CV_H = IntVar(value=0)
 px_info_var = 1
 focused_cv = 0
 
