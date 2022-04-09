@@ -93,8 +93,7 @@ def patient_loader():
 
     filepaths = filedialog.askopenfilenames()
     filepaths = list(filepaths)
-    slice_num = 0
-    depth_num = 150
+    
     #-------------------------------------------------
     #GENERO PLANO CORONAL CON IMAGENES T2 (VER COMO SELECCIONAR ESAS EN PARTICULAR)
     init_dcm = pydicom.dcmread(filepaths[0])
@@ -103,13 +102,14 @@ def patient_loader():
     axiales = np.zeros((len(filepaths),init_img.shape[0],init_img.shape[1]))
     factor = 6 #factor = ancho de corte / ancho de pixel => cantidad de pixeles por tajo
     coronales  =  np.zeros((axiales.shape[1],factor*axiales.shape[0],axiales.shape[2]))
-    max = 0
+
+    slice_num = 0
+    depth_num = int(coronales.shape[0]/2)
+
     for n, dcm in enumerate(filepaths):
         full_dicom = pydicom.dcmread(dcm)
-        new_max = full_dicom[0x0028,0x0107].value
-        if new_max > max: max = new_max
-        img = full_dicom.pixel_array
-        axiales[n] = img
+        axiales[n] = full_dicom.pixel_array
+    max = axiales.max()
     for n in range(len(axiales)):
         axiales[n] = (axiales[n]/max)*255
 
