@@ -68,7 +68,10 @@ def canvas_creator():
     cv3.bind("<Enter>",lambda event, arg=cv3: focus_cv(event,arg))
     cv4.bind("<Enter>",lambda event, arg=cv4: focus_cv(event,arg))
 
-    root.bind("<MouseWheel>", slice_selection)  
+    cv1.bind("<MouseWheel>", slice_selection)
+    cv3.bind("<MouseWheel>", slice_selection)  
+    cv4.bind("<MouseWheel>", slice_selection)
+    cv2.bind("<MouseWheel>", depth_selection)  
     patient_loader()
 
 def focus_cv(event,arg):
@@ -76,17 +79,22 @@ def focus_cv(event,arg):
     cv = arg
 
 def slice_selection(event):
-    global slice_num
+    global slice_num,depth_num
     if event.delta > 0 and slice_num < len(axiales)-1: slice_num+=1
     elif event.delta < 0 and slice_num > 0: slice_num-=1
-    set_img(slice_num)
-
+    set_img(slice_num,depth_num)
+def depth_selection(event):
+    global depth_num
+    if event.delta > 0 and depth_num < len(coronales)-1: depth_num+=1
+    elif event.delta < 0 and depth_num > 0: depth_num-=1
+    set_img(slice_num,depth_num)
 def patient_loader():
-    global filepaths, axiales, coronales, slice_num, factor
+    global filepaths, axiales, coronales, slice_num, depth_num, factor
 
     filepaths = filedialog.askopenfilenames()
     filepaths = list(filepaths)
     slice_num = 0
+    depth_num = 150
     #-------------------------------------------------
     #GENERO PLANO CORONAL CON IMAGENES T2 (VER COMO SELECCIONAR ESAS EN PARTICULAR)
     init_dcm = pydicom.dcmread(filepaths[0])
@@ -110,12 +118,12 @@ def patient_loader():
             for j in range(factor): # por ancho de tomo axial, repito misma muestra
                 coronales[p,i*factor+j] = axiales[i,p,:]
     #------------------------------------------------
-    set_img(slice_num)
+    set_img(slice_num,depth_num)
 
-def set_img(num):
+def set_img(num,depth):
     global cv,cv1,cv2,cv3,cv4,axial_t2,coronal_t2
     axial_t2 = ImageTk.PhotoImage(image=Image.fromarray(axiales[num]))
-    coronal_t2 = ImageTk.PhotoImage(image=Image.fromarray(coronales[150]))
+    coronal_t2 = ImageTk.PhotoImage(image=Image.fromarray(coronales[depth]))
     
     cv1.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=axial_t2, tags="axial_t2")
     cv2.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=coronal_t2, tags="coronal_t2")
