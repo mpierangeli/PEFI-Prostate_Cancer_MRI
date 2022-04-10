@@ -33,7 +33,7 @@ def menu_creator():
     editmenu.add_command(label="Medición",command=ruler_gen)
 
     reportmenu = Menu(menubar, tearoff=0)
-    reportmenu.add_command(label="Nuevo Reporte")
+    reportmenu.add_command(label="Nuevo Reporte",command=report_window_gen)
 
     helpmenu = Menu(menubar, tearoff=0)
     helpmenu.add_command(label="Ayuda")
@@ -45,6 +45,12 @@ def menu_creator():
     menubar.add_cascade(label="Herramientas", menu=editmenu)
     menubar.add_cascade(label="Reportar", menu=reportmenu)
     menubar.add_cascade(label="Ayuda", menu=helpmenu)
+
+def report_window_gen():
+    global report_window
+
+    report_window = Toplevel(root)
+    report_window.minsize(500,500)
 
 def canvas_creator():
     global cv1,cv2,cv3,cv4
@@ -89,7 +95,7 @@ def depth_selection(event):
     elif event.delta < 0 and depth_num > 0: depth_num-=1
     set_img(slice_num,depth_num)
 def patient_loader():
-    global filepaths, axiales, coronales, slice_num, depth_num, factor
+    global filepaths, axiales, coronales, slice_num, depth_num, factor, init_dcm, init_img, px_info_var
 
     filepaths = filedialog.askopenfilenames()
     filepaths = list(filepaths)
@@ -99,8 +105,10 @@ def patient_loader():
     init_dcm = pydicom.dcmread(filepaths[0])
     init_img = init_dcm.pixel_array
 
+    px_info_var = [float(init_dcm[0x0028,0x0030].value[0]),float(init_dcm[0x0028,0x0030].value[1])]
     axiales = np.zeros((len(filepaths),init_img.shape[0],init_img.shape[1]))
-    factor = 6 #factor = ancho de corte / ancho de pixel => cantidad de pixeles por tajo
+    factor = int(init_dcm[0x0018, 0x0050].value/px_info_var[0])
+    #factor = 6 #factor = ancho de corte / ancho de pixel => cantidad de pixeles por tajo
     coronales  =  np.zeros((axiales.shape[1],factor*axiales.shape[0],axiales.shape[2]))
 
     slice_num = 0
@@ -118,8 +126,40 @@ def patient_loader():
             for j in range(factor): # por ancho de tomo axial, repito misma muestra
                 coronales[p,i*factor+j] = axiales[i,p,:]
     #------------------------------------------------
-    set_img(slice_num,depth_num)
+    set_img(slice_num,depth_num) # por default inicia mostrando esto
 
+
+
+    #-------------------------------------
+    root.bind("<F1>",info_tab_gen)
+
+def info_tab_gen(event):
+    global info_tab
+    info_tab = Frame(root, width=500, height=MF_H.get(), background="#222")
+    info_tab.place(relx=0,rely=0)
+    info_tab.pack_propagate(0)
+    l2 = Label(info_tab, text="INFO",bg="#222",font=("Roboto",10),fg="#FFF").grid(row=0,column=0,pady=(10,20))
+
+    #IMPORTANT DATA
+    # VER Q MOSTRAR EN EL PANEL DE INFO!!
+    i1 = Label(info_tab, text="Paciente = "+str(init_dcm[0x0010, 0x0010].value),bg="#222",font=("Roboto",9),fg="#FFF").grid(row=2,column=0,pady=(0,10))
+    i2 = Label(info_tab, text="Canvas Size = "+str(CV_W.get())+"x"+str(CV_H.get()),bg="#222",font=("Roboto",9),fg="#FFF").grid(row=3,column=0,pady=(0,10))
+    i3 = Label(info_tab, text="Orig. Img. Size = "+str(init_img.shape[1])+"x"+str(init_img.shape[0]),bg="#222",font=("Roboto",9),fg="#FFF").grid(row=4,column=0,pady=(0,10))
+    #i4 = Label(info_tab, text="Crop. Img. Size = "+str(ima_cropped.width())+"x"+str(ima_cropped.height()),bg="#AAA",font=("Roboto",9)).grid(row=5,column=0,pady=(0,10))
+    i5 = Label(info_tab, text="FOV = "+str(int(init_img.shape[1]*px_info_var[0]))+"x"+str(int(init_img.shape[0]*px_info_var[1]))+" [mm x mm]",bg="#222",font=("Roboto",9),fg="#FFF").grid(row=6,column=0,pady=(0,10))
+    ##si la secuencia es 2d o 3d cambia el slice thickness:
+    if init_dcm[0x0018,0x0023].value == "2D":
+        ST = round(init_dcm[0x0018, 0x0050].value*(1+init_dcm[0x0018, 0x0088].value/100),1)
+    elif init_dcm[0x0018,0x0023].value == "3D":
+        ST = round(init_dcm[0x0018, 0x0050].value,1)
+    else:
+        ST = 1000000
+    i6 = Label(info_tab, text="Slice Thickness = "+str(ST)+"mm",bg="#222",font=("Roboto",9),fg="#FFF").grid(row=7,column=0,pady=(0,10))
+
+    root.bind("<F1>",info_tab_destroy)
+def info_tab_destroy(event):
+    info_tab.destroy()
+    root.bind("<F1>",info_tab_gen)
 def set_img(num,depth):
     global cv,cv1,cv2,cv3,cv4,axial_t2,coronal_t2
     axial_t2 = ImageTk.PhotoImage(image=Image.fromarray(axiales[num]))
@@ -155,8 +195,8 @@ def temp_square(event):
     else: a = 10
     if dy>0: b = -10
     else: b = 10
-    cv.create_text((event.x+x0)/2,y0+b,text=str(abs(round(px_info_var*dx,2)))+"mm",fill="#F00",font=("Roboto", 9),tags="temp_text_s")
-    cv.create_text(x0+a,(event.y+y0)/2,text=str(abs(round(px_info_var*dy,2)))+"mm",fill="#F00",font=("Roboto", 9),tags="temp_text_s",angle=90)
+    cv.create_text((event.x+x0)/2,y0+b,text=str(abs(round(px_info_var[0]*dx,2)))+"mm",fill="#F00",font=("Roboto", 9),tags="temp_text_s")
+    cv.create_text(x0+a,(event.y+y0)/2,text=str(abs(round(px_info_var[1]*dy,2)))+"mm",fill="#F00",font=("Roboto", 9),tags="temp_text_s",angle=90)
 def finish_square(event):
     global x1, y1
     x1, y1 = event.x, event.y
@@ -186,7 +226,8 @@ def temp_circle(event):
     dy = abs(event.y-y0)
     r = math.sqrt(dx**2+dy**2)
     cv.create_oval(x0-r,y0-r,x0+r,y0+r,outline="#A00",dash=(7,),tags="temp_circle")
-    cv.create_text(x0,y0+r+10,text="r: "+str(abs(round(px_info_var*r,2)))+"mm",fill="#F00",font=("Roboto", 9),tags="temp_text_c")
+    cv.create_text(x0,y0+r+10,text="r: "+str(abs(round(px_info_var[0]*r,2)))+"mm",fill="#F00",font=("Roboto", 9),tags="temp_text_c")
+    ## VER ACA EL PX_INFO_VAR
 def finish_circle(event):
     global x1, y1
     x1, y1 = event.x, event.y
@@ -216,7 +257,7 @@ def start_ruler(event):
 def temp_ruler(event):
     
     cv.delete("temp_ruler","temp_text_r")
-    cv.create_line(x0,y0,event.x,event.y,fill="#1BB",dash=(3,),tags="temp_ruler")
+    cv.create_line(x0,y0,event.x,event.y,fill="#1BB",dash=(3,),arrow=BOTH,tags="temp_ruler")
     dx = event.x-x0
     dy = event.y-y0
     ang = abs(math.degrees(math.atan((-dy)/(-dx+1e-6))))
@@ -228,14 +269,15 @@ def temp_ruler(event):
         ang = -ang
         a -= 20
 
-    cv.create_text((event.x+x0)/2+a,(event.y+y0)/2+b,text=str(abs(round(px_info_var*(math.sqrt(dx**2+dy**2)),1)))+"mm",fill="#2CC",font=("Roboto", 9),tags="temp_text_r",angle=ang)
+    cv.create_text((event.x+x0)/2+a,(event.y+y0)/2+b,text=str(abs(round(px_info_var[0]*(math.sqrt(dx**2+dy**2)),1)))+"mm",fill="#2CC",font=("Roboto", 9),tags="temp_text_r",angle=ang)
+    #VER ACA EL PIXEL_INFO_VAR
 def finish_ruler(event):
     global x1, y1
     x1, y1 = event.x, event.y
     if x1 == x0 and y1 == y0:
         print("NO SUELTE EL MOUSE")
         return
-    cv.create_line(x0,y0,x1,y1,fill="#2CC",tags="medicion")
+    cv.create_line(x0,y0,x1,y1,fill="#2CC",arrow=BOTH,tags="medicion")
     cv.delete("temp_ruler")
     cv.old_coords = None
     root.config(cursor="arrow")
@@ -258,7 +300,6 @@ MF_W = IntVar(value=1600)
 MF_H = IntVar(value=880)
 CV_W = IntVar(value=0)
 CV_H = IntVar(value=0)
-px_info_var = 1
 focused_cv = 0
 
 #MAIN WINDOW DISPLAY
