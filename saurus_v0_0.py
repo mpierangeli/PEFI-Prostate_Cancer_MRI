@@ -74,25 +74,28 @@ def canvas_creator():
     cv2.bind("<Enter>",lambda event, arg=cv2: focus_cv(event,arg))
     cv3.bind("<Enter>",lambda event, arg=cv3: focus_cv(event,arg))
     cv4.bind("<Enter>",lambda event, arg=cv4: focus_cv(event,arg))
-    cv1.bind("<Leave>",lambda event, arg=cv1: unfocus_cv(event,arg))
-    cv2.bind("<Leave>",lambda event, arg=cv2: unfocus_cv(event,arg))
-    cv3.bind("<Leave>",lambda event, arg=cv3: unfocus_cv(event,arg))
-    cv4.bind("<Leave>",lambda event, arg=cv4: unfocus_cv(event,arg))
+    cv1.bind("<Leave>", unfocus_cv)
+    cv2.bind("<Leave>", unfocus_cv)
+    cv3.bind("<Leave>", unfocus_cv)
+    cv4.bind("<Leave>", unfocus_cv)
 
     cv1.bind("<MouseWheel>", slice_selection)
     cv3.bind("<MouseWheel>", slice_selection)  
     cv4.bind("<MouseWheel>", slice_selection)
-    cv2.bind("<MouseWheel>", depth_selection)  
+    cv2.bind("<MouseWheel>", depth_selection)
+
+    root.bind("<F3>",clear_cv)
     patient_loader()
 
+def clear_cv (event):
+    cv.delete("square","circle","ruler","temp_text_c","temp_text_s","temp_text_r")
 def focus_cv(event,arg):
     global cv
     cv = arg
     cv.create_text(50,CV_H.get()-20,text="FOCUSED",font=("Roboto",5),fill="#FFF",tag="focus_check")
-def unfocus_cv(event,arg):
-    global cv
-    cv = arg
+def unfocus_cv(event):
     cv.delete("focus_check")
+    
 def slice_selection(event):
     global slice_num,depth_num
     if event.delta > 0 and slice_num < len(axiales)-1: slice_num+=1
@@ -104,7 +107,7 @@ def depth_selection(event):
     elif event.delta < 0 and depth_num > 0: depth_num-=1
     set_img(slice_num,depth_num)
 def patient_loader():
-    global filepaths, axiales, coronales, slice_num, depth_num, factor, init_dcm, init_img, px_info_var
+    global filepaths, axiales, coronales, slice_num, depth_num, factor, init_dcm, init_img, px_info_var, px_info_static
 
     filepaths = filedialog.askopenfilenames()
     filepaths = list(filepaths)
@@ -114,10 +117,10 @@ def patient_loader():
     init_dcm = pydicom.dcmread(filepaths[0])
     init_img = init_dcm.pixel_array
 
+    px_info_static = [float(init_dcm[0x0028,0x0030].value[0]),float(init_dcm[0x0028,0x0030].value[1])]
     px_info_var = [float(init_dcm[0x0028,0x0030].value[0]),float(init_dcm[0x0028,0x0030].value[1])]
     axiales = np.zeros((len(filepaths),init_img.shape[0],init_img.shape[1]))
     factor = int(init_dcm[0x0018, 0x0050].value/px_info_var[0])
-    #factor = 6 #factor = ancho de corte / ancho de pixel => cantidad de pixeles por tajo
     coronales  =  np.zeros((axiales.shape[1],factor*axiales.shape[0],axiales.shape[2]))
 
     slice_num = 0
@@ -153,8 +156,7 @@ def info_tab_gen(event):
     i1 = Label(info_tab, text="Paciente = "+str(init_dcm[0x0010, 0x0010].value),bg="#222",font=("Roboto",9),fg="#FFF").grid(row=2,column=0,pady=(0,10))
     i2 = Label(info_tab, text="Canvas Size = "+str(CV_W.get())+"x"+str(CV_H.get()),bg="#222",font=("Roboto",9),fg="#FFF").grid(row=3,column=0,pady=(0,10))
     i3 = Label(info_tab, text="Orig. Img. Size = "+str(init_img.shape[1])+"x"+str(init_img.shape[0]),bg="#222",font=("Roboto",9),fg="#FFF").grid(row=4,column=0,pady=(0,10))
-    #i4 = Label(info_tab, text="Crop. Img. Size = "+str(ima_cropped.width())+"x"+str(ima_cropped.height()),bg="#AAA",font=("Roboto",9)).grid(row=5,column=0,pady=(0,10))
-    i5 = Label(info_tab, text="FOV = "+str(int(init_img.shape[1]*px_info_var[0]))+"x"+str(int(init_img.shape[0]*px_info_var[1]))+" [mm x mm]",bg="#222",font=("Roboto",9),fg="#FFF").grid(row=6,column=0,pady=(0,10))
+    i4 = Label(info_tab, text="FOV = "+str(int(init_img.shape[1]*px_info_static[0]))+"x"+str(int(init_img.shape[0]*px_info_static[1]))+" [mm x mm]",bg="#222",font=("Roboto",9),fg="#FFF").grid(row=6,column=0,pady=(0,10))
     ##si la secuencia es 2d o 3d cambia el slice thickness:
     if init_dcm[0x0018,0x0023].value == "2D":
         ST = round(init_dcm[0x0018, 0x0050].value*(1+init_dcm[0x0018, 0x0088].value/100),1)
@@ -162,21 +164,25 @@ def info_tab_gen(event):
         ST = round(init_dcm[0x0018, 0x0050].value,1)
     else:
         ST = 1000000
-    i6 = Label(info_tab, text="Slice Thickness = "+str(ST)+"mm",bg="#222",font=("Roboto",9),fg="#FFF").grid(row=7,column=0,pady=(0,10))
+    i5 = Label(info_tab, text="Slice Thickness = "+str(ST)+"mm",bg="#222",font=("Roboto",9),fg="#FFF").grid(row=7,column=0,pady=(0,10))
 
     root.bind("<F1>",info_tab_destroy)
 def info_tab_destroy(event):
     info_tab.destroy()
     root.bind("<F1>",info_tab_gen)
 def set_img(num,depth):
-    global cv,cv1,cv2,cv3,cv4,axial_t2,coronal_t2
+    global cv,cv1,cv2,cv3,cv4,axial_t2,coronal_t2, xcf_axial_t2, ycf_axial_t2, xcf_coronal_t2, ycf_coronal_t2, px_info_var
 
     temp_axial_t2 = imutils.resize(axiales[num], height=CV_H.get())
-    temp_coronal_t2 = imutils.resize(coronales[depth], width=temp_axial_t2.shape[0])
+    xcf_axial_t2 = axiales[num].shape[0]/temp_axial_t2.shape[0] #x factor correction -> por el resize
+    ycf_axial_t2 = axiales[num].shape[1]/temp_axial_t2.shape[1] #y factor correction -> por el resize
+
+    px_info_var = [float(init_dcm[0x0028,0x0030].value[0])*xcf_axial_t2,float(init_dcm[0x0028,0x0030].value[1])*ycf_axial_t2]
+    temp_coronal_t2 = imutils.resize(coronales[depth], width=temp_axial_t2.shape[1])
+    #xcf_coronal_t2 = coronales[depth].shape[0]/temp_coronal_t2.shape[0] #x factor correction -> por el resize
+    #ycf_coronal_t2 = axiales[depth].shape[1]/temp_coronal_t2.shape[1] #y factor correction -> por el resize
     axial_t2 = ImageTk.PhotoImage(Image.fromarray(temp_axial_t2))
     coronal_t2 = ImageTk.PhotoImage(Image.fromarray(temp_coronal_t2))
-    #axial_t2 = ImageTk.PhotoImage(Image.fromarray(axiales[num]))
-    #coronal_t2 = ImageTk.PhotoImage(Image.fromarray(coronales[depth]))
     
     cv1.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=axial_t2, tags="axial_t2")
     cv2.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=coronal_t2, tags="coronal_t2")
@@ -220,7 +226,7 @@ def finish_square(event):
         print("NO SUELTE EL MOUSE")
         return
     cv.create_rectangle(x0,y0,x1,y1,outline="#F00",tags="square",width=1)
-    cv.delete("temp_line")
+    cv.delete("temp_square")
     cv.old_coords = None
     root.config(cursor="arrow")
     root.unbind('<Button-1>')
@@ -292,7 +298,7 @@ def finish_ruler(event):
     if x1 == x0 and y1 == y0:
         print("NO SUELTE EL MOUSE")
         return
-    cv.create_line(x0,y0,x1,y1,fill="#2CC",arrow=BOTH,tags="medicion")
+    cv.create_line(x0,y0,x1,y1,fill="#2CC",arrow=BOTH,tags="ruler")
     cv.delete("temp_ruler")
     cv.old_coords = None
     root.config(cursor="arrow")
