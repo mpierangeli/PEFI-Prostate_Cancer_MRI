@@ -79,23 +79,60 @@ def canvas_creator():
     cv3.bind("<Leave>", unfocus_cv)
     cv4.bind("<Leave>", unfocus_cv)
 
-    cv1.bind("<MouseWheel>", slice_selection)
-    cv3.bind("<MouseWheel>", slice_selection)  
-    cv4.bind("<MouseWheel>", slice_selection)
-    cv2.bind("<MouseWheel>", depth_selection)
+    cv1.bind("<Control-MouseWheel>", slice_selection)
+    cv3.bind("<Control-MouseWheel>", slice_selection)  
+    cv4.bind("<Control-MouseWheel>", slice_selection)
+    cv2.bind("<Control-MouseWheel>", depth_selection)
+
+    cv1.bind("<Button-3>", zoom_gen)
 
     root.bind("<F3>",clear_cv)
+    root.bind("<F4>",reset_cv)
     patient_loader()
 
+def zoom_gen (event):
+    global xi,yi
+    root.config(cursor="tcross")
+    xi,yi = event.x,event.y
+    cv.bind('<B3-Motion>', temp_zoom)
+    cv.bind('<ButtonRelease-3>', finish_zoom)
+def temp_zoom(event):
+    cv.delete("temp_zoom","temp_text_z")
+    cv.create_line(xi,yi,event.x,yi,fill="#0F0",dash=(3,),tags="temp_zoom")
+    cv.create_line(xi,yi,xi,event.y,fill="#0F0",dash=(3,),tags="temp_zoom")
+    cv.create_line(event.x,yi,event.x,event.y,fill="#0F0",dash=(3,),tags="temp_zoom")
+    cv.create_line(xi,event.y,event.x,event.y,fill="#0F0",dash=(3,),tags="temp_zoom")
+    cv.create_text((event.x+xi)/2,yi-10,text="zoom in",fill="#0F0",font=("Roboto", 9),tags="temp_text_z")
+def finish_zoom(event):
+    global xf, yf, xi, yi, zoomed
+    xf, yf = event.x, event.y
+    root.config(cursor="arrow")
+    if xf == xi or yf == yi:
+        print("NO SUELTE EL MOUSE")
+        return
+    cv.delete("temp_zoom","temp_text_z")
+    #correciones a xi,yi,xf,yf segun posicion en canvas
+    #yi e yf no necesitan
+    
+    xi = int(xi-(CV_W.get()-axial_t2.width())/2)
+    xf = int(xf-(CV_W.get()-axial_t2.width())/2)
+    zoomed = True
+    set_img(slice_num,depth_num)
+    cv.old_coords = None
+
 def clear_cv (event):
-    cv.delete("square","circle","ruler","temp_text_c","temp_text_s","temp_text_r")
+    cv.delete("square","circle","ruler","text_c","text_s","text_r")
 def focus_cv(event,arg):
     global cv
     cv = arg
     cv.create_text(50,CV_H.get()-20,text="FOCUSED",font=("Roboto",5),fill="#FFF",tag="focus_check")
 def unfocus_cv(event):
     cv.delete("focus_check")
-    
+def reset_cv(event):
+    global zoomed
+    zoomed = False
+    set_img(slice_num,depth_num)
+
 def slice_selection(event):
     global slice_num,depth_num
     if event.delta > 0 and slice_num < len(axiales)-1: slice_num+=1
@@ -107,7 +144,7 @@ def depth_selection(event):
     elif event.delta < 0 and depth_num > 0: depth_num-=1
     set_img(slice_num,depth_num)
 def patient_loader():
-    global filepaths, axiales, coronales, slice_num, depth_num, factor, init_dcm, init_img, px_info_var, px_info_static
+    global filepaths, axiales, coronales, slice_num, depth_num, factor, init_dcm, init_img, px_info_var, px_info_static, xi,xf,yi,yf, zoomed
 
     filepaths = filedialog.askopenfilenames()
     filepaths = list(filepaths)
@@ -138,9 +175,8 @@ def patient_loader():
             for j in range(factor): # por ancho de tomo axial, repito misma muestra
                 coronales[p,i*factor+j] = axiales[i,p,:]
     #------------------------------------------------
+    zoomed = False
     set_img(slice_num,depth_num) # por default inicia mostrando esto
-
-
 
     #-------------------------------------
     root.bind("<F1>",info_tab_gen)
@@ -170,19 +206,31 @@ def info_tab_gen(event):
 def info_tab_destroy(event):
     info_tab.destroy()
     root.bind("<F1>",info_tab_gen)
+
 def set_img(num,depth):
-    global cv,cv1,cv2,cv3,cv4,axial_t2,coronal_t2, xcf_axial_t2, ycf_axial_t2, xcf_coronal_t2, ycf_coronal_t2, px_info_var
-
+    global cv,cv1,cv2,cv3,cv4,axial_t2,coronal_t2, xcf_axial_t2, ycf_axial_t2, xcf_coronal_t2, ycf_coronal_t2, px_info_var, xi,yi,xf,yf
+    
     temp_axial_t2 = imutils.resize(axiales[num], height=CV_H.get())
-    xcf_axial_t2 = axiales[num].shape[0]/temp_axial_t2.shape[0] #x factor correction -> por el resize
-    ycf_axial_t2 = axiales[num].shape[1]/temp_axial_t2.shape[1] #y factor correction -> por el resize
+    init_width = temp_axial_t2.shape[1]
+    xcf_axial_t2 = axiales[num].shape[0]/temp_axial_t2.shape[0] #x factor correction -> por el resize inicial
+    ycf_axial_t2 = axiales[num].shape[1]/temp_axial_t2.shape[1] #y factor correction -> por el resize inicial
+    if zoomed:
+        crop = temp_axial_t2[yi:yf,xi:xf]
+        temp_axial_t2 = imutils.resize(crop, height=CV_H.get())
+        xcf_axial_t2 *= crop.shape[0]/temp_axial_t2.shape[0] #x factor correction -> por el resize inicial
+        ycf_axial_t2 *= crop.shape[1]/temp_axial_t2.shape[1] #y factor correction -> por el resize inicial
+        
 
-    px_info_var = [float(init_dcm[0x0028,0x0030].value[0])*xcf_axial_t2,float(init_dcm[0x0028,0x0030].value[1])*ycf_axial_t2]
-    temp_coronal_t2 = imutils.resize(coronales[depth], width=temp_axial_t2.shape[1])
+    temp_coronal_t2 = imutils.resize(coronales[depth], width=init_width)
     #xcf_coronal_t2 = coronales[depth].shape[0]/temp_coronal_t2.shape[0] #x factor correction -> por el resize
     #ycf_coronal_t2 = axiales[depth].shape[1]/temp_coronal_t2.shape[1] #y factor correction -> por el resize
+
     axial_t2 = ImageTk.PhotoImage(Image.fromarray(temp_axial_t2))
     coronal_t2 = ImageTk.PhotoImage(Image.fromarray(temp_coronal_t2))
+    
+    
+    px_info_var = [float(init_dcm[0x0028,0x0030].value[0])*xcf_axial_t2,float(init_dcm[0x0028,0x0030].value[1])*ycf_axial_t2]
+
     
     cv1.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=axial_t2, tags="axial_t2")
     cv2.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=coronal_t2, tags="coronal_t2")
@@ -222,13 +270,23 @@ def temp_square(event):
 def finish_square(event):
     global x1, y1
     x1, y1 = event.x, event.y
+    root.config(cursor="arrow")
     if x1 == x0 or y1 == y0:
         print("NO SUELTE EL MOUSE")
         return
     cv.create_rectangle(x0,y0,x1,y1,outline="#F00",tags="square",width=1)
-    cv.delete("temp_square")
+    dx = x1-x0
+    dy = y1-y0
+    a = 0
+    b = 0
+    if dx>0: a = -10
+    else: a = 10
+    if dy>0: b = -10
+    else: b = 10
+    cv.create_text((x1+x0)/2,y0+b,text=str(abs(round(px_info_var[0]*dx,2)))+"mm",fill="#F00",font=("Roboto", 9),tags="text_s")
+    cv.create_text(x0+a,(y1+y0)/2,text=str(abs(round(px_info_var[1]*dy,2)))+"mm",fill="#F00",font=("Roboto", 9),tags="text_s",angle=90)
+    cv.delete("temp_square","temp_text_s")
     cv.old_coords = None
-    root.config(cursor="arrow")
     root.unbind('<Button-1>')
     root.unbind('<B1-Motion>')
     root.unbind('<ButtonRelease-1>')
@@ -253,6 +311,7 @@ def temp_circle(event):
 def finish_circle(event):
     global x1, y1
     x1, y1 = event.x, event.y
+    root.config(cursor="arrow")
     dx = abs(x1-x0)
     dy = abs(y1-y0)
     r = math.sqrt(dx**2+dy**2)
@@ -260,9 +319,10 @@ def finish_circle(event):
         print("NO SUELTE EL MOUSE")
         return
     cv.create_oval(x0-r,y0-r,x0+r,y0+r,outline="#F00",tags="circle")
-    cv.delete("temp_circle")
+    r_real = math.sqrt((dx*px_info_var[0])**2+(dy*px_info_var[1])**2) # Porq distancia real depende del ancho de pixel en cada dirección.
+    cv.create_text(x0,y0+r+10,text="r: "+str(round(r_real,2))+"mm",fill="#F00",font=("Roboto", 9),tags="text_c")
+    cv.delete("temp_circle","temp_text_c")
     cv.old_coords = None
-    root.config(cursor="arrow")
     root.unbind('<Button-1>')
     root.unbind('<B1-Motion>')
     root.unbind('<ButtonRelease-1>')
@@ -274,7 +334,7 @@ def ruler_gen():
     root.bind('<ButtonRelease-1>', finish_ruler)
 def start_ruler(event):
     global x0, y0
-    #cv.delete("temp_ruler","medicion","temp_text_r")
+    #cv.delete("temp_ruler","ruler","temp_text_r")
     x0, y0 = event.x, event.y
 def temp_ruler(event):
     
@@ -295,13 +355,25 @@ def temp_ruler(event):
 def finish_ruler(event):
     global x1, y1
     x1, y1 = event.x, event.y
+    root.config(cursor="arrow")
     if x1 == x0 and y1 == y0:
         print("NO SUELTE EL MOUSE")
         return
     cv.create_line(x0,y0,x1,y1,fill="#2CC",arrow=BOTH,tags="ruler")
-    cv.delete("temp_ruler")
+    dx = x1-x0
+    dy = y1-y0
+    ang = abs(math.degrees(math.atan((-dy)/(-dx+1e-6))))
+    a = 10
+    b = 10
+    if int(dx) == 0: b -= 10
+    elif int(dy) == 0: a -= 10
+    elif dx*dy > 0: 
+        ang = -ang
+        a -= 20
+    r_real = math.sqrt((dx*px_info_var[0])**2+(dy*px_info_var[1])**2)
+    cv.create_text((x1+x0)/2+a,(y1+y0)/2+b,text=str(round(r_real,2))+"mm",fill="#2CC",font=("Roboto", 9),tags="text_r",angle=ang)
+    cv.delete("temp_ruler","temp_text_r")
     cv.old_coords = None
-    root.config(cursor="arrow")
     root.unbind('<Button-1>')
     root.unbind('<B1-Motion>')
     root.unbind('<ButtonRelease-1>')
