@@ -2,7 +2,7 @@ from tkinter import *
 from PIL import Image,ImageTk
 from tkinter import filedialog
 import pydicom
-import cv2
+import cv2 as opencv
 import numpy as np
 import math
 import imutils
@@ -12,7 +12,7 @@ def windows_creator():
 
     global main_frame, bot_frame
 
-    main_frame = Frame(root, width=MF_W.get(), height=MF_H.get(), background="#222")
+    main_frame = Frame(root, width=MF_W.get(), height=MF_H.get()-100, background="#222") # 20 de botframe 20 menu 20 windows tab 40 windows taskbar
     main_frame.grid(row=1, column=0)
     main_frame.grid_propagate(0)
 
@@ -112,10 +112,13 @@ def finish_zoom(event):
         return
     cv.delete("temp_zoom","temp_text_z")
     #correciones a xi,yi,xf,yf segun posicion en canvas
-    #yi e yf no necesitan
+    if xf < xi: xi, xf = xf, xi
+    if yf < yi: yi, yf = yf, yi
     
     xi = int(xi-(CV_W.get()-axial_t2.width())/2)
     xf = int(xf-(CV_W.get()-axial_t2.width())/2)
+    yi = int(yi-(CV_H.get()-axial_t2.height())/2)
+    yf = int(yf-(CV_H.get()-axial_t2.height())/2)       # CAMBIAR AXIAL POR MENU PARA CADA CANVAS 
     zoomed = True
     set_img(slice_num,depth_num)
     cv.old_coords = None
@@ -157,7 +160,7 @@ def patient_loader():
     px_info_static = [float(init_dcm[0x0028,0x0030].value[0]),float(init_dcm[0x0028,0x0030].value[1])]
     px_info_var = [float(init_dcm[0x0028,0x0030].value[0]),float(init_dcm[0x0028,0x0030].value[1])]
     axiales = np.zeros((len(filepaths),init_img.shape[0],init_img.shape[1]))
-    factor = int(init_dcm[0x0018, 0x0050].value/px_info_var[0])
+    factor = int(init_dcm[0x0018, 0x0050].value/px_info_static[0])
     coronales  =  np.zeros((axiales.shape[1],factor*axiales.shape[0],axiales.shape[2]))
 
     slice_num = 0
@@ -207,24 +210,27 @@ def info_tab_destroy(event):
     info_tab.destroy()
     root.bind("<F1>",info_tab_gen)
 
-def set_img(num,depth):
+def set_img(slice,depth):
     global cv,cv1,cv2,cv3,cv4,axial_t2,coronal_t2, xcf_axial_t2, ycf_axial_t2, xcf_coronal_t2, ycf_coronal_t2, px_info_var, xi,yi,xf,yf
     
-    temp_axial_t2 = imutils.resize(axiales[num], height=CV_H.get())
+    temp_axial_t2 = imutils.resize(axiales[slice], height=CV_H.get())
     init_width = temp_axial_t2.shape[1]
-    xcf_axial_t2 = axiales[num].shape[0]/temp_axial_t2.shape[0] #x factor correction -> por el resize inicial
-    ycf_axial_t2 = axiales[num].shape[1]/temp_axial_t2.shape[1] #y factor correction -> por el resize inicial
+    xcf_axial_t2 = axiales[slice].shape[0]/temp_axial_t2.shape[0] #x factor correction -> por el resize inicial
+    ycf_axial_t2 = axiales[slice].shape[1]/temp_axial_t2.shape[1] #y factor correction -> por el resize inicial
     if zoomed:
         crop = temp_axial_t2[yi:yf,xi:xf]
-        temp_axial_t2 = imutils.resize(crop, height=CV_H.get())
+        if (abs(yf-yi) >= abs(xf-xi)):
+            temp_axial_t2 = imutils.resize(crop, height=CV_H.get())     #CORREGIR ZOOM PARA CORTES SEMI-CUADRADOS
+        else:
+            temp_axial_t2 = imutils.resize(crop, width=CV_W.get())
         xcf_axial_t2 *= crop.shape[0]/temp_axial_t2.shape[0] #x factor correction -> por el resize inicial
         ycf_axial_t2 *= crop.shape[1]/temp_axial_t2.shape[1] #y factor correction -> por el resize inicial
         
 
-    temp_coronal_t2 = imutils.resize(coronales[depth], width=init_width)
-    #xcf_coronal_t2 = coronales[depth].shape[0]/temp_coronal_t2.shape[0] #x factor correction -> por el resize
-    #ycf_coronal_t2 = axiales[depth].shape[1]/temp_coronal_t2.shape[1] #y factor correction -> por el resize
-
+    temp_coronal_t2 = imutils.resize(coronales[depth], width=init_width) # ver error aca con el resize y el muestro en iamgen
+    xcf_coronal_t2 = coronales[depth].shape[0]/temp_coronal_t2.shape[0] #x factor correction -> por el resize
+    ycf_coronal_t2 = coronales[depth].shape[1]/temp_coronal_t2.shape[1] #y factor correction -> por el resize
+    
     axial_t2 = ImageTk.PhotoImage(Image.fromarray(temp_axial_t2))
     coronal_t2 = ImageTk.PhotoImage(Image.fromarray(temp_coronal_t2))
     
@@ -235,10 +241,10 @@ def set_img(num,depth):
     cv1.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=axial_t2, tags="axial_t2")
     cv2.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=coronal_t2, tags="coronal_t2")
     cv2.delete("slice_marker")
-    cv2.create_line(CV_W.get()/2-coronal_t2.width()/2, num*factor+CV_H.get()/2-coronal_t2.height()/2, coronal_t2.width()/2+CV_W.get()/2, num*factor+CV_H.get()/2-coronal_t2.height()/2, fill="#2DD", tags="slice_marker")
-    cv2.create_line(CV_W.get()/2-coronal_t2.width()/2, (num+1)*factor+CV_H.get()/2-coronal_t2.height()/2, coronal_t2.width()/2+CV_W.get()/2, (num+1)*factor+CV_H.get()/2-coronal_t2.height()/2, fill="#2DD", tags="slice_marker")
+    cv2.create_line(CV_W.get()/2-coronal_t2.width()/2, slice*factor/ycf_coronal_t2+CV_H.get()/2-coronal_t2.height()/2, coronal_t2.width()/2+CV_W.get()/2, slice*factor/ycf_coronal_t2+CV_H.get()/2-coronal_t2.height()/2, fill="#2DD", tags="slice_marker")
+    cv2.create_line(CV_W.get()/2-coronal_t2.width()/2, (slice+1)*factor/ycf_coronal_t2+CV_H.get()/2-coronal_t2.height()/2, coronal_t2.width()/2+CV_W.get()/2, (slice+1)*factor/ycf_coronal_t2+CV_H.get()/2-coronal_t2.height()/2, fill="#2DD", tags="slice_marker")
     cv2.delete("cv2_info")
-    cv2.create_text(80,20,text="Axial/height: "+str(num+1),fill="#2CC",font=("Roboto", 12),tags="cv2_info")
+    cv2.create_text(80,20,text="Axial/height: "+str(slice+1),fill="#2CC",font=("Roboto", 12),tags="cv2_info")
     cv2.create_text(80,40,text="Coronal/depth: "+str(depth+1),fill="#2CC",font=("Roboto", 12),tags="cv2_info")
 
 ## HERRAMIENTAS
@@ -384,13 +390,13 @@ def finish_ruler(event):
 root = Tk()
 root.title("S A U R U S")
 #root.maxsize(1600, 900)
-root.minsize(1600, 900)
+root.minsize(1920, 1080)
 root.config(bg="#F00")
 root.iconbitmap("unsam.ico")
 
 # GLOBAL VARIABLES
-MF_W = IntVar(value=1600)
-MF_H = IntVar(value=880)
+MF_W = IntVar(value=1920)
+MF_H = IntVar(value=1080)
 CV_W = IntVar(value=0)
 CV_H = IntVar(value=0)
 focused_cv = 0
