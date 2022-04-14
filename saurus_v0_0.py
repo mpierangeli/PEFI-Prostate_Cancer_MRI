@@ -12,7 +12,7 @@ def windows_creator():
 
     global main_frame, bot_frame
 
-    main_frame = Frame(root, width=MF_W.get(), height=MF_H.get()-100, background="#222") # 20 de botframe 20 menu 20 windows tab 40 windows taskbar
+    main_frame = Frame(root, width=MF_W.get(), height=MF_H.get(), background="#222") # 20 de botframe 20 menu 20 windows tab 40 windows taskbar
     main_frame.grid(row=1, column=0)
     main_frame.grid_propagate(0)
 
@@ -390,13 +390,13 @@ def finish_ruler(event):
 root = Tk()
 root.title("S A U R U S")
 #root.maxsize(1600, 900)
-root.minsize(1920, 1080)
+#root.minsize(1920, 1080)
 root.config(bg="#F00")
 root.iconbitmap("unsam.ico")
 
 # GLOBAL VARIABLES
 MF_W = IntVar(value=1920)
-MF_H = IntVar(value=1080)
+MF_H = IntVar(value=980)
 CV_W = IntVar(value=0)
 CV_H = IntVar(value=0)
 focused_cv = 0
