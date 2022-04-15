@@ -54,7 +54,8 @@ def report_window_gen():
     report_window.minsize(500,500)
 
 def canvas_creator():
-    global cv1,cv2,cv3,cv4
+    global cv1,cv2,cv3,cv4, focused_cv
+    focused_cv = 0
     CV_W.set(int(MF_W.get()/2)-5)
     CV_H.set(int(MF_H.get()/2)-5)
     cv1 = Canvas(main_frame, width=CV_W.get(),height=CV_H.get(),bg="#000",highlightthickness=0)
@@ -88,7 +89,13 @@ def canvas_creator():
 
     root.bind("<F3>",clear_cv)
     root.bind("<F4>",reset_cv)
+    root.bind("<Control-z>",go_back_1)
     patient_loader()
+
+def go_back_1(event):
+    temp_cv = obj_master[-1].incv
+    temp_cv.delete(obj_master[-1].name)
+    obj_master.pop()
 
 def zoom_gen (event):
     global xi,yi
@@ -124,7 +131,11 @@ def finish_zoom(event):
     cv.old_coords = None
 
 def clear_cv (event):
-    cv.delete("square","circle","ruler","text_c","text_s","text_r")
+    global obj_master
+    for obj in obj_master:                                      # CON ESTO BORRO EL CANVAS PERO NO EL OBJETO
+        if obj.incv == cv:
+            cv.delete(obj.name)
+    obj_master = [obj for obj in obj_master if obj.incv != cv]  # CON ESTO BORRO EL OBJETO PERO NO EL CANVAS
 def focus_cv(event,arg):
     global cv
     cv = arg
@@ -147,10 +158,10 @@ def depth_selection(event):
     elif event.delta < 0 and depth_num > 0: depth_num-=1
     set_img(slice_num,depth_num)
 def patient_loader():
-    global filepaths, axiales, coronales, slice_num, depth_num, factor, init_dcm, init_img, px_info_var, px_info_static, xi,xf,yi,yf, zoomed, obj_master
+    global filepaths, axiales, coronales, slice_num, depth_num, factor, init_dcm, init_img, px_info_var, px_info_static, zoomed, obj_master
 
     #GENERO CONTAINER DE OBJETOS VERVERVER
-    obj_master = 0
+    obj_master = []
 
     filepaths = filedialog.askopenfilenames()
     filepaths = list(filepaths)
@@ -257,26 +268,28 @@ def square_gen():
     root.bind('<B1-Motion>', temp_square)
     root.bind('<ButtonRelease-1>', finish_square)
 def start_square(event):
-    global s1
-    s1 = roi_square("s1")
-    s1.init_coord(event.x,event.y)
+    obj_master.append(1)
+    obj_master[-1] = roi_square("s"+str(len(obj_master)),cv)
+    obj_master[-1].init_coord(event.x,event.y)
 def temp_square(event):
-    s1.end_coord(event.x,event.y)
-    s1.draw(True)
+    obj_master[-1].end_coord(event.x,event.y)
+    obj_master[-1].draw(True)
 def finish_square(event):
-    s1.end_coord(event.x,event.y)
-    if s1.xi == s1.xf or s1.yf == s1.yi:
+    if obj_master[-1].xi == event.x or obj_master[-1].yi == event.y:
         print("NO SUELTE EL MOUSE")
+        obj_master.pop()
         return
-    s1.draw(False)
+    obj_master[-1].end_coord(event.x,event.y)
+    obj_master[-1].draw(False)
     root.config(cursor="arrow")
     root.unbind('<Button-1>')
     root.unbind('<B1-Motion>')
     root.unbind('<ButtonRelease-1>')
 
 class roi_square:
-    def __init__(self,name):
+    def __init__(self,name,incv):
         self.name = name
+        self.incv = incv
     def init_coord(self,xi,yi):
         self.xi = xi
         self.yi = yi
@@ -284,8 +297,8 @@ class roi_square:
         self.xf = xf
         self.yf = yf
     def draw(self,temporal):
+        cv.delete(self.name)
         if temporal:
-            cv.delete(self.name)
             cv.create_rectangle(self.xi,self.yi,self.xf,self.yf,outline="#A00",tags=self.name,dash=(7,))
         else:
             self.name = self.name + "_"
@@ -298,7 +311,6 @@ class roi_square:
         self.ydis = abs(round(px_info_var[1]*dy,2))
         cv.create_text((self.xf+self.xi)/2,self.yi+b,text=str(self.xdis)+"mm",fill="#F00",font=("Roboto", 9),tags=self.name)
         cv.create_text(self.xi+a,(self.yf+self.yi)/2,text=str(self.ydis)+"mm",fill="#F00",font=("Roboto", 9),tags=self.name,angle=90)
-
 
 ## MAIN LOOP
 
@@ -315,7 +327,6 @@ MF_W = IntVar(value=1920)
 MF_H = IntVar(value=980)
 CV_W = IntVar(value=0)
 CV_H = IntVar(value=0)
-focused_cv = 0
 
 #MAIN WINDOW DISPLAY
 
