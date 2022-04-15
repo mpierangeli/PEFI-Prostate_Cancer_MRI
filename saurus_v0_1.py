@@ -37,7 +37,7 @@ def menu_creator():
     reportmenu.add_command(label="Nuevo Reporte",command=report_window_gen)
 
     helpmenu = Menu(menubar, tearoff=0)
-    helpmenu.add_command(label="Ayuda")
+    helpmenu.add_command(label="Keybinds", command=key_tab_gen)
     helpmenu.add_command(label="Acerca de...")
     helpmenu.add_separator()
     helpmenu.add_command(label="Salir", command=root.quit)
@@ -145,6 +145,7 @@ def unfocus_cv(event):
 def reset_cv(event):
     global zoomed
     zoomed = False
+    cv.delete(ALL)
     set_img(slice_num,depth_num)
 
 def slice_selection(event):
@@ -159,13 +160,15 @@ def depth_selection(event):
     set_img(slice_num,depth_num)
 def patient_loader():
     global filepaths, axiales, coronales, slice_num, depth_num, factor, init_dcm, init_img, px_info_var, px_info_static, zoomed, obj_master
-
+    
+    filepaths_raw = filedialog.askopenfilenames()
+    if not filepaths_raw: 
+        set_img(slice_num,depth_num)
+        return
+    filepaths = list(filepaths_raw)
+    
     #GENERO CONTAINER DE OBJETOS VERVERVER
     obj_master = []
-
-    filepaths = filedialog.askopenfilenames()
-    filepaths = list(filepaths)
-    
     #-------------------------------------------------
     #GENERO PLANO CORONAL CON IMAGENES T2 (VER COMO SELECCIONAR ESAS EN PARTICULAR)
     init_dcm = pydicom.dcmread(filepaths[0])
@@ -197,6 +200,24 @@ def patient_loader():
 
     #-------------------------------------
     root.bind("<F1>",info_tab_gen)
+
+def key_tab_gen():
+    global key_tab
+    key_tab = Frame(root,background="#2CC")
+    key_tab.place(relx=0,rely=0, width=400, height=MF_H.get())
+    l2 = Label(key_tab, text="KEYBINDS",bg="#2CC",font=("Roboto",10),fg="#000").grid(row=0,column=0,pady=(10,20))
+
+    i1 = Label(key_tab, text="F1 -> INFORMACIÓN PACIENTE",bg="#2CC",font=("Roboto",9),fg="#000").grid(row=2,column=0,pady=(0,10))
+    i2 = Label(key_tab, text="F3 -> LIMPIAR CANVAS (seleccionado por puntero)",bg="#2CC",font=("Roboto",9),fg="#000").grid(row=3,column=0,pady=(0,10))
+    i3 = Label(key_tab, text="F4 -> RESETEAR ZOOM/CANVAS (seleccionado por puntero)",bg="#2CC",font=("Roboto",9),fg="#000").grid(row=4,column=0,pady=(0,10))
+    i4 = Label(key_tab, text="Ctrl+Z -> BORRAR ÚLTIMA HERRAMIENTA",bg="#2CC",font=("Roboto",9),fg="#000").grid(row=5,column=0,pady=(0,10))
+    i5 = Label(key_tab, text="Right Click -> ZOOM",bg="#2CC",font=("Roboto",9),fg="#000").grid(row=6,column=0,pady=(0,10))
+    i6 = Label(key_tab, text="Ctrl+Ruedita -> CAMBIO SLICE/DEPTH (seleccionado por puntero)",bg="#2CC",font=("Roboto",9),fg="#000").grid(row=7,column=0,pady=(0,10))
+    i7 = Label(key_tab, text="Escape para cerrar esta ventana",bg="#2CC",font=("Roboto",9),fg="#000").grid(row=8,column=0,pady=(50,10))
+
+    root.bind("<Escape>",key_tab_destroy)
+def key_tab_destroy(event):
+    key_tab.destroy()
 
 def info_tab_gen(event):
     global info_tab
