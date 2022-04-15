@@ -286,6 +286,8 @@ def finish_square(event):
     root.unbind('<B1-Motion>')
     root.unbind('<ButtonRelease-1>')
 
+
+## OBJETOS
 class roi_square:
     def __init__(self,name,incv):
         self.name = name
@@ -312,14 +314,11 @@ class roi_square:
         cv.create_text((self.xf+self.xi)/2,self.yi+b,text=str(self.xdis)+"mm",fill="#F00",font=("Roboto", 9),tags=self.name)
         cv.create_text(self.xi+a,(self.yf+self.yi)/2,text=str(self.ydis)+"mm",fill="#F00",font=("Roboto", 9),tags=self.name,angle=90)
 
-## MAIN LOOP
+#-------------- MAIN LOOP ---------------------------------------------------------
 
-#MAIN WINDOW SETUP
 root = Tk()
 root.title("S A U R U S")
-#root.maxsize(1600, 900)
-#root.minsize(1920, 1080)
-root.config(bg="#F00")
+root.config(bg="#F00") #para debug
 root.iconbitmap("unsam.ico")
 
 # GLOBAL VARIABLES
@@ -329,8 +328,9 @@ CV_W = IntVar(value=0)
 CV_H = IntVar(value=0)
 
 #MAIN WINDOW DISPLAY
-
 windows_creator()
 menu_creator()
 
 root.mainloop()
+
+#------------------------------------------------------------------------------
