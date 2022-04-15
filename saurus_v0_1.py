@@ -286,7 +286,6 @@ def finish_square(event):
     root.unbind('<B1-Motion>')
     root.unbind('<ButtonRelease-1>')
 
-
 ## OBJETOS
 class roi_square:
     def __init__(self,name,incv):
