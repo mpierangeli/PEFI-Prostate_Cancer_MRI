@@ -1,8 +1,9 @@
+from calendar import SATURDAY
 from tkinter import *
 from PIL import Image,ImageTk
 from tkinter import filedialog
 import pydicom
-import cv2 as opencv
+#import cv2 as opencv
 import numpy as np
 import math
 import imutils
@@ -80,10 +81,7 @@ def canvas_creator():
     cv3.bind("<Leave>", unfocus_cv)
     cv4.bind("<Leave>", unfocus_cv)
 
-    cv1.bind("<Control-MouseWheel>", slice_selection)
-    cv3.bind("<Control-MouseWheel>", slice_selection)  
-    cv4.bind("<Control-MouseWheel>", slice_selection)
-    cv2.bind("<Control-MouseWheel>", depth_selection)
+    root.bind("<Control-MouseWheel>", slice_and_depth_selector)
 
     cv1.bind("<Button-3>", zoom_gen)
 
@@ -127,7 +125,7 @@ def finish_zoom(event):
     yi = int(yi-(CV_H.get()-axial_t2.height())/2)
     yf = int(yf-(CV_H.get()-axial_t2.height())/2)       # CAMBIAR AXIAL POR MENU PARA CADA CANVAS 
     zoomed = True
-    set_img(slice_num,depth_num)
+    set_img(slice_num,coronal_depth_num,sagital_depth_num)
     cv.old_coords = None
 
 def clear_cv (event):
@@ -140,30 +138,38 @@ def focus_cv(event,arg):
     global cv
     cv = arg
     cv.create_text(50,CV_H.get()-20,text="FOCUSED",font=("Roboto",5),fill="#FFF",tag="focus_check")
+    if axis_switch:
+        cv.create_text(80,20,text="Axial/height: "+str(slice_num+1),fill="#2CC",font=("Roboto", 12),tags="cv_info")
+        cv.create_text(80,40,text="Coronal/depth: "+str(coronal_depth_num+1),fill="#F80",font=("Roboto", 12),tags="cv_info")
+        cv.create_text(80,60,text="Sagital/depth: "+str(sagital_depth_num+1),fill="#5D0",font=("Roboto", 12),tags="cv_info")
 def unfocus_cv(event):
-    cv.delete("focus_check")
+    cv.delete("focus_check","cv_info")
 def reset_cv(event):
     global zoomed
     zoomed = False
     cv.delete(ALL)
-    set_img(slice_num,depth_num)
+    set_img(slice_num,coronal_depth_num,sagital_depth_num)
 
-def slice_selection(event):
-    global slice_num,depth_num
-    if event.delta > 0 and slice_num < len(axiales)-1: slice_num+=1
-    elif event.delta < 0 and slice_num > 0: slice_num-=1
-    set_img(slice_num,depth_num)
-def depth_selection(event):
-    global depth_num
-    if event.delta > 0 and depth_num < len(coronales)-1: depth_num+=1
-    elif event.delta < 0 and depth_num > 0: depth_num-=1
-    set_img(slice_num,depth_num)
+def slice_and_depth_selector(event):
+    global slice_num,coronal_depth_num,sagital_depth_num
+    if cv == cv1:
+        if event.delta > 0 and slice_num < len(axiales)-1: slice_num+=1
+        elif event.delta < 0 and slice_num > 0: slice_num-=1
+    if cv == cv2:
+        if event.delta > 0 and coronal_depth_num < len(coronales)-1: coronal_depth_num+=1
+        elif event.delta < 0 and coronal_depth_num > 0: coronal_depth_num-=1
+    if cv == cv4:
+        if event.delta > 0 and sagital_depth_num < len(sagitales)-1: sagital_depth_num+=1
+        elif event.delta < 0 and sagital_depth_num > 0: sagital_depth_num-=1
+    
+    set_img(slice_num,coronal_depth_num,sagital_depth_num)
+
 def patient_loader():
-    global filepaths, axiales, coronales, slice_num, depth_num, factor, init_dcm, init_img, px_info_var, px_info_static, zoomed, obj_master
+    global filepaths, axiales, coronales, sagitales, slice_num, coronal_depth_num, sagital_depth_num, factor, init_dcm, init_img, px_info_var, px_info_static, zoomed, axis_switch, obj_master
     
     filepaths_raw = filedialog.askopenfilenames()
     if not filepaths_raw: 
-        set_img(slice_num,depth_num)
+        set_img(slice_num,coronal_depth_num,sagital_depth_num)
         return
     filepaths = list(filepaths_raw)
     
@@ -176,12 +182,16 @@ def patient_loader():
 
     px_info_static = [float(init_dcm[0x0028,0x0030].value[0]),float(init_dcm[0x0028,0x0030].value[1])]
     px_info_var = [float(init_dcm[0x0028,0x0030].value[0]),float(init_dcm[0x0028,0x0030].value[1])]
-    axiales = np.zeros((len(filepaths),init_img.shape[0],init_img.shape[1]))
     factor = int(init_dcm[0x0018, 0x0050].value/px_info_static[0])
+
+    axiales = np.zeros((len(filepaths),init_img.shape[0],init_img.shape[1]))
     coronales  =  np.zeros((axiales.shape[1],factor*axiales.shape[0],axiales.shape[2]))
+    sagitales = np.zeros((axiales.shape[2],factor*axiales.shape[0],axiales.shape[1]))
 
     slice_num = 0
-    depth_num = int(coronales.shape[0]/2)
+    coronal_depth_num = int(coronales.shape[0]/2)
+    sagital_depth_num = int(sagitales.shape[0]/2)
+
 
     for n, dcm in enumerate(filepaths):
         full_dicom = pydicom.dcmread(dcm)
@@ -190,17 +200,30 @@ def patient_loader():
     for n in range(len(axiales)):
         axiales[n] = (axiales[n]/max)*255
 
-    for p in range(axiales.shape[1]): # por cada fila de las axiales -> profundidad de la coronal
-        for i in range(axiales.shape[0]): # por cada imagen axial -> altura de la coronal
-            for j in range(factor): # por ancho de tomo axial, repito misma muestra
-                coronales[p,i*factor+j] = axiales[i,p,:]
+    for i in range(axiales.shape[1]): # por cada fila de las axiales -> profundidad de la coronal
+        for j in range(axiales.shape[0]): # por cada imagen axial -> altura de la coronal
+            for k in range(factor): # por ancho de tomo axial, repito misma muestra
+                coronales[i,j*factor+k] = axiales[j,i,:]
+
+    for i in range(axiales.shape[2]): # por cada columna de las axiales -> profundidad de la sagital
+        for j in range(axiales.shape[0]): # por cada imagen axial -> altura de la sagital
+            for k in range(factor): # por ancho de tomo axial, repito misma muestra
+                sagitales[i,j*factor+k] = axiales[j,:,i]
     #------------------------------------------------
     zoomed = False
-    set_img(slice_num,depth_num) # por default inicia mostrando esto
+    axis_switch = True
+    set_img(slice_num,coronal_depth_num,sagital_depth_num) # por default inicia mostrando esto
 
     #-------------------------------------
     root.bind("<F1>",info_tab_gen)
+    root.bind("<F2>",axis_onoff)
 
+def axis_onoff (event):
+    global axis_switch
+    print("ENTRE A AXIS")
+    axis_switch = False if axis_switch else True
+    set_img(slice_num,coronal_depth_num,sagital_depth_num)
+        
 def key_tab_gen():
     global key_tab
     key_tab = Frame(root,background="#2CC")
@@ -208,12 +231,13 @@ def key_tab_gen():
     l2 = Label(key_tab, text="KEYBINDS",bg="#2CC",font=("Roboto",10),fg="#000").grid(row=0,column=0,pady=(10,20))
 
     i1 = Label(key_tab, text="F1 -> INFORMACIÓN PACIENTE",bg="#2CC",font=("Roboto",9),fg="#000").grid(row=2,column=0,pady=(0,10))
-    i2 = Label(key_tab, text="F3 -> LIMPIAR CANVAS (seleccionado por puntero)",bg="#2CC",font=("Roboto",9),fg="#000").grid(row=3,column=0,pady=(0,10))
-    i3 = Label(key_tab, text="F4 -> RESETEAR ZOOM/CANVAS (seleccionado por puntero)",bg="#2CC",font=("Roboto",9),fg="#000").grid(row=4,column=0,pady=(0,10))
-    i4 = Label(key_tab, text="Ctrl+Z -> BORRAR ÚLTIMA HERRAMIENTA",bg="#2CC",font=("Roboto",9),fg="#000").grid(row=5,column=0,pady=(0,10))
-    i5 = Label(key_tab, text="Right Click -> ZOOM",bg="#2CC",font=("Roboto",9),fg="#000").grid(row=6,column=0,pady=(0,10))
-    i6 = Label(key_tab, text="Ctrl+Ruedita -> CAMBIO SLICE/DEPTH (seleccionado por puntero)",bg="#2CC",font=("Roboto",9),fg="#000").grid(row=7,column=0,pady=(0,10))
-    i7 = Label(key_tab, text="Escape para cerrar esta ventana",bg="#2CC",font=("Roboto",9),fg="#000").grid(row=8,column=0,pady=(50,10))
+    i8 = Label(key_tab, text="F2 -> AXIS ON/OFF",bg="#2CC",font=("Roboto",9),fg="#000").grid(row=2,column=0,pady=(0,10))
+    i2 = Label(key_tab, text="F3 -> LIMPIAR CANVAS (seleccionado por puntero)",bg="#2CC",font=("Roboto",9),fg="#000").grid(row=4,column=0,pady=(0,10))
+    i3 = Label(key_tab, text="F4 -> RESETEAR ZOOM/CANVAS (seleccionado por puntero)",bg="#2CC",font=("Roboto",9),fg="#000").grid(row=5,column=0,pady=(0,10))
+    i4 = Label(key_tab, text="Ctrl+Z -> BORRAR ÚLTIMA HERRAMIENTA",bg="#2CC",font=("Roboto",9),fg="#000").grid(row=6,column=0,pady=(0,10))
+    i5 = Label(key_tab, text="Right Click -> ZOOM",bg="#2CC",font=("Roboto",9),fg="#000").grid(row=7,column=0,pady=(0,10))
+    i6 = Label(key_tab, text="Ctrl+Ruedita -> CAMBIO SLICE/DEPTH (seleccionado por puntero)",bg="#2CC",font=("Roboto",9),fg="#000").grid(row=8,column=0,pady=(0,10))
+    i7 = Label(key_tab, text="Escape para cerrar esta ventana",bg="#2CC",font=("Roboto",9),fg="#000").grid(row=9,column=0,pady=(50,10))
 
     root.bind("<Escape>",key_tab_destroy)
 def key_tab_destroy(event):
@@ -245,13 +269,15 @@ def info_tab_destroy(event):
     info_tab.destroy()
     root.bind("<F1>",info_tab_gen)
 
-def set_img(slice,depth):
-    global cv,cv1,cv2,cv3,cv4,axial_t2,coronal_t2, xcf_axial_t2, ycf_axial_t2, xcf_coronal_t2, ycf_coronal_t2, px_info_var, xi,yi,xf,yf
+def set_img(slice,coronal_depth,sagital_depth):
+    global cv,cv1,cv2,cv3,cv4,axial_t2,coronal_t2,sagital_t2, xcf_axial_t2, ycf_axial_t2, xcf_coronal_t2, ycf_coronal_t2, px_info_var, xi,yi,xf,yf
     
     temp_axial_t2 = imutils.resize(axiales[slice], height=CV_H.get())
     init_width = temp_axial_t2.shape[1]
+    init_height = temp_axial_t2.shape[0]
     xcf_axial_t2 = axiales[slice].shape[0]/temp_axial_t2.shape[0] #x factor correction -> por el resize inicial
     ycf_axial_t2 = axiales[slice].shape[1]/temp_axial_t2.shape[1] #y factor correction -> por el resize inicial
+
     if zoomed:
         crop = temp_axial_t2[yi:yf,xi:xf]
         if (abs(yf-yi) >= abs(xf-xi)):
@@ -261,26 +287,53 @@ def set_img(slice,depth):
         xcf_axial_t2 *= crop.shape[0]/temp_axial_t2.shape[0] #x factor correction -> por el resize inicial
         ycf_axial_t2 *= crop.shape[1]/temp_axial_t2.shape[1] #y factor correction -> por el resize inicial
         
-
-    temp_coronal_t2 = imutils.resize(coronales[depth], width=init_width) # ver error aca con el resize y el muestro en iamgen
-    xcf_coronal_t2 = coronales[depth].shape[0]/temp_coronal_t2.shape[0] #x factor correction -> por el resize
-    ycf_coronal_t2 = coronales[depth].shape[1]/temp_coronal_t2.shape[1] #y factor correction -> por el resize
+    temp_coronal_t2 = imutils.resize(coronales[coronal_depth], width=init_width) 
+    xcf_coronal_t2 = coronales[coronal_depth].shape[0]/temp_coronal_t2.shape[0] #x factor correction -> por el resize
+    ycf_coronal_t2 = coronales[coronal_depth].shape[1]/temp_coronal_t2.shape[1] #y factor correction -> por el resize
     
+    temp_sagital_t2 = imutils.resize(sagitales[sagital_depth], width=init_height) 
+    xcf_sagital_t2 = sagitales[sagital_depth].shape[0]/temp_sagital_t2.shape[0] #x factor correction -> por el resize
+    ycf_sagital_t2 = sagitales[sagital_depth].shape[1]/temp_sagital_t2.shape[1] #y factor correction -> por el resize
+
     axial_t2 = ImageTk.PhotoImage(Image.fromarray(temp_axial_t2))
     coronal_t2 = ImageTk.PhotoImage(Image.fromarray(temp_coronal_t2))
-    
+    sagital_t2 = ImageTk.PhotoImage(Image.fromarray(temp_sagital_t2))
     
     px_info_var = [float(init_dcm[0x0028,0x0030].value[0])*xcf_axial_t2,float(init_dcm[0x0028,0x0030].value[1])*ycf_axial_t2]
 
     
     cv1.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=axial_t2, tags="axial_t2")
     cv2.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=coronal_t2, tags="coronal_t2")
-    cv2.delete("slice_marker")
-    cv2.create_line(CV_W.get()/2-coronal_t2.width()/2, slice*factor/ycf_coronal_t2+CV_H.get()/2-coronal_t2.height()/2, coronal_t2.width()/2+CV_W.get()/2, slice*factor/ycf_coronal_t2+CV_H.get()/2-coronal_t2.height()/2, fill="#2DD", tags="slice_marker")
-    cv2.create_line(CV_W.get()/2-coronal_t2.width()/2, (slice+1)*factor/ycf_coronal_t2+CV_H.get()/2-coronal_t2.height()/2, coronal_t2.width()/2+CV_W.get()/2, (slice+1)*factor/ycf_coronal_t2+CV_H.get()/2-coronal_t2.height()/2, fill="#2DD", tags="slice_marker")
-    cv2.delete("cv2_info")
-    cv2.create_text(80,20,text="Axial/height: "+str(slice+1),fill="#2CC",font=("Roboto", 12),tags="cv2_info")
-    cv2.create_text(80,40,text="Coronal/depth: "+str(depth+1),fill="#2CC",font=("Roboto", 12),tags="cv2_info")
+    cv4.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=sagital_t2, tags="sagital_t2")
+
+    cv1.delete("coronal_depth_marker","sagital_depth_marker","cv_info")
+    cv2.delete("slice_marker","sagital_depth_marker","cv_info")
+    cv4.delete("slice_marker","coronal_depth_marker","cv_info")
+    if axis_switch:
+
+        cv1.create_line(CV_W.get()/2-axial_t2.width()/2+2, coronal_depth/ycf_axial_t2, axial_t2.width()/2+CV_W.get()/2, coronal_depth/ycf_axial_t2, fill="#F80", tags="coronal_depth_marker")
+        cv1.create_line(CV_W.get()/2-axial_t2.width()/2+2, (coronal_depth+1)/ycf_axial_t2, axial_t2.width()/2+CV_W.get()/2, (coronal_depth+1)/ycf_axial_t2, fill="#F80", tags="coronal_depth_marker")
+        cv1.create_line(sagital_depth/xcf_axial_t2+CV_W.get()/2-axial_t2.width()/2+2,0,sagital_depth/xcf_axial_t2+CV_W.get()/2-axial_t2.width()/2+2,CV_H.get(), fill="#5D0", tags="sagital_depth_marker")
+        cv1.create_line((sagital_depth+1)/xcf_axial_t2+CV_W.get()/2-axial_t2.width()/2+2,0,(sagital_depth+1)/xcf_axial_t2+CV_W.get()/2-axial_t2.width()/2+2,CV_H.get(), fill="#5D0", tags="sagital_depth_marker")
+
+        cv2.create_line(CV_W.get()/2-coronal_t2.width()/2+2, slice*factor/ycf_coronal_t2+CV_H.get()/2-coronal_t2.height()/2, coronal_t2.width()/2+CV_W.get()/2, slice*factor/ycf_coronal_t2+CV_H.get()/2-coronal_t2.height()/2, fill="#2DD", tags="slice_marker")
+        cv2.create_line(CV_W.get()/2-coronal_t2.width()/2+2, (slice+1)*factor/ycf_coronal_t2+CV_H.get()/2-coronal_t2.height()/2, coronal_t2.width()/2+CV_W.get()/2, (slice+1)*factor/ycf_coronal_t2+CV_H.get()/2-coronal_t2.height()/2, fill="#2DD", tags="slice_marker")
+        cv2.create_line(sagital_depth/xcf_coronal_t2+CV_W.get()/2-coronal_t2.width()/2+2,0,sagital_depth/xcf_coronal_t2+CV_W.get()/2-coronal_t2.width()/2+2,CV_H.get(), fill="#5D0", tags="sagital_depth_marker")
+        cv2.create_line((sagital_depth+1)/xcf_coronal_t2+CV_W.get()/2-coronal_t2.width()/2+2,0,(sagital_depth+1)/xcf_coronal_t2+CV_W.get()/2-coronal_t2.width()/2+2,CV_H.get(), fill="#5D0", tags="sagital_depth_marker")
+
+        cv4.create_line(CV_W.get()/2-sagital_t2.width()/2+2, slice*factor/ycf_sagital_t2+CV_H.get()/2-sagital_t2.height()/2, sagital_t2.width()/2+CV_W.get()/2, slice*factor/ycf_sagital_t2+CV_H.get()/2-sagital_t2.height()/2, fill="#2DD", tags="slice_marker")
+        cv4.create_line(CV_W.get()/2-sagital_t2.width()/2+2, (slice+1)*factor/ycf_sagital_t2+CV_H.get()/2-sagital_t2.height()/2, sagital_t2.width()/2+CV_W.get()/2, (slice+1)*factor/ycf_sagital_t2+CV_H.get()/2-sagital_t2.height()/2, fill="#2DD", tags="slice_marker")
+        cv4.create_line(coronal_depth/xcf_sagital_t2+CV_W.get()/2-sagital_t2.width()/2+2,0,coronal_depth/xcf_sagital_t2+CV_W.get()/2-sagital_t2.width()/2+2,CV_H.get(), fill="#F80", tags="coronal_depth_marker")
+        cv4.create_line((coronal_depth+1)/xcf_sagital_t2+CV_W.get()/2-sagital_t2.width()/2+2,0,(coronal_depth+1)/xcf_sagital_t2+CV_W.get()/2-sagital_t2.width()/2+2,CV_H.get(), fill="#F80", tags="coronal_depth_marker")
+        print(axis_switch)
+        cv.create_text(80,20,text="Axial/height: "+str(slice_num+1),fill="#2CC",font=("Roboto", 12),tags="cv_info")
+        cv.create_text(80,40,text="Coronal/depth: "+str(coronal_depth_num+1),fill="#F80",font=("Roboto", 12),tags="cv_info")
+        cv.create_text(80,60,text="Sagital/depth: "+str(sagital_depth_num+1),fill="#5D0",font=("Roboto", 12),tags="cv_info")
+
+    # REDIBUJO EL CANVAS CON LO QUE TENIA
+    for obj in obj_master:
+        if obj.inslice == slice_num:
+            obj.draw(False)
 
 ## HERRAMIENTAS
 def square_gen():
@@ -290,7 +343,7 @@ def square_gen():
     root.bind('<ButtonRelease-1>', finish_square)
 def start_square(event):
     obj_master.append(1)
-    obj_master[-1] = roi_square("s"+str(len(obj_master)),cv)
+    obj_master[-1] = roi_square("s"+str(len(obj_master)),cv,slice_num)
     obj_master[-1].init_coord(event.x,event.y)
 def temp_square(event):
     obj_master[-1].end_coord(event.x,event.y)
@@ -309,9 +362,10 @@ def finish_square(event):
 
 ## OBJETOS
 class roi_square:
-    def __init__(self,name,incv):
+    def __init__(self,name,incv,inslice):
         self.name = name
         self.incv = incv
+        self.inslice = inslice
     def init_coord(self,xi,yi):
         self.xi = xi
         self.yi = yi
