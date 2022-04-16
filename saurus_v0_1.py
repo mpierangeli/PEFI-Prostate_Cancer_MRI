@@ -2,7 +2,6 @@ from tkinter import *
 from PIL import Image,ImageTk
 from tkinter import filedialog
 import pydicom
-#import cv2 as opencv
 import numpy as np
 import math
 import imutils
@@ -30,7 +29,7 @@ def menu_creator():
     
     editmenu = Menu(menubar, tearoff=0)
     editmenu.add_command(label="ROI Rectangular",command=square_gen)
-    editmenu.add_command(label="ROI Circular")
+    editmenu.add_command(label="ROI Circular",command=circle_gen)
     editmenu.add_command(label="Medición")
 
     reportmenu = Menu(menubar, tearoff=0)
@@ -344,8 +343,7 @@ def square_gen():
     root.bind('<B1-Motion>', temp_square)
     root.bind('<ButtonRelease-1>', finish_square)
 def start_square(event):
-    obj_master.append(1)
-    obj_master[-1] = roi_square("s"+str(len(obj_master)),cv,slice_num)
+    obj_master.append(roi_square("s"+str(len(obj_master)),cv,slice_num))
     obj_master[-1].init_coord(event.x,event.y)
 def temp_square(event):
     obj_master[-1].end_coord(event.x,event.y)
@@ -361,7 +359,28 @@ def finish_square(event):
     root.unbind('<Button-1>')
     root.unbind('<B1-Motion>')
     root.unbind('<ButtonRelease-1>')
-
+def circle_gen():
+    root.config(cursor="tcross")
+    root.bind('<Button-1>', start_circle)
+    root.bind('<B1-Motion>', temp_circle)
+    root.bind('<ButtonRelease-1>', finish_circle)
+def start_circle(event):
+    obj_master.append(roi_circle("c"+str(len(obj_master)),cv,slice_num))
+    obj_master[-1].init_coord(event.x,event.y)
+def temp_circle(event):
+    obj_master[-1].end_coord(event.x,event.y)
+    obj_master[-1].draw(True)
+def finish_circle(event):
+    if obj_master[-1].xi == event.x and obj_master[-1].yi == event.y:
+        print("NO SUELTE EL MOUSE")
+        obj_master.pop()
+        return
+    obj_master[-1].end_coord(event.x,event.y)
+    obj_master[-1].draw(False)
+    root.config(cursor="arrow")
+    root.unbind('<Button-1>')
+    root.unbind('<B1-Motion>')
+    root.unbind('<ButtonRelease-1>')
 ## OBJETOS
 class roi_square:
     def __init__(self,name,incv,inslice):
@@ -374,6 +393,8 @@ class roi_square:
     def end_coord(self,xf,yf):
         self.xf = xf
         self.yf = yf
+        self.dx = abs(self.xf-self.xi)
+        self.dy = abs(self.yf-self.yi)
     def draw(self,temporal):
         cv.delete(self.name)
         if temporal:
@@ -381,15 +402,34 @@ class roi_square:
         else:
             self.name = self.name + "_"
             cv.create_rectangle(self.xi,self.yi,self.xf,self.yf,outline="#F00",tags=self.name)
-        dx = self.xf-self.xi
-        dy = self.yf-self.yi
-        a = -10 if dx>0 else 10
-        b = -10 if dy>0 else 10
-        self.xdis = abs(round(px_info_var[0]*dx,2))
-        self.ydis = abs(round(px_info_var[1]*dy,2))
+        a = -10 if self.dx>0 else 10
+        b = -10 if self.dy>0 else 10
+        self.xdis = round(px_info_var[0]*self.dx,2)
+        self.ydis = round(px_info_var[1]*self.dy,2)
         cv.create_text((self.xf+self.xi)/2,self.yi+b,text=str(self.xdis)+"mm",fill="#F00",font=("Roboto", 9),tags=self.name)
         cv.create_text(self.xi+a,(self.yf+self.yi)/2,text=str(self.ydis)+"mm",fill="#F00",font=("Roboto", 9),tags=self.name,angle=90)
-
+class roi_circle:
+    def __init__(self,name,incv,inslice):
+        self.name = name
+        self.incv = incv
+        self.inslice = inslice
+    def init_coord(self,xi,yi):
+        self.xi = xi
+        self.yi = yi
+    def end_coord(self,xf,yf):
+        self.dx = abs(xf-self.xi)
+        self.dy = abs(yf-self.yi)
+        self.r = math.sqrt(self.dx**2+self.dy**2)
+    def draw(self,temporal):
+        cv.delete(self.name)
+        if temporal:
+            cv.create_oval(self.xi-self.r,self.yi-self.r,self.xi+self.r,self.yi+self.r,outline="#A00",dash=(7,),tags=self.name)
+        else:
+            self.name = self.name + "_"
+            cv.create_oval(self.xi-self.r,self.yi-self.r,self.xi+self.r,self.yi+self.r,outline="#F00",tags=self.name)
+        self.rdis = math.sqrt((self.dx*px_info_var[0])**2+(self.dy*px_info_var[1])**2) # Porq distancia real depende del ancho de pixel en cada dirección.
+        cv.create_text(self.xi,self.yi+self.r+10,text="r: "+str(round(self.rdis,2))+"mm",fill="#F00",font=("Roboto", 9),tags=self.name)
+        
 #-------------- MAIN LOOP ---------------------------------------------------------
 
 root = Tk()
