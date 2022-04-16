@@ -30,7 +30,7 @@ def menu_creator():
     editmenu = Menu(menubar, tearoff=0)
     editmenu.add_command(label="ROI Rectangular",command=lambda tipo="s": roi_gen(tipo))
     editmenu.add_command(label="ROI Circular",command=lambda tipo="c": roi_gen(tipo))
-    editmenu.add_command(label="Medición")
+    editmenu.add_command(label="Medición",command=lambda tipo="r": roi_gen(tipo))
 
     reportmenu = Menu(menubar, tearoff=0)
     reportmenu.add_command(label="Nuevo Reporte",command=report_window_gen)
@@ -349,6 +349,8 @@ def roi_start(event,tipo):
         obj_master.append(roi_square(tipo+str(len(obj_master)),cv,slice_num))
     elif tipo == "c":
         obj_master.append(roi_circle(tipo+str(len(obj_master)),cv,slice_num))
+    elif tipo == "r":
+        obj_master.append(roi_ruler(tipo+str(len(obj_master)),cv,slice_num))
     obj_master[-1].init_coord(event.x,event.y)
 def roi_temp(event):
     obj_master[-1].end_coord(event.x,event.y)
@@ -359,7 +361,7 @@ def roi_end(event):
             print("NO SUELTE EL MOUSE")
             obj_master.pop()
             return
-    elif obj_master[-1].name[0] == "c":
+    elif obj_master[-1].name[0] == "c" or obj_master[-1].name[0] == "r":
         if obj_master[-1].xi == event.x and obj_master[-1].yi == event.y:
             print("NO SUELTE EL MOUSE")
             obj_master.pop()
@@ -430,7 +432,38 @@ class roi_circle:
             cv.create_oval(self.xi-self.r,self.yi-self.r,self.xi+self.r,self.yi+self.r,outline="#F00",tags=self.name)
         self.rdis = math.sqrt((self.dx*px_info_var[0])**2+(self.dy*px_info_var[1])**2) # Porq distancia real depende del ancho de pixel en cada dirección.
         cv.create_text(self.xi,self.yi+self.r+10,text="r: "+str(round(self.rdis,2))+"mm",fill="#F00",font=("Roboto", 9),tags=self.name)
+class roi_ruler:
+    def __init__(self,name,incv,inslice):
+        self.name = name
+        self.incv = incv
+        self.inslice = inslice
+    def init_coord(self,xi,yi):
+        self.xi = xi
+        self.yi = yi
+    def end_coord(self,xf,yf):
+        self.xf = xf
+        self.yf = yf
+        self.dx = self.xf-self.xi
+        self.dy = self.yf-self.yi
+    def draw(self,temporal):
+        cv.delete(self.name)
+        if temporal:
+            cv.create_line(self.xi,self.yi,self.xf,self.yf,fill="#1BB",dash=(3,),arrow=BOTH,tags=self.name)
+        else:
+            self.name = self.name + "_"
+            cv.create_line(self.xi,self.yi,self.xf,self.yf,fill="#2CC",arrow=BOTH,tags=self.name)
+        self.ang = abs(math.degrees(math.atan((-self.dy)/(-self.dx+1e-6))))
+        self.rdis = math.sqrt((self.dx*px_info_var[0])**2+(self.dy*px_info_var[1])**2) # Porq distancia real depende del ancho de pixel en cada dirección.
+        a = 10
+        b = 10
+        if int(self.dx) == 0: b -= 10
+        elif int(self.dy) == 0: a -= 10
+        elif self.dx*self.dy > 0: 
+            self.ang = -self.ang
+            a -= 20
+        cv.create_text((self.xf+self.xi)/2+a,(self.yf+self.yi)/2+b,text=str(round(self.rdis,2))+"mm",fill="#2CC",font=("Roboto", 9),tags=self.name,angle=self.ang)
         
+
 #-------------- MAIN LOOP ---------------------------------------------------------
 
 root = Tk()
