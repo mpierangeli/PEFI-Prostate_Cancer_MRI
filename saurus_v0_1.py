@@ -28,8 +28,8 @@ def menu_creator():
     filemenu.add_command(label="Selección Paciente", command=canvas_creator)
     
     editmenu = Menu(menubar, tearoff=0)
-    editmenu.add_command(label="ROI Rectangular",command=square_gen)
-    editmenu.add_command(label="ROI Circular",command=circle_gen)
+    editmenu.add_command(label="ROI Rectangular",command=lambda tipo="s": roi_gen(tipo))
+    editmenu.add_command(label="ROI Circular",command=lambda tipo="c": roi_gen(tipo))
     editmenu.add_command(label="Medición")
 
     reportmenu = Menu(menubar, tearoff=0)
@@ -337,40 +337,41 @@ def set_img(slice,coronal_depth,sagital_depth):
             obj.draw(False)
 
 ## HERRAMIENTAS
-def square_gen():
+
+#ROI GENERATORS
+def roi_gen(tipo):
     root.config(cursor="tcross")
-    root.bind('<Button-1>', start_square)
-    root.bind('<B1-Motion>', temp_square)
-    root.bind('<ButtonRelease-1>', finish_square)
-def start_square(event):
-    obj_master.append(roi_square("s"+str(len(obj_master)),cv,slice_num))
+    root.bind('<Button-1>', lambda event, arg=tipo: roi_start(event,arg))
+    root.bind('<B1-Motion>', roi_temp)
+    root.bind('<ButtonRelease-1>', roi_end)
+def roi_start(event,tipo):
+    if tipo == "s":
+        obj_master.append(roi_square(tipo+str(len(obj_master)),cv,slice_num))
+    elif tipo == "c":
+        obj_master.append(roi_circle(tipo+str(len(obj_master)),cv,slice_num))
     obj_master[-1].init_coord(event.x,event.y)
-def temp_square(event):
+def roi_temp(event):
     obj_master[-1].end_coord(event.x,event.y)
     obj_master[-1].draw(True)
-def finish_square(event):
-    if obj_master[-1].xi == event.x or obj_master[-1].yi == event.y:
-        print("NO SUELTE EL MOUSE")
-        obj_master.pop()
-        return
+def roi_end(event):
+    if obj_master[-1].name[0] == "s":
+        if obj_master[-1].xi == event.x or obj_master[-1].yi == event.y:
+            print("NO SUELTE EL MOUSE")
+            obj_master.pop()
+            return
+    elif obj_master[-1].name[0] == "c":
+        if obj_master[-1].xi == event.x and obj_master[-1].yi == event.y:
+            print("NO SUELTE EL MOUSE")
+            obj_master.pop()
+            return
     obj_master[-1].end_coord(event.x,event.y)
     obj_master[-1].draw(False)
     root.config(cursor="arrow")
     root.unbind('<Button-1>')
     root.unbind('<B1-Motion>')
     root.unbind('<ButtonRelease-1>')
-def circle_gen():
-    root.config(cursor="tcross")
-    root.bind('<Button-1>', start_circle)
-    root.bind('<B1-Motion>', temp_circle)
-    root.bind('<ButtonRelease-1>', finish_circle)
-def start_circle(event):
-    obj_master.append(roi_circle("c"+str(len(obj_master)),cv,slice_num))
-    obj_master[-1].init_coord(event.x,event.y)
-def temp_circle(event):
-    obj_master[-1].end_coord(event.x,event.y)
-    obj_master[-1].draw(True)
-def finish_circle(event):
+
+
     if obj_master[-1].xi == event.x and obj_master[-1].yi == event.y:
         print("NO SUELTE EL MOUSE")
         obj_master.pop()
@@ -393,8 +394,8 @@ class roi_square:
     def end_coord(self,xf,yf):
         self.xf = xf
         self.yf = yf
-        self.dx = abs(self.xf-self.xi)
-        self.dy = abs(self.yf-self.yi)
+        self.dx = self.xf-self.xi
+        self.dy = self.yf-self.yi
     def draw(self,temporal):
         cv.delete(self.name)
         if temporal:
@@ -404,8 +405,8 @@ class roi_square:
             cv.create_rectangle(self.xi,self.yi,self.xf,self.yf,outline="#F00",tags=self.name)
         a = -10 if self.dx>0 else 10
         b = -10 if self.dy>0 else 10
-        self.xdis = round(px_info_var[0]*self.dx,2)
-        self.ydis = round(px_info_var[1]*self.dy,2)
+        self.xdis = abs(round(px_info_var[0]*self.dx,2))
+        self.ydis = abs(round(px_info_var[1]*self.dy,2))
         cv.create_text((self.xf+self.xi)/2,self.yi+b,text=str(self.xdis)+"mm",fill="#F00",font=("Roboto", 9),tags=self.name)
         cv.create_text(self.xi+a,(self.yf+self.yi)/2,text=str(self.ydis)+"mm",fill="#F00",font=("Roboto", 9),tags=self.name,angle=90)
 class roi_circle:
