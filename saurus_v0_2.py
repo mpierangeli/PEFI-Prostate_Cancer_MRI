@@ -242,26 +242,29 @@ def key_tab_destroy(event):
 
 def info_tab_gen(event):
     global info_tab
-    info_tab = Frame(root,background="#222")
-    info_tab.place(relx=0,rely=0, width=200, height=MF_H.get())
-    l2 = Label(info_tab, text="INFORMACIÓN",bg="#222",font=("Roboto",10),fg="#FFF").grid(row=0,column=0,pady=(10,20))
+    info_tab = Frame(root,background="#2CC")
+    info_tab.place(relx=0,rely=0, height=MF_H.get())
+    l2 = Label(info_tab, text="DICOM METADATA",bg="#2CC",font=("Roboto",12),fg="#000").grid(row=0,column=0,pady=10)
 
     #IMPORTANT DATA
     # VER Q MOSTRAR EN EL PANEL DE INFO!!
-    i1 = Label(info_tab, text="Paciente = "+str(init_dcm[0x0010, 0x0010].value),bg="#222",font=("Roboto",9),fg="#FFF").grid(row=2,column=0,pady=(0,10))
-    i2 = Label(info_tab, text="Canvas Size = "+str(CV_W.get())+"x"+str(CV_H.get()),bg="#222",font=("Roboto",9),fg="#FFF").grid(row=3,column=0,pady=(0,10))
-    i3 = Label(info_tab, text="Orig. Img. Size = "+str(init_img.shape[1])+"x"+str(init_img.shape[0]),bg="#222",font=("Roboto",9),fg="#FFF").grid(row=4,column=0,pady=(0,10))
-    i4 = Label(info_tab, text="FOV = "+str(int(init_img.shape[1]*px_info_static[0]))+"x"+str(int(init_img.shape[0]*px_info_static[1]))+" [mm x mm]",bg="#222",font=("Roboto",9),fg="#FFF").grid(row=6,column=0,pady=(0,10))
-    ##si la secuencia es 2d o 3d cambia el slice thickness:
-    if init_dcm[0x0018,0x0023].value == "2D":
-        ST = round(init_dcm[0x0018, 0x0050].value*(1+init_dcm[0x0018, 0x0088].value/100),1)
-    elif init_dcm[0x0018,0x0023].value == "3D":
-        ST = round(init_dcm[0x0018, 0x0050].value,1)
-    else:
-        ST = 1000000
-    i5 = Label(info_tab, text="Slice Thickness = "+str(ST)+"mm",bg="#222",font=("Roboto",9),fg="#FFF").grid(row=7,column=0,pady=(0,10))
+    info = ""
+    for item in init_dcm:
+        info += (str(item) + "\n")
+    
+    text_box = Text(info_tab,width=100,height=58,font=("Roboto",10),fg="#000",bg="#2CC",bd=0)
+    text_box.grid(row=1, column=0)
+    text_box.insert(END,info)
+
+    sb = Scrollbar(info_tab,orient=VERTICAL)
+    sb.grid(row=1, column=1, sticky=NS)
+
+    text_box.config(yscrollcommand=sb.set)
+    sb.config(command=text_box.yview)
+    
 
     root.bind("<F1>",info_tab_destroy)
+    
 def info_tab_destroy(event):
     info_tab.destroy()
     root.bind("<F1>",info_tab_gen)
