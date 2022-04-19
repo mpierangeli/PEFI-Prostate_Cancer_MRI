@@ -1,11 +1,10 @@
 from tkinter import *
-from PIL import Image,ImageTk
+from PIL import Image,ImageTk, ImageGrab
 from tkinter import filedialog
 import pydicom
 import numpy as np
 import math
 import imutils
-
 
 def windows_creator():
 
@@ -47,10 +46,32 @@ def menu_creator():
     menubar.add_cascade(label="Ayuda", menu=helpmenu)
 
 def report_window_gen():
-    global report_window
+    global report_window, observations,temp_ima
 
     report_window = Toplevel(root)
-    report_window.minsize(500,500)
+    report_frame = Frame(report_window,width=MF_W.get()/2, height=MF_H.get()/2, background="#222")
+    report_frame.grid(row=0, column=0)
+    report_frame.grid_propagate(0)
+
+    report_menu_creator()
+
+    l1 = Label(report_frame,text="Registro provisorio de observaciones",bg="#2CC",font=("Roboto",12),fg="#000").grid(row=0,column=0,ipady=10)
+
+    temp_ima = ImageTk.PhotoImage(observations[-1])
+    panel = Label(report_window, image = temp_ima)
+    panel.grid(row=1,column=0)
+    
+def report_menu_creator():
+    menubar_report = Menu(report_window)
+    report_window.config(menu=menubar_report)
+
+    obsmenu = Menu(menubar_report, tearoff=0)
+    obsmenu.add_command(label="Agregar nueva observación")
+    obsmenu.add_command(label="Borrar observación")
+    obsmenu.add_command(label="Finalizar reporte?")
+
+    menubar_report.add_cascade(label="Observaciones", menu=obsmenu)
+    
 
 def canvas_creator():
     global cv1,cv2,cv3,cv4, focused_cv
@@ -163,7 +184,7 @@ def slice_and_depth_selector(event):
     set_img(slice_num,coronal_depth_num,sagital_depth_num)
 
 def patient_loader():
-    global filepaths, axiales, coronales, sagitales, slice_num, coronal_depth_num, sagital_depth_num, factor, init_dcm, init_img, px_info_var, px_info_static, zoomed, axis_switch, obj_master
+    global filepaths, axiales, coronales, sagitales, slice_num, coronal_depth_num, sagital_depth_num, factor, init_dcm, init_img, px_info_var, px_info_static, zoomed, axis_switch, obj_master, observations
     
     filepaths_raw = filedialog.askopenfilenames()
     if not filepaths_raw: 
@@ -173,6 +194,7 @@ def patient_loader():
     
     #GENERO CONTAINER DE OBJETOS VERVERVER
     obj_master = []
+    observations = []
     #-------------------------------------------------
     #GENERO PLANO CORONAL CON IMAGENES T2 (VER COMO SELECCIONAR ESAS EN PARTICULAR)
     init_dcm = pydicom.dcmread(filepaths[0])
@@ -215,6 +237,7 @@ def patient_loader():
     #-------------------------------------
     root.bind("<F1>",info_tab_gen)
     root.bind("<F2>",axis_onoff)
+    root.bind("<F8>",screenshot)
 
 def axis_onoff (event):
     global axis_switch
@@ -362,6 +385,14 @@ def set_img(slice,coronal_depth,sagital_depth):
         if obj.inslice == slice_num:
             obj.draw(False)
 
+def screenshot(event):
+    global observations
+    x0 = cv.winfo_rootx()
+    y0 = cv.winfo_rooty()
+    x1 = x0 + cv.winfo_width()
+    y1 = y0 + cv.winfo_height()
+    observations.append(ImageGrab.grab((x0, y0, x1, y1)))
+    observations[-1].save("obs_"+str(len(observations))+".png") # VER DONDE GUARDA ESTO Y SI ES NECESARIO GUARDAR
 ## HERRAMIENTAS
 
 #ROI GENERATORS
