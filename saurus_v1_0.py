@@ -190,7 +190,6 @@ def sec_selector(event):
 
 
 
-
 def slice_and_depth_selector(event):
     global slice_num,coronal_depth_num,sagital_depth_num
     if cv == cv1:
