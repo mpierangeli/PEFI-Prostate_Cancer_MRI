@@ -1,10 +1,13 @@
+from msilib.schema import ListBox
 from tkinter import *
-from PIL import Image,ImageTk, ImageGrab
+from typing import List
+from PIL import Image, ImageTk, ImageGrab
 from tkinter import filedialog
 import pydicom
 import numpy as np
 import math
 import imutils
+import os
 
 def windows_creator():
 
@@ -117,14 +120,15 @@ def canvas_creator(layout: int):
     for cv in cv_master:
         cv.bind("<Enter>",lambda event, arg=cv: focus_cv(event,arg))
         cv.bind("<Leave>", unfocus_cv)
+        
  
 
     #cv_master[0].bind("<Button-3>", zoom_gen) # VER DE AGREGAR ZOOM PARA todo
 
     root.bind("<F3>",clear_cv)
     root.bind("<F4>",reset_cv)
-    
-    #patient_loader()
+    root.bind("<F10>", sec_selector)
+    patient_loader()
 
 def clear_cv (event):
     global obj_master
@@ -148,6 +152,45 @@ def reset_cv(event):
     cv.delete(ALL)
     set_img(slice_num,coronal_depth_num,sagital_depth_num)
 
+def patient_loader():
+    global secuencias
+    
+    secuencias = []
+    sec_uids = []
+    
+    filepath = filedialog.askdirectory()
+    
+    for file in os.listdir(filepath):
+        name, ext = os.path.splitext(file)
+        if ext == ".IMA":
+            temp_dcm = pydicom.dcmread(filepath+"/"+file)
+            temp_uid = temp_dcm.SeriesInstanceUID
+            if  temp_uid not in sec_uids:
+                secuencias.append(secuencia(temp_dcm.SequenceName+"-> TE: "+str(temp_dcm.EchoTime)+", TR: "+str(temp_dcm.RepetitionTime)+", "+str(temp_dcm.ScanOptions) ,temp_uid))
+                secuencias[-1].add_dcm(temp_dcm)
+                sec_uids.append(temp_uid)
+            else:
+                for sec in secuencias:
+                    if temp_uid == sec.UID:
+                        sec.add_dcm(temp_dcm)
+                        
+def sec_selector(event):
+    global seq_tab
+
+    seq_tab = Frame(root,background="#2CC")
+    seq_tab.place(relx=0,rely=0, height=MF_H.get())
+    Label(seq_tab, text="SECUENCIAS DISPONIBLES",bg="#2CC",font=("Roboto",12),fg="#000").grid(row=0,column=0,pady=20)
+
+    sec_list = Listbox(seq_tab, height=100, width=50, relief=FLAT, bg="#2CC",font=("Roboto",9), fg="#000",selectbackground="#222",highlightthickness=0)
+    sec_list.grid(row=1,column=0,padx=10)
+    for sec in secuencias:
+        sec_list.insert(END,sec.name)
+    
+
+
+
+
+
 def slice_and_depth_selector(event):
     global slice_num,coronal_depth_num,sagital_depth_num
     if cv == cv1:
@@ -162,7 +205,7 @@ def slice_and_depth_selector(event):
     
     set_img(slice_num,coronal_depth_num,sagital_depth_num)
 
-def patient_loader():
+""" def patient_loader():
     global filepaths, axiales, coronales, sagitales, slice_num, coronal_depth_num, sagital_depth_num, factor, init_dcm, init_img, px_info_var, px_info_static, zoomed, axis_switch, obj_master, observations
     
     filepaths_raw = filedialog.askopenfilenames()
@@ -218,7 +261,7 @@ def patient_loader():
     root.bind("<F2>",axis_onoff)
     root.bind("<F8>",screenshot)
     root.bind("<Control-MouseWheel>", slice_and_depth_selector)
-    root.bind("<Control-z>",go_back_1)
+    root.bind("<Control-z>",go_back_1) """
 
 def axis_onoff (event):
     global axis_switch
@@ -536,8 +579,15 @@ class roi_ruler:
             self.ang = -self.ang
             a -= 20
         cv.create_text((self.xf+self.xi)/2+a,(self.yf+self.yi)/2+b,text=str(round(self.rdis,2))+"mm",fill="#2CC",font=("Roboto", 9),tags=self.name,angle=self.ang)
-        
-
+class secuencia:
+    def __init__(self,name,UID):
+        self.name = name
+        self.UID = UID
+        self.dcm_serie = []
+        #self.img_serie = []
+    def add_dcm(self,dcm):
+        self.dcm_serie.append(dcm)
+        #self.img_serie.append(self.dcm_serie[-1].pixel_array)
 #-------------- MAIN LOOP ---------------------------------------------------------
 
 root = Tk()
