@@ -27,7 +27,7 @@ def menu_creator():
     root.config(menu=menubar)
 
     filemenu = Menu(menubar, tearoff=0)
-    filemenu.add_command(label="Selección Paciente", command=lambda layout=1: canvas_creator(layout))
+    filemenu.add_command(label="Selección Paciente", command=lambda layout=4: canvas_creator(layout))
     filemenu.add_separator()
     filemenu.add_command(label="Panel de Secuencias")
     
@@ -119,15 +119,12 @@ def canvas_creator(layout: int):
 
     for cv in cv_master:
         cv.bind("<Enter>",lambda event, arg=cv: focus_cv(event,arg))
-        cv.bind("<Leave>", unfocus_cv)
-        
- 
+        cv.bind("<Leave>", unfocus_cv)   
 
     #cv_master[0].bind("<Button-3>", zoom_gen) # VER DE AGREGAR ZOOM PARA todo
 
     root.bind("<F3>",clear_cv)
     root.bind("<F4>",reset_cv)
-    root.bind("<F10>", sec_selector)
     patient_loader()
 
 def clear_cv (event):
@@ -140,10 +137,6 @@ def focus_cv(event,arg: Canvas):
     global cv
     cv = arg
     cv.create_text(50,CV_H.get()-20,text="FOCUSED",font=("Roboto",5),fill="#FFF",tag="focus_check")
-    if axis_switch:
-        cv.create_text(80,20,text="Axial/height: "+str(slice_num+1),fill="#2CC",font=("Roboto", 12),tags="cv_info")
-        cv.create_text(80,40,text="Coronal/depth: "+str(coronal_depth_num+1),fill="#F80",font=("Roboto", 12),tags="cv_info")
-        cv.create_text(80,60,text="Sagital/depth: "+str(sagital_depth_num+1),fill="#5D0",font=("Roboto", 12),tags="cv_info")
 def unfocus_cv(event):
     cv.delete("focus_check","cv_info")
 def reset_cv(event):
@@ -173,9 +166,10 @@ def patient_loader():
                 for sec in secuencias:
                     if temp_uid == sec.UID:
                         sec.add_dcm(temp_dcm)
-                        
-def sec_selector(event):
-    global seq_tab
+    sec_selector()              
+          
+def sec_selector():
+    global seq_tab,sec_list
 
     seq_tab = Frame(root,background="#2CC")
     seq_tab.place(relx=0,rely=0, height=MF_H.get())
@@ -185,10 +179,18 @@ def sec_selector(event):
     sec_list.grid(row=1,column=0,padx=10)
     for sec in secuencias:
         sec_list.insert(END,sec.name)
+    seq_tab.bind('<Leave>', sec_move)
+
+def sec_move(event):
+    seq = sec_list.get(ANCHOR)
+    seq_tab.destroy()
+    root.config(cursor="plus")
+    root.bind('<Button-1>', lambda event, seq=seq: sec_setup(event, seq))
     
-
-
-
+def sec_setup(event, seq):
+    root.config(cursor="arrow")
+    root.unbind('<Button-1>')
+    cv.create_text(CV_W.get()/2,CV_H.get()/2,text=seq,fill="#FFF",font=("Roboto", 15))
 
 def slice_and_depth_selector(event):
     global slice_num,coronal_depth_num,sagital_depth_num
@@ -583,6 +585,7 @@ class secuencia:
         self.name = name
         self.UID = UID
         self.dcm_serie = []
+        self.incv = 0
         #self.img_serie = []
     def add_dcm(self,dcm):
         self.dcm_serie.append(dcm)
