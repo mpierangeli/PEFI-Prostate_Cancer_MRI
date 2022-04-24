@@ -27,7 +27,7 @@ def menu_creator():
     root.config(menu=menubar)
 
     filemenu = Menu(menubar, tearoff=0)
-    filemenu.add_command(label="Selección Paciente", command=lambda layout=4: canvas_creator(layout))
+    filemenu.add_command(label="Selección Paciente", command=patient_loader)
     filemenu.add_separator()
     filemenu.add_command(label="Panel de Secuencias", command=sec_selector)
     
@@ -37,10 +37,10 @@ def menu_creator():
     editmenu.add_command(label="Medición",command=lambda tipo="r": roi_gen(tipo))
 
     reportmenu = Menu(menubar, tearoff=0)
-    reportmenu.add_command(label="Nuevo Reporte",command=report_window_gen)
+    reportmenu.add_command(label="Nuevo Reporte")
 
     helpmenu = Menu(menubar, tearoff=0)
-    helpmenu.add_command(label="Keybinds", command=key_tab_gen)
+    helpmenu.add_command(label="Keybinds")
     helpmenu.add_command(label="Acerca de...")
     helpmenu.add_separator()
     helpmenu.add_command(label="Salir", command=root.quit)
@@ -56,36 +56,8 @@ def menu_creator():
     menubar.add_cascade(label="Reportar", menu=reportmenu)
     menubar.add_cascade(label="Ayuda", menu=helpmenu)
 
-def report_window_gen():
-    global report_window, observations,temp_ima
-
-    report_window = Toplevel(root)
-    report_frame = Frame(report_window,width=MF_W.get()/2, height=MF_H.get()/2, background="#222")
-    report_frame.grid(row=0, column=0)
-    report_frame.grid_propagate(0)
-
-    report_menu_creator()
-
-    l1 = Label(report_frame,text="Registro provisorio de observaciones",bg="#2CC",font=("Roboto",12),fg="#000").grid(row=0,column=0,ipady=10)
-
-    temp_ima = ImageTk.PhotoImage(observations[-1])
-    panel = Label(report_window, image = temp_ima)
-    panel.grid(row=1,column=0)
-    
-def report_menu_creator():
-    menubar_report = Menu(report_window)
-    report_window.config(menu=menubar_report)
-
-    obsmenu = Menu(menubar_report, tearoff=0)
-    obsmenu.add_command(label="Agregar nueva observación")
-    obsmenu.add_command(label="Borrar observación")
-    obsmenu.add_command(label="Finalizar reporte?")
-
-    menubar_report.add_cascade(label="Observaciones", menu=obsmenu)
-    
 def canvas_creator(layout: int):
-    global cv_master, focused_cv, cv_layout
-    focused_cv = 0
+    global cv_master, cv_layout
     cv_layout = layout
     try:
         for cv in cv_master:
@@ -121,11 +93,8 @@ def canvas_creator(layout: int):
         cv.bind("<Enter>",lambda event, arg=cv: focus_cv(event,arg))
         cv.bind("<Leave>", unfocus_cv)   
 
-    #cv_master[0].bind("<Button-3>", zoom_gen) # VER DE AGREGAR ZOOM PARA todo
-
     root.bind("<F3>",clear_cv)
     root.bind("<F4>",reset_cv)
-    patient_loader()
 
 def clear_cv (event):
     global obj_master
@@ -143,8 +112,6 @@ def reset_cv(event):
     global zoomed
     zoomed = False
     cv.delete(ALL)
-    set_img(slice_num,coronal_depth_num,sagital_depth_num)
-
 def patient_loader():
     global secuencias
     
@@ -168,6 +135,8 @@ def patient_loader():
                         sec.add_dcm(temp_dcm)
     for sec in secuencias:
         sec.load_img_serie()
+        
+    canvas_creator(1)
     sec_selector()              
           
 def sec_selector():
@@ -189,6 +158,8 @@ def sec_move(event):
     root.bind('<Button-1>', lambda event, seq=seq: sec_setup(event, seq))  
 def sec_setup(event, seq):
     for sec in secuencias:
+        if sec.incv == cv:
+            sec.incv = 0
         if sec.name == seq:
             sec.incv = cv
     root.config(cursor="arrow")
@@ -196,23 +167,18 @@ def sec_setup(event, seq):
     refresh_canvas()
 
 def refresh_canvas():
-    pass
+    global img2cv
+    img2cv = []
+    for sec in secuencias:
+        if sec.incv != 0:
+            selCV = sec.incv
+            if cv_layout == 2:
+                temp_img = imutils.resize(sec.img_serie[sec.slice], width=CV_W.get())
+            else:
+                temp_img = imutils.resize(sec.img_serie[sec.slice], height=CV_H.get())
+            img2cv.append(ImageTk.PhotoImage(Image.fromarray(temp_img)))
+            selCV.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=img2cv[-1])
     
-
-def slice_and_depth_selector(event):
-    global slice_num,coronal_depth_num,sagital_depth_num
-    if cv == cv1:
-        if event.delta > 0 and slice_num < len(axiales)-1: slice_num+=1
-        elif event.delta < 0 and slice_num > 0: slice_num-=1
-    if cv == cv2:
-        if event.delta > 0 and coronal_depth_num < len(coronales)-1: coronal_depth_num+=1
-        elif event.delta < 0 and coronal_depth_num > 0: coronal_depth_num-=1
-    if cv == cv4:
-        if event.delta > 0 and sagital_depth_num < len(sagitales)-1: sagital_depth_num+=1
-        elif event.delta < 0 and sagital_depth_num > 0: sagital_depth_num-=1
-    
-    set_img(slice_num,coronal_depth_num,sagital_depth_num)
-
 """ def patient_loader():
     global filepaths, axiales, coronales, sagitales, slice_num, coronal_depth_num, sagital_depth_num, factor, init_dcm, init_img, px_info_var, px_info_static, zoomed, axis_switch, obj_master, observations
     
@@ -270,58 +236,6 @@ def slice_and_depth_selector(event):
     root.bind("<F8>",screenshot)
     root.bind("<Control-MouseWheel>", slice_and_depth_selector)
     root.bind("<Control-z>",go_back_1) """
-
-def axis_onoff (event):
-    global axis_switch
-    axis_switch = False if axis_switch else True
-    set_img(slice_num,coronal_depth_num,sagital_depth_num)
-        
-def key_tab_gen():
-    global key_tab
-    key_tab = Frame(root,background="#2CC")
-    key_tab.place(relx=0,rely=0, width=400, height=MF_H.get())
-    l2 = Label(key_tab, text="KEYBINDS",bg="#2CC",font=("Roboto",10),fg="#000").grid(row=0,column=0,pady=(10,20))
-
-    i1 = Label(key_tab, text="F1 -> INFORMACIÓN PACIENTE",bg="#2CC",font=("Roboto",9),fg="#000").grid(row=2,column=0,pady=(0,10))
-    i8 = Label(key_tab, text="F2 -> AXIS ON/OFF",bg="#2CC",font=("Roboto",9),fg="#000").grid(row=3,column=0,pady=(0,10))
-    i2 = Label(key_tab, text="F3 -> LIMPIAR CANVAS (seleccionado por puntero)",bg="#2CC",font=("Roboto",9),fg="#000").grid(row=4,column=0,pady=(0,10))
-    i3 = Label(key_tab, text="F4 -> RESETEAR ZOOM/CANVAS (seleccionado por puntero)",bg="#2CC",font=("Roboto",9),fg="#000").grid(row=5,column=0,pady=(0,10))
-    i4 = Label(key_tab, text="Ctrl+Z -> BORRAR ÚLTIMA HERRAMIENTA",bg="#2CC",font=("Roboto",9),fg="#000").grid(row=6,column=0,pady=(0,10))
-    i5 = Label(key_tab, text="Right Click -> ZOOM",bg="#2CC",font=("Roboto",9),fg="#000").grid(row=7,column=0,pady=(0,10))
-    i6 = Label(key_tab, text="Ctrl+Ruedita -> CAMBIO SLICE/DEPTH (seleccionado por puntero)",bg="#2CC",font=("Roboto",9),fg="#000").grid(row=8,column=0,pady=(0,10))
-    i7 = Label(key_tab, text="Escape para cerrar esta ventana",bg="#2CC",font=("Roboto",9),fg="#000").grid(row=9,column=0,pady=(50,10))
-
-    root.bind("<Escape>",key_tab_destroy)
-def key_tab_destroy(event):
-    key_tab.destroy()
-
-def info_tab_gen(event):
-    global info_tab
-    info_tab = Frame(root,background="#2CC")
-    info_tab.place(relx=0,rely=0, height=MF_H.get())
-    l2 = Label(info_tab, text="DICOM METADATA",bg="#2CC",font=("Roboto",12),fg="#000").grid(row=0,column=0,pady=10)
-
-    #IMPORTANT DATA
-    # VER Q MOSTRAR EN EL PANEL DE INFO!!
-    info = ""
-    for item in init_dcm:
-        info += (str(item) + "\n")
-    
-    text_box = Text(info_tab,width=100,height=58,font=("Roboto",10),fg="#000",bg="#2CC",bd=0)
-    text_box.grid(row=1, column=0)
-    text_box.insert(END,info)
-
-    sb = Scrollbar(info_tab,orient=VERTICAL)
-    sb.grid(row=1, column=1, sticky=NS)
-
-    text_box.config(yscrollcommand=sb.set)
-    sb.config(command=text_box.yview)
-    
-
-    root.bind("<F1>",info_tab_destroy)   
-def info_tab_destroy(event):
-    info_tab.destroy()
-    root.bind("<F1>",info_tab_gen)
 
 def set_img(slice: int, coronal_depth: int, sagital_depth: int):
     global cv,cv1,cv2,cv3,cv4,axial_t2,coronal_t2,sagital_t2, xcf_axial_t2, ycf_axial_t2, xcf_coronal_t2, ycf_coronal_t2, px_info_var, xi,yi,xf,yf
@@ -417,52 +331,6 @@ def set_img(slice: int, coronal_depth: int, sagital_depth: int):
             obj.draw(False)
 
 
-def go_back_1(event):
-    temp_cv = obj_master[-1].incv
-    temp_cv.delete(obj_master[-1].name)
-    obj_master.pop()
-
-def zoom_gen (event):
-    global xi,yi
-    root.config(cursor="tcross")
-    xi,yi = event.x,event.y
-    cv.bind('<B3-Motion>', temp_zoom)
-    cv.bind('<ButtonRelease-3>', finish_zoom)
-def temp_zoom(event):
-    cv.delete("temp_zoom","temp_text_z")
-    cv.create_line(xi,yi,event.x,yi,fill="#0F0",dash=(3,),tags="temp_zoom")
-    cv.create_line(xi,yi,xi,event.y,fill="#0F0",dash=(3,),tags="temp_zoom")
-    cv.create_line(event.x,yi,event.x,event.y,fill="#0F0",dash=(3,),tags="temp_zoom")
-    cv.create_line(xi,event.y,event.x,event.y,fill="#0F0",dash=(3,),tags="temp_zoom")
-    cv.create_text((event.x+xi)/2,yi-10,text="zoom in",fill="#0F0",font=("Roboto", 9),tags="temp_text_z")
-def finish_zoom(event):
-    global xf, yf, xi, yi, zoomed
-    xf, yf = event.x, event.y
-    root.config(cursor="arrow")
-    if xf == xi or yf == yi:
-        print("NO SUELTE EL MOUSE")
-        return
-    cv.delete("temp_zoom","temp_text_z")
-    #correciones a xi,yi,xf,yf segun posicion en canvas
-    if xf < xi: xi, xf = xf, xi
-    if yf < yi: yi, yf = yf, yi
-    
-    xi = int(xi-(CV_W.get()-axial_t2.width())/2)
-    xf = int(xf-(CV_W.get()-axial_t2.width())/2)
-    yi = int(yi-(CV_H.get()-axial_t2.height())/2)
-    yf = int(yf-(CV_H.get()-axial_t2.height())/2)       # CAMBIAR AXIAL POR MENU PARA CADA CANVAS 
-    zoomed = True
-    set_img(slice_num,coronal_depth_num,sagital_depth_num)
-    cv.old_coords = None
-
-def screenshot(event):
-    global observations
-    x0 = cv.winfo_rootx()
-    y0 = cv.winfo_rooty()
-    x1 = x0 + cv.winfo_width()
-    y1 = y0 + cv.winfo_height()
-    observations.append(ImageGrab.grab((x0, y0, x1, y1)))
-    observations[-1].save("obs_"+str(len(observations))+".png") # VER DONDE GUARDA ESTO Y SI ES NECESARIO GUARDAR
 ## HERRAMIENTAS
 
 #ROI GENERATORS
@@ -595,11 +463,11 @@ class secuencia:
         self.incv = 0       # en que cv la quiero mostrar
         self.width = 0      # w del pixel_array de las dicom
         self.height = 0     # h del pixel_array de las dicom
-        
     def add_dcm(self,dcm):
         self.dcm_serie.append(dcm)
     def load_img_serie(self):
         self.img_serie = np.zeros((len(self.dcm_serie),self.dcm_serie[0].pixel_array.shape[0],self.dcm_serie[0].pixel_array.shape[1]))
+        self.slice = int(len(self.dcm_serie)/2)    # en que slice tengo posicionada la secuencia para mostrarla
         for n, dcm in enumerate(self.dcm_serie):
            self.img_serie[n]=dcm.pixel_array
         max = self.img_serie.max()
