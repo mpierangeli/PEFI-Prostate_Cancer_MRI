@@ -29,7 +29,7 @@ def menu_creator():
     filemenu = Menu(menubar, tearoff=0)
     filemenu.add_command(label="Selección Paciente", command=lambda layout=4: canvas_creator(layout))
     filemenu.add_separator()
-    filemenu.add_command(label="Panel de Secuencias")
+    filemenu.add_command(label="Panel de Secuencias", command=sec_selector)
     
     editmenu = Menu(menubar, tearoff=0)
     editmenu.add_command(label="ROI Rectangular",command=lambda tipo="s": roi_gen(tipo))
@@ -166,6 +166,8 @@ def patient_loader():
                 for sec in secuencias:
                     if temp_uid == sec.UID:
                         sec.add_dcm(temp_dcm)
+    for sec in secuencias:
+        sec.load_img_serie()
     sec_selector()              
           
 def sec_selector():
@@ -180,17 +182,22 @@ def sec_selector():
     for sec in secuencias:
         sec_list.insert(END,sec.name)
     seq_tab.bind('<Leave>', sec_move)
-
 def sec_move(event):
     seq = sec_list.get(ANCHOR)
     seq_tab.destroy()
     root.config(cursor="plus")
-    root.bind('<Button-1>', lambda event, seq=seq: sec_setup(event, seq))
-    
+    root.bind('<Button-1>', lambda event, seq=seq: sec_setup(event, seq))  
 def sec_setup(event, seq):
+    for sec in secuencias:
+        if sec.name == seq:
+            sec.incv = cv
     root.config(cursor="arrow")
     root.unbind('<Button-1>')
-    cv.create_text(CV_W.get()/2,CV_H.get()/2,text=seq,fill="#FFF",font=("Roboto", 15))
+    refresh_canvas()
+
+def refresh_canvas():
+    pass
+    
 
 def slice_and_depth_selector(event):
     global slice_num,coronal_depth_num,sagital_depth_num
@@ -582,16 +589,26 @@ class roi_ruler:
         cv.create_text((self.xf+self.xi)/2+a,(self.yf+self.yi)/2+b,text=str(round(self.rdis,2))+"mm",fill="#2CC",font=("Roboto", 9),tags=self.name,angle=self.ang)
 class secuencia:
     def __init__(self,name,UID):
-        self.name = name
-        self.UID = UID
-        self.dcm_serie = []
-        self.incv = 0
-        #self.img_serie = []
+        self.name = name    # nombre de secuencia -> name+TE+TR+Modes
+        self.UID = UID      # UID único (lo que realmente las identifica)
+        self.dcm_serie = [] # serie de dicoms pertenecientes al mismo UID
+        self.incv = 0       # en que cv la quiero mostrar
+        self.width = 0      # w del pixel_array de las dicom
+        self.height = 0     # h del pixel_array de las dicom
+        
     def add_dcm(self,dcm):
         self.dcm_serie.append(dcm)
-        #self.img_serie.append(self.dcm_serie[-1].pixel_array)
+    def load_img_serie(self):
+        self.img_serie = np.zeros((len(self.dcm_serie),self.dcm_serie[0].pixel_array.shape[0],self.dcm_serie[0].pixel_array.shape[1]))
+        for n, dcm in enumerate(self.dcm_serie):
+           self.img_serie[n]=dcm.pixel_array
+        max = self.img_serie.max()
+        for n in range(len(self.img_serie)):
+            self.img_serie[n] = (self.img_serie[n]/max)*255     # normalizo las imagenes
+        
 #-------------- MAIN LOOP ---------------------------------------------------------
-
+      
+        
 root = Tk()
 root.title("S A U R U S")
 root.config(bg="#F00") #para debug
