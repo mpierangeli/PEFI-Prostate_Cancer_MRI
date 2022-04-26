@@ -1,7 +1,5 @@
-from msilib.schema import ListBox
 from tkinter import *
-from typing import List
-from PIL import Image, ImageTk, ImageGrab
+from PIL import Image, ImageTk#, ImageGrab
 from tkinter import filedialog
 import pydicom
 import numpy as np
@@ -60,10 +58,12 @@ def canvas_creator(layout: int):
     global cv_master, cv_layout
     cv_layout = layout
     try:
-        for cv in cv_master:
-            cv.destroy()
+        for temp_cv in cv_master:
+            temp_cv.destroy()
     except:
         pass
+    for sec in secuencias:
+        sec.incv = 0
     cv_master = []
 
     match cv_layout:
@@ -89,34 +89,49 @@ def canvas_creator(layout: int):
             cv_master[2].grid(row=1,column=0,padx=(0,5),pady=(5,0))
             cv_master[3].grid(row=1,column=1,padx=(5,0),pady=(5,0))
 
-    for cv in cv_master:
-        cv.bind("<Enter>",lambda event, arg=cv: focus_cv(event,arg))
-        cv.bind("<Leave>", unfocus_cv)   
+    for temp_cv in cv_master:
+        temp_cv.bind("<Enter>",lambda event, arg=temp_cv: focus_cv(event,arg))
+        temp_cv.bind("<Leave>", unfocus_cv)   
 
     root.bind("<F3>",clear_cv)
-    root.bind("<F4>",reset_cv)
-
+    #root.bind("<F4>",reset_cv)
+    root.bind("<Control-MouseWheel>", slice_selector)
+    root.bind("<Control-z>",go_back_1)
+    
 def clear_cv (event):
     global obj_master
     for obj in obj_master:                                      # CON ESTO BORRO EL CANVAS PERO NO EL OBJETO
         if obj.incv == cv:
             cv.delete(obj.name)
     obj_master = [obj for obj in obj_master if obj.incv != cv]  # CON ESTO BORRO EL OBJETO PERO NO EL CANVAS
-def focus_cv(event,arg: Canvas):
+def focus_cv(event, arg: Canvas):
     global cv
     cv = arg
     cv.create_text(50,CV_H.get()-20,text="FOCUSED",font=("Roboto",5),fill="#FFF",tag="focus_check")
 def unfocus_cv(event):
     cv.delete("focus_check","cv_info")
-def reset_cv(event):
+""" def reset_cv(event):
     global zoomed
     zoomed = False
-    cv.delete(ALL)
+    cv.delete(ALL) """
+
+def go_back_1(event):
+    temp_cv = obj_master[-1].incv
+    temp_cv.delete(obj_master[-1].name)
+    obj_master.pop()
+
 def patient_loader():
-    global secuencias
+    global secuencias, obj_master
     
+    # MASTER DE SECUENCIAS CARGADAS
     secuencias = []
+    # auxiliar de secuencias
     sec_uids = []
+    
+    # MASTER DE DIBUJOS
+    obj_master = []
+    # MASTER DE OBSERVACIONES PARA REPORTE
+    observations = []
     
     filepath = filedialog.askdirectory()
     
@@ -133,6 +148,7 @@ def patient_loader():
                 for sec in secuencias:
                     if temp_uid == sec.UID:
                         sec.add_dcm(temp_dcm)
+                        break
     for sec in secuencias:
         sec.load_img_serie()
         
@@ -156,7 +172,7 @@ def sec_move(event):
     seq_tab.destroy()
     root.config(cursor="plus")
     root.bind('<Button-1>', lambda event, seq=seq: sec_setup(event, seq))  
-def sec_setup(event, seq):
+def sec_setup(event, seq: str):
     for sec in secuencias:
         if sec.incv == cv:
             sec.incv = 0
@@ -178,7 +194,23 @@ def refresh_canvas():
                 temp_img = imutils.resize(sec.img_serie[sec.slice], height=CV_H.get())
             img2cv.append(ImageTk.PhotoImage(Image.fromarray(temp_img)))
             selCV.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=img2cv[-1])
-    
+
+    # REDIBUJO LOS OBJETOS GUARDADOS EN LOS CANVAS
+    for obj in obj_master:
+        for sec in secuencias:
+            if sec.incv == obj.incv:
+                if obj.inslice == sec.slice:
+                    obj.draw(False)
+                break
+            
+def slice_selector(event):
+    for sec in secuencias:
+        if sec.incv == cv:
+            if event.delta > 0 and sec.slice < sec.depth-1: sec.slice += 1
+            elif event.delta < 0 and sec.slice > 0: sec.slice -= 1
+            break
+    refresh_canvas()
+
 """ def patient_loader():
     global filepaths, axiales, coronales, sagitales, slice_num, coronal_depth_num, sagital_depth_num, factor, init_dcm, init_img, px_info_var, px_info_static, zoomed, axis_switch, obj_master, observations
     
@@ -237,7 +269,7 @@ def refresh_canvas():
     root.bind("<Control-MouseWheel>", slice_and_depth_selector)
     root.bind("<Control-z>",go_back_1) """
 
-def set_img(slice: int, coronal_depth: int, sagital_depth: int):
+""" def set_img(slice: int, coronal_depth: int, sagital_depth: int):
     global cv,cv1,cv2,cv3,cv4,axial_t2,coronal_t2,sagital_t2, xcf_axial_t2, ycf_axial_t2, xcf_coronal_t2, ycf_coronal_t2, px_info_var, xi,yi,xf,yf
     
     temp_axial_t2 = imutils.resize(axiales[slice], height=CV_H.get())
@@ -328,7 +360,7 @@ def set_img(slice: int, coronal_depth: int, sagital_depth: int):
     # REDIBUJO EL CANVAS CON LO QUE TENIA
     for obj in obj_master:
         if obj.inslice == slice_num:
-            obj.draw(False)
+            obj.draw(False) """
 
 
 ## HERRAMIENTAS
@@ -342,6 +374,11 @@ def roi_gen(tipo: str):
     root.bind("<Escape>", lambda event, arg=False: roi_escape(event,arg))
 def roi_start(event,tipo: str):
     root.bind("<Escape>", lambda event, arg=True: roi_escape(event,arg))
+    slice_num = 0
+    for sec in secuencias:
+        if sec.incv == cv:
+            slice_num = sec.slice
+            break
     if tipo == "s":
         obj_master.append(roi_square(tipo+str(len(obj_master)),cv,slice_num))
     elif tipo == "c":
@@ -465,13 +502,19 @@ class secuencia:
         self.height = 0     # h del pixel_array de las dicom
     def add_dcm(self,dcm):
         self.dcm_serie.append(dcm)
+        if dcm.pixel_array.shape[0] > self.height: self.height = dcm.pixel_array.shape[0] # ESTO NO HACE FALTA VER
+        if dcm.pixel_array.shape[1] > self.width: self.width = dcm.pixel_array.shape[1]
     def load_img_serie(self):
-        self.img_serie = np.zeros((len(self.dcm_serie),self.dcm_serie[0].pixel_array.shape[0],self.dcm_serie[0].pixel_array.shape[1]))
-        self.slice = int(len(self.dcm_serie)/2)    # en que slice tengo posicionada la secuencia para mostrarla
+        self.depth = len(self.dcm_serie)
+        self.img_serie = np.zeros((self.depth,self.height,self.width))
+        self.slice = int(self.depth/2)    # en que slice tengo posicionada la secuencia para mostrarla
         for n, dcm in enumerate(self.dcm_serie):
-           self.img_serie[n]=dcm.pixel_array
+            try:
+                self.img_serie[n] = dcm.pixel_array
+            except:
+                print("ALGUNAS IMAGENES NO SE CARGARON POR TAMAÑO")
         max = self.img_serie.max()
-        for n in range(len(self.img_serie)):
+        for n in range(self.depth):
             self.img_serie[n] = (self.img_serie[n]/max)*255     # normalizo las imagenes
         
 #-------------- MAIN LOOP ---------------------------------------------------------
