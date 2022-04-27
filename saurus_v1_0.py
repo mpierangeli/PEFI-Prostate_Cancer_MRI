@@ -187,29 +187,30 @@ def refresh_canvas():
     img2cv = []
     for sec in secuencias:
         if sec.incv != 0:
-            selCV = sec.incv
             if cv_layout == 2:
                 temp_img = imutils.resize(sec.img_serie[sec.slice], width=CV_W.get())
             else:
                 temp_img = imutils.resize(sec.img_serie[sec.slice], height=CV_H.get())
+                
+            sec.realx = sec.dcm_serie[0].PixelSpacing[0]*sec.width/temp_img.shape[1]
+            sec.realy = sec.dcm_serie[0].PixelSpacing[1]*sec.height/temp_img.shape[0]
             img2cv.append(ImageTk.PhotoImage(Image.fromarray(temp_img)))
-            selCV.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=img2cv[-1])
+            sec.incv.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=img2cv[-1])
+        
+        # REDIBUJO LOS OBJETOS GUARDADOS EN LOS CANVAS
+            for obj in obj_master:
+                if sec.incv == obj.incv:
+                    if obj.inslice == sec.slice:
+                        obj.draw(False)
 
-    # REDIBUJO LOS OBJETOS GUARDADOS EN LOS CANVAS
-    for obj in obj_master:
-        for sec in secuencias:
-            if sec.incv == obj.incv:
-                if obj.inslice == sec.slice:
-                    obj.draw(False)
-                break
-            
+          
 def slice_selector(event):
     for sec in secuencias:
         if sec.incv == cv:
             if event.delta > 0 and sec.slice < sec.depth-1: sec.slice += 1
             elif event.delta < 0 and sec.slice > 0: sec.slice -= 1
             break
-    refresh_canvas()
+    refresh_canvas() 
 
 """ def patient_loader():
     global filepaths, axiales, coronales, sagitales, slice_num, coronal_depth_num, sagital_depth_num, factor, init_dcm, init_img, px_info_var, px_info_static, zoomed, axis_switch, obj_master, observations
@@ -374,17 +375,16 @@ def roi_gen(tipo: str):
     root.bind("<Escape>", lambda event, arg=False: roi_escape(event,arg))
 def roi_start(event,tipo: str):
     root.bind("<Escape>", lambda event, arg=True: roi_escape(event,arg))
-    slice_num = 0
     for sec in secuencias:
         if sec.incv == cv:
-            slice_num = sec.slice
+            temp_sec = sec
             break
     if tipo == "s":
-        obj_master.append(roi_square(tipo+str(len(obj_master)),cv,slice_num))
+        obj_master.append(roi_square(tipo+str(len(obj_master)),temp_sec))
     elif tipo == "c":
-        obj_master.append(roi_circle(tipo+str(len(obj_master)),cv,slice_num))
+        obj_master.append(roi_circle(tipo+str(len(obj_master)),temp_sec))
     elif tipo == "r":
-        obj_master.append(roi_ruler(tipo+str(len(obj_master)),cv,slice_num))
+        obj_master.append(roi_ruler(tipo+str(len(obj_master)),temp_sec))
     obj_master[-1].init_coord(event.x,event.y)
 def roi_temp(event):
     obj_master[-1].end_coord(event.x,event.y)
@@ -409,17 +409,18 @@ def roi_escape(event,flag: bool):
     root.unbind('<B1-Motion>')
     root.unbind('<ButtonRelease-1>')
     if flag:
-        cv = obj_master[-1].incv
-        cv.delete(obj_master[-1].name)
+        obj_master[-1].incv.delete(obj_master[-1].name)
         obj_master.pop()
         
 
 ## OBJETOS
 class roi_square:
-    def __init__(self,name,incv,inslice):
+    def __init__(self, name, sec):
         self.name = name
-        self.incv = incv
-        self.inslice = inslice
+        self.incv = sec.incv
+        self.inslice = sec.slice
+        self.realx = sec.realx
+        self.realy = sec.realy
     def init_coord(self,xi,yi):
         self.xi = xi
         self.yi = yi
@@ -437,15 +438,17 @@ class roi_square:
             cv.create_rectangle(self.xi,self.yi,self.xf,self.yf,outline="#F00",tags=self.name)
         a = -10 if self.dx>0 else 10
         b = -10 if self.dy>0 else 10
-        self.xdis = abs(round(px_info_var[0]*self.dx,2))
-        self.ydis = abs(round(px_info_var[1]*self.dy,2))
+        self.xdis = abs(round(self.realx*self.dx,2))
+        self.ydis = abs(round(self.realy*self.dy,2))
         cv.create_text((self.xf+self.xi)/2,self.yi+b,text=str(self.xdis)+"mm",fill="#F00",font=("Roboto", 9),tags=self.name)
         cv.create_text(self.xi+a,(self.yf+self.yi)/2,text=str(self.ydis)+"mm",fill="#F00",font=("Roboto", 9),tags=self.name,angle=90)
 class roi_circle:
-    def __init__(self,name,incv,inslice):
+    def __init__(self,name,sec):
         self.name = name
-        self.incv = incv
-        self.inslice = inslice
+        self.incv = sec.incv
+        self.inslice = sec.slice
+        self.realx = sec.realx
+        self.realy = sec.realy
     def init_coord(self,xi,yi):
         self.xi = xi
         self.yi = yi
@@ -460,13 +463,15 @@ class roi_circle:
         else:
             self.name = self.name + "_"
             cv.create_oval(self.xi-self.r,self.yi-self.r,self.xi+self.r,self.yi+self.r,outline="#F00",tags=self.name)
-        self.rdis = math.sqrt((self.dx*px_info_var[0])**2+(self.dy*px_info_var[1])**2) # Porq distancia real depende del ancho de pixel en cada dirección.
+        self.rdis = math.sqrt((self.dx*self.realx)**2+(self.dy*self.realy)**2) # Porq distancia real depende del ancho de pixel en cada dirección.
         cv.create_text(self.xi,self.yi+self.r+10,text="r: "+str(round(self.rdis,2))+"mm",fill="#F00",font=("Roboto", 9),tags=self.name)
 class roi_ruler:
-    def __init__(self,name,incv,inslice):
+    def __init__(self,name,sec):
         self.name = name
-        self.incv = incv
-        self.inslice = inslice
+        self.incv = sec.incv
+        self.inslice = sec.slice
+        self.realx = sec.realx
+        self.realy = sec.realy
     def init_coord(self,xi,yi):
         self.xi = xi
         self.yi = yi
@@ -483,7 +488,7 @@ class roi_ruler:
             self.name = self.name + "_"
             cv.create_line(self.xi,self.yi,self.xf,self.yf,fill="#2CC",arrow=BOTH,tags=self.name)
         self.ang = abs(math.degrees(math.atan((-self.dy)/(-self.dx+1e-6))))
-        self.rdis = math.sqrt((self.dx*px_info_var[0])**2+(self.dy*px_info_var[1])**2) # Porq distancia real depende del ancho de pixel en cada dirección.
+        self.rdis = math.sqrt((self.dx*self.realx)**2+(self.dy*self.realy)**2) # Porq distancia real depende del ancho de pixel en cada dirección.
         a = 10
         b = 10
         if int(self.dx) == 0: b -= 10
@@ -500,6 +505,8 @@ class secuencia:
         self.incv = 0       # en que cv la quiero mostrar
         self.width = 0      # w del pixel_array de las dicom
         self.height = 0     # h del pixel_array de las dicom
+        self.realx = 0      # tamaño en mm del pixel en x
+        self.realy = 0      # tamaño en mm del pixel en y
     def add_dcm(self,dcm):
         self.dcm_serie.append(dcm)
         if dcm.pixel_array.shape[0] > self.height: self.height = dcm.pixel_array.shape[0] # ESTO NO HACE FALTA VER
@@ -510,7 +517,7 @@ class secuencia:
         self.slice = int(self.depth/2)    # en que slice tengo posicionada la secuencia para mostrarla
         for n, dcm in enumerate(self.dcm_serie):
             try:
-                self.img_serie[n] = dcm.pixel_array
+                self.img_serie[n] += dcm.pixel_array
             except:
                 print("ALGUNAS IMAGENES NO SE CARGARON POR TAMAÑO")
         max = self.img_serie.max()
