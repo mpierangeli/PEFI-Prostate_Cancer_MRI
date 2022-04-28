@@ -116,8 +116,7 @@ def unfocus_cv(event):
     cv.delete(ALL) """
 
 def go_back_1(event):
-    temp_cv = obj_master[-1].incv
-    temp_cv.delete(obj_master[-1].name)
+    obj_master[-1].insec.incv.delete(obj_master[-1].name)
     obj_master.pop()
 
 def patient_loader():
@@ -199,7 +198,7 @@ def refresh_canvas():
         
         # REDIBUJO LOS OBJETOS GUARDADOS EN LOS CANVAS
             for obj in obj_master:
-                if sec.incv == obj.incv:
+                if obj.insec == sec:
                     if obj.inslice == sec.slice:
                         obj.draw(False)
 
@@ -409,7 +408,7 @@ def roi_escape(event,flag: bool):
     root.unbind('<B1-Motion>')
     root.unbind('<ButtonRelease-1>')
     if flag:
-        obj_master[-1].incv.delete(obj_master[-1].name)
+        obj_master[-1].insec.incv.delete(obj_master[-1].name)
         obj_master.pop()
         
 
@@ -417,10 +416,8 @@ def roi_escape(event,flag: bool):
 class roi_square:
     def __init__(self, name, sec):
         self.name = name
-        self.incv = sec.incv
+        self.insec = sec
         self.inslice = sec.slice
-        self.realx = sec.realx
-        self.realy = sec.realy
     def init_coord(self,xi,yi):
         self.xi = xi
         self.yi = yi
@@ -438,17 +435,15 @@ class roi_square:
             cv.create_rectangle(self.xi,self.yi,self.xf,self.yf,outline="#F00",tags=self.name)
         a = -10 if self.dx>0 else 10
         b = -10 if self.dy>0 else 10
-        self.xdis = abs(round(self.realx*self.dx,2))
-        self.ydis = abs(round(self.realy*self.dy,2))
+        self.xdis = abs(round(self.insec.realx*self.dx,2))
+        self.ydis = abs(round(self.insec.realy*self.dy,2))
         cv.create_text((self.xf+self.xi)/2,self.yi+b,text=str(self.xdis)+"mm",fill="#F00",font=("Roboto", 9),tags=self.name)
         cv.create_text(self.xi+a,(self.yf+self.yi)/2,text=str(self.ydis)+"mm",fill="#F00",font=("Roboto", 9),tags=self.name,angle=90)
 class roi_circle:
     def __init__(self,name,sec):
         self.name = name
-        self.incv = sec.incv
+        self.insec = sec
         self.inslice = sec.slice
-        self.realx = sec.realx
-        self.realy = sec.realy
     def init_coord(self,xi,yi):
         self.xi = xi
         self.yi = yi
@@ -463,15 +458,13 @@ class roi_circle:
         else:
             self.name = self.name + "_"
             cv.create_oval(self.xi-self.r,self.yi-self.r,self.xi+self.r,self.yi+self.r,outline="#F00",tags=self.name)
-        self.rdis = math.sqrt((self.dx*self.realx)**2+(self.dy*self.realy)**2) # Porq distancia real depende del ancho de pixel en cada dirección.
+        self.rdis = math.sqrt((self.dx*self.insec.realx)**2+(self.dy*self.insec.realy)**2) # Porq distancia real depende del ancho de pixel en cada dirección.
         cv.create_text(self.xi,self.yi+self.r+10,text="r: "+str(round(self.rdis,2))+"mm",fill="#F00",font=("Roboto", 9),tags=self.name)
 class roi_ruler:
     def __init__(self,name,sec):
         self.name = name
-        self.incv = sec.incv
+        self.insec = sec
         self.inslice = sec.slice
-        self.realx = sec.realx
-        self.realy = sec.realy
     def init_coord(self,xi,yi):
         self.xi = xi
         self.yi = yi
@@ -488,7 +481,7 @@ class roi_ruler:
             self.name = self.name + "_"
             cv.create_line(self.xi,self.yi,self.xf,self.yf,fill="#2CC",arrow=BOTH,tags=self.name)
         self.ang = abs(math.degrees(math.atan((-self.dy)/(-self.dx+1e-6))))
-        self.rdis = math.sqrt((self.dx*self.realx)**2+(self.dy*self.realy)**2) # Porq distancia real depende del ancho de pixel en cada dirección.
+        self.rdis = math.sqrt((self.dx*self.insec.realx)**2+(self.dy*self.insec.realy)**2) # Porq distancia real depende del ancho de pixel en cada dirección.
         a = 10
         b = 10
         if int(self.dx) == 0: b -= 10
@@ -517,7 +510,7 @@ class secuencia:
         self.slice = int(self.depth/2)    # en que slice tengo posicionada la secuencia para mostrarla
         for n, dcm in enumerate(self.dcm_serie):
             try:
-                self.img_serie[n] += dcm.pixel_array
+                self.img_serie[n] = dcm.pixel_array
             except:
                 print("ALGUNAS IMAGENES NO SE CARGARON POR TAMAÑO")
         max = self.img_serie.max()
