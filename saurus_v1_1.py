@@ -88,9 +88,8 @@ class roi_ruler:
             a -= 20
         cv.create_text((self.xf+self.xi)/2+a,(self.yf+self.yi)/2+b,text=str(round(self.rdis,2))+"mm",fill="#2CC",font=("Roboto", 9),tags=self.name,angle=self.ang)
 class secuencia:
-    def __init__(self,name,UID):
+    def __init__(self,name):
         self.name = name    # nombre de secuencia -> name+TE+TR+Modes
-        self.UID = UID      # UID único (lo que realmente las identifica)
         self.dcm_serie = [] # serie de dicoms pertenecientes al mismo UID
         self.incv = 0       # en que cv la quiero mostrar
         self.width = 0      # w del pixel_array de las dicom
@@ -98,6 +97,7 @@ class secuencia:
         self.realx = 0      # tamaño en mm del pixel en x
         self.realy = 0      # tamaño en mm del pixel en y
         self.plano = ""     # axial/sagital/coronal/mixto(ver si no conviene separar, borrar secuencia o khe)
+        self.isloaded = False
     def add_dcm(self,dcm):
         self.dcm_serie.append(dcm)
         if dcm.pixel_array.shape[0] > self.height: self.height = dcm.pixel_array.shape[0] 
@@ -106,25 +106,24 @@ class secuencia:
         self.depth = len(self.dcm_serie)
         self.img_serie = np.zeros((self.depth,self.height,self.width))
         self.slice = int(self.depth/2)    # en que slice tengo posicionada la secuencia para mostrarla
+        planos = [0,0,0] # [axial,sagital,coronal]
         for n, dcm in enumerate(self.dcm_serie):
             try:
                 self.img_serie[n] = dcm.pixel_array
             except: # en caso de que las imagenes no sean del mismo tamaño, paddeo con 0s y asigno un cachito
                 self.img_serie[n,int((self.width-dcm.pixel_array.shape[0])/2):int((self.width-dcm.pixel_array.shape[0])/2)+dcm.pixel_array.shape[0],int((self.height-dcm.pixel_array.shape[1])/2):int((self.height-dcm.pixel_array.shape[1])/2)+dcm.pixel_array.shape[1]] = dcm.pixel_array
-        max = self.img_serie.max()
-        for n in range(self.depth):
-            self.img_serie[n] = (self.img_serie[n]/max)*255     # normalizo las imagenes
-            
-        planos = [0,0,0] # [axial,sagital,coronal]
-        for dcm in self.dcm_serie:
             codif = [round(n) for n in dcm.ImageOrientationPatient]
             if  codif == [1, 0, 0, 0, 1, 0]: planos[0] += 1
             elif codif == [0, 1, 0, 0, 0, -1]: planos[1] += 1
             elif codif == [1, 0, 0, 0, 0, -1]: planos[2] += 1
+        max = self.img_serie.max()
+        for n in range(self.depth):
+            self.img_serie[n] = (self.img_serie[n]/max)*255     # normalizo las imagenes
         if planos[1] == 0 and planos[2] == 0: self.plano = "axial"
         elif planos[0] == 0 and planos[2] == 0: self.plano = "sagital"
         elif planos[0] == 0 and planos[1] == 0: self.plano = "coronal"
         else: self.plano = "mixta"
+        self.isloaded = True
 ## FUNCIONES
 
 def windows_creator():
@@ -211,9 +210,10 @@ def canvas_creator(layout: int):
 
     for temp_cv in cv_master:
         temp_cv.bind("<Enter>",lambda event, arg=temp_cv: focus_cv(event,arg))
-        temp_cv.bind("<Leave>", unfocus_cv)   
+        temp_cv.bind("<Leave>", unfocus_cv)
+        temp_cv.bind("<Button-3>", portablemenu)
 
-    root.bind("<F3>",clear_cv)
+    #root.bind("<F3>",clear_cv)
     #root.bind("<F4>",reset_cv)
     root.bind("<Control-MouseWheel>", slice_selector)
     root.bind("<Control-z>",go_back_1)
@@ -250,23 +250,15 @@ def patient_loader():
     #observations = []
     
     filepath = filedialog.askdirectory()
-    
-    for file in os.listdir(filepath):
+    for file in sorted(os.listdir(filepath)):
         name, ext = os.path.splitext(file)
         if ext == ".IMA":
             temp_dcm = pydicom.dcmread(filepath+"/"+file)
             temp_uid = temp_dcm.SeriesInstanceUID
             if  temp_uid not in sec_uids:
-                secuencias.append(secuencia(temp_dcm.SequenceName+"-> TE: "+str(temp_dcm.EchoTime)+", TR: "+str(temp_dcm.RepetitionTime)+", "+str(temp_dcm.ScanOptions)+", UID: "+temp_uid[-5:-1] ,temp_uid))
-                secuencias[-1].add_dcm(temp_dcm)
+                secuencias.append(secuencia(temp_dcm.SequenceName+"-> TE: "+str(temp_dcm.EchoTime)+", TR: "+str(temp_dcm.RepetitionTime)+", "+str(temp_dcm.ScanOptions)+", UID: "+temp_uid[-5:-1]))
                 sec_uids.append(temp_uid)
-            else:
-                for sec in secuencias:
-                    if temp_uid == sec.UID:
-                        sec.add_dcm(temp_dcm)
-                        break
-    for sec in secuencias:
-        sec.load_img_serie()
+            secuencias[-1].add_dcm(temp_dcm)
     canvas_creator(1)
     sec_selector()              
           
@@ -290,7 +282,10 @@ def sec_move(event):
 def sec_setup(event, sec_name: str):
     for sec in secuencias:
         if sec.incv == cv: sec.incv = 0
-        if sec.name == sec_name: sec.incv = cv
+        if sec.name == sec_name: 
+            sec.incv = cv
+            if not sec.isloaded:
+                sec.load_img_serie()
     root.config(cursor="arrow")
     root.unbind('<Button-1>')
     refresh_canvas(sec_name)
@@ -349,7 +344,12 @@ def slice_selector(event):
             break
     refresh_canvas(sec.name) 
 
+def portablemenu(event):
+    global portaframe
 
+    portaframe = Frame(root,background="#FFF")
+    #portaframe.place(re)
+    print("ENTRE")
 ## HERRAMIENTAS
 
 #ROI GENERATORS
