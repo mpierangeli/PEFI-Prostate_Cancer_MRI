@@ -97,14 +97,14 @@ class secuencia:
         self.realx = 0      # tamaño en mm del pixel en x
         self.realy = 0      # tamaño en mm del pixel en y
         self.plano = ""     # axial/sagital/coronal/mixto(ver si no conviene separar, borrar secuencia o khe)
-        self.isloaded = False
+        self.isloaded = False   # flag para saber si ya estan cargadas las imagenes de la secuencia
     def add_dcm(self,dcm):
-        self.dcm_serie.append(dcm)
+        self.dcm_serie.append(dcm)  # serie de dicoms
         if dcm.pixel_array.shape[0] > self.height: self.height = dcm.pixel_array.shape[0] 
         if dcm.pixel_array.shape[1] > self.width: self.width = dcm.pixel_array.shape[1]
     def load_img_serie(self):
-        self.depth = len(self.dcm_serie)
-        self.img_serie = np.zeros((self.depth,self.height,self.width))
+        self.depth = len(self.dcm_serie)    # cantidad de slices de la secuencia
+        self.img_serie = np.zeros((self.depth,self.height,self.width))  # serie de imagenes
         self.slice = int(self.depth/2)    # en que slice tengo posicionada la secuencia para mostrarla
         planos = [0,0,0] # [axial,sagital,coronal]
         for n, dcm in enumerate(self.dcm_serie):
@@ -172,6 +172,18 @@ def menu_creator():
     menubar.add_cascade(label="Herramientas", menu=editmenu)
     menubar.add_cascade(label="Reportar", menu=reportmenu)
     menubar.add_cascade(label="Ayuda", menu=helpmenu)
+    
+    global portablemenu
+    portablemenu = Menu(root, tearoff = 0)
+    
+    portablemenu.add_command(label ="zoom? VER")
+    portablemenu.add_command(label ="TIPOS DE ROI VER")
+    portablemenu.add_command(label ="TAB DE INFO DE IMAGEN -> dicom VER")
+    portablemenu.add_command(label ="BRILLO/CONTRASTE VER")
+    portablemenu.add_separator()
+    portablemenu.add_command(label ="Cargar Secuencia VER")
+    portablemenu.add_command(label ="Refresh VER")
+
 
 def canvas_creator(layout: int):
     global cv_master, img2cv
@@ -185,7 +197,7 @@ def canvas_creator(layout: int):
         sec.incv = 0 # VER ESTO
     cv_master = []
 
-    match layout:
+    match layout:   # VER DE SACAR ESTO SI FUERZA A USAR python 3.10
         case 1:
             CV_W.set(MF_W.get()-40)
             CV_H.set(MF_H.get()-40)
@@ -211,10 +223,11 @@ def canvas_creator(layout: int):
     for temp_cv in cv_master:
         temp_cv.bind("<Enter>",lambda event, arg=temp_cv: focus_cv(event,arg))
         temp_cv.bind("<Leave>", unfocus_cv)
-        temp_cv.bind("<Button-3>", portablemenu)
+        temp_cv.bind("<Button-3>", popupmenu)
 
     #root.bind("<F3>",clear_cv)
     #root.bind("<F4>",reset_cv)
+    
     root.bind("<Control-MouseWheel>", slice_selector)
     root.bind("<Control-z>",go_back_1)
     
@@ -231,6 +244,12 @@ def focus_cv(event, arg: Canvas):
 def unfocus_cv(event):
     cv.delete("focus_check","cv_info")
 
+
+def popupmenu(event):
+    try:
+        portablemenu.tk_popup(event.x_root, event.y_root)
+    finally:
+        portablemenu.grab_release()
 
 def go_back_1(event):
     obj_master[-1].insec.incv.delete(obj_master[-1].name)
@@ -256,7 +275,7 @@ def patient_loader():
             temp_dcm = pydicom.dcmread(filepath+"/"+file)
             temp_uid = temp_dcm.SeriesInstanceUID
             if  temp_uid not in sec_uids:
-                secuencias.append(secuencia(temp_dcm.SequenceName+"-> TE: "+str(temp_dcm.EchoTime)+", TR: "+str(temp_dcm.RepetitionTime)+", "+str(temp_dcm.ScanOptions)+", UID: "+temp_uid[-5:-1]))
+                secuencias.append(secuencia(temp_dcm.SequenceName+"-> TE: "+str(temp_dcm.EchoTime)+", TR: "+str(temp_dcm.RepetitionTime)+", "+str(temp_dcm.ScanOptions)+", UID: "+temp_uid[-4:-1]))
                 sec_uids.append(temp_uid)
             secuencias[-1].add_dcm(temp_dcm)
     canvas_creator(1)
@@ -344,12 +363,6 @@ def slice_selector(event):
             break
     refresh_canvas(sec.name) 
 
-def portablemenu(event):
-    global portaframe
-
-    portaframe = Frame(root,background="#FFF")
-    #portaframe.place(re)
-    print("ENTRE")
 ## HERRAMIENTAS
 
 #ROI GENERATORS
