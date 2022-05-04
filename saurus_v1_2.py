@@ -121,16 +121,18 @@ class secuencia:
         elif planos[0] == 0 and planos[1] == 0: self.plano = "coronal"
         else: self.plano = "mixta"
         self.isloaded = True
+        self.img_serie_cte = np.zeros((self.depth,self.height,self.width))  # serie de imagenes
+        for n in range(self.depth):
+           self.img_serie_cte[n] = self.img_serie[n]
         self.alpha = 1
         self.beta = 0
-    def adjust_img_serie(self,delta):
-        #max = self.img_serie.max()
+    def adjust_img_serie(self,a,b):
+        self.alpha += a
+        self.beta += b
+        #self.beta += int(round(255*(1-self.alpha)/2))
         for n in range(self.depth):
-        #    self.img_serie[n] = (self.img_serie[n]/max)*255     # normalizo las imagenes
-            #alpha = 0.5
-            #beta = 100
-            self.alpha += delta
-            self.img_serie[n] = cv2.convertScaleAbs(self.im[n], alpha=self.alpha, beta=self.beta)
+            self.img_serie[n] = cv2.convertScaleAbs(self.img_serie_cte[n], alpha=self.alpha, beta=self.beta)
+ 
 ## FUNCIONES
 
 def windows_creator():
@@ -192,7 +194,7 @@ def menu_creator():
     portablemenu.add_command(label = "Medición", command = lambda tipo="r": roi_gen(tipo))
 
     portablemenu.add_command(label = "Metadata", command = info_tab_gen)
-    portablemenu.add_command(label = "BRILLO/CONTRASTE VER", command = ajuste_img)
+    portablemenu.add_command(label = "BRILLO/CONTRASTE VER")
     portablemenu.add_separator()
     portablemenu.add_command(label = "Cargar Secuencia", command = sec_selector)
     portablemenu.add_command(label = "Limpiar", command = clear_cv)
@@ -239,6 +241,11 @@ def canvas_creator(layout: int):
 
     root.bind("<Control-MouseWheel>", slice_selector)
     root.bind("<Control-z>",go_back_1)
+    root.bind("<Right>",lambda event, arg="c+": bnc(event,arg))
+    root.bind("<Left>",lambda event, arg="c-": bnc(event,arg))
+    root.bind("<Up>",lambda event, arg="b+": bnc(event,arg))
+    root.bind("<Down>",lambda event, arg="b-": bnc(event,arg))
+    
     
 def clear_cv ():
     global obj_master
@@ -397,16 +404,25 @@ def info_tab_gen():
 def info_tab_destroy(event):
     info_tab.destroy()
 
-def ajuste_img():
-    root.bind("<MouseWheel>", bnc)
 
-def bnc(event):
+def bnc(event,tipo: str):
     for sec in secuencias:
         if sec.incv == cv:
-            if event.delta > 0: sec.adjust_img_serie(0.01)
-            elif event.delta < 0: sec.adjust_img_serie(-0.01)
-            break
+            if tipo == "c+" and sec.alpha < 3:
+                sec.adjust_img_serie(0.01,0)
+                break
+            elif tipo == "c-" and sec.alpha > 0:
+                sec.adjust_img_serie(-0.01,0)
+                break
+            elif tipo == "b+" and sec.beta < 100:
+                sec.adjust_img_serie(0,2)
+                break
+            elif tipo == "b-" and sec.beta > 0:
+                sec.adjust_img_serie(0,-2)
+                break
     refresh_canvas(sec.name) 
+    
+
 ## HERRAMIENTAS
 
 #ROI GENERATORS
