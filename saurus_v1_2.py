@@ -124,8 +124,11 @@ class secuencia:
         self.img_serie_cte = np.zeros((self.depth,self.height,self.width))  # serie de imagenes
         for n in range(self.depth):
            self.img_serie_cte[n] = self.img_serie[n]
-        self.alpha = 1
+        self.alpha = 0.1
         self.beta = 0
+        #temp_max = self.img_serie_cte.max()
+        #for n in range(self.depth):
+        #    self.img_serie[n] =(self.img_serie_cte[n]/temp_max)*255
     def adjust_img_serie(self,a,b):
         self.alpha += a
         self.beta += b
@@ -137,7 +140,7 @@ class secuencia:
 
 def windows_creator():
 
-    global main_frame, bot_frame
+    global main_frame, bot_frame, info_label
 
     main_frame = Frame(root, width=MF_W.get(), height=MF_H.get(), background="#222") # 20 de botframe 20 menu 20 windows tab 40 windows taskbar
     main_frame.grid(row=1, column=0)
@@ -146,6 +149,8 @@ def windows_creator():
     bot_frame = Frame(root, width=MF_W.get(), height=20, background="#2CC")
     bot_frame.grid(row=2, column=0)
     bot_frame.grid_propagate(0)
+
+    info_label = Label(bot_frame, textvariable=info_text,bg="#2CC",font=("Roboto",9),fg="#000").grid(row=0,column=0,padx=10)
 
 def menu_creator():
     
@@ -171,10 +176,15 @@ def menu_creator():
     helpmenu.add_separator()
     helpmenu.add_command(label="Salir", command=root.quit)
 
+    global layoutmenu
+    layoutmenu = Menu(root, tearoff = 0)
+    layoutmenu.add_command(label="1x1",command=lambda layout=1: canvas_creator(layout))
+    layoutmenu.add_command(label="1x2",command=lambda layout=2: canvas_creator(layout))
+    layoutmenu.add_command(label="2x2",command=lambda layout=4: canvas_creator(layout))
     displaymenu = Menu(menubar, tearoff = 0)
-    displaymenu.add_command(label="1x1",command=lambda layout=1: canvas_creator(layout))
-    displaymenu.add_command(label="1x2",command=lambda layout=2: canvas_creator(layout))
-    displaymenu.add_command(label="2x2",command=lambda layout=4: canvas_creator(layout))
+    displaymenu.add_cascade(label="Layout", menu = layoutmenu)
+    displaymenu.add_separator()
+    displaymenu.add_checkbutton(label="Información ON/OFF", onvalue=True, offvalue=False, variable=info_cv)
     
     menubar.add_cascade(label="Abrir", menu=filemenu)
     menubar.add_cascade(label="Pantalla", menu=displaymenu)
@@ -200,7 +210,7 @@ def menu_creator():
     portablemenu.add_command(label = "Limpiar", command = clear_cv)
 
 def canvas_creator(layout: int):
-    global cv_master, img2cv
+    global cv_master, img2cv, info_switch
     img2cv = [0,0,0,0]
     try:
         for temp_cv in cv_master:
@@ -257,6 +267,13 @@ def focus_cv(event, arg: Canvas):
     global cv
     cv = arg
     cv.create_text(50,CV_H.get()-20,text="FOCUSED",font=("Roboto",5),fill="#FFF",tag="focus_check")
+    if info_cv.get():
+        for sec in secuencias:
+            if sec.incv == cv:
+                cv.create_text(150,20,text=sec.name,font=("Roboto",10),fill="#FFF",tag="cv_info")
+                cv.create_text(150,40,text="Vista: "+sec.plano,font=("Roboto",10),fill="#FFF",tag="cv_info")
+                cv.create_text(150,60,text="Slice: "+str(sec.slice)+"/"+str(sec.depth),font=("Roboto",10),fill="#FFF",tag="cv_info")
+                cv.create_text(150,80,text="Img. size: "+str(sec.width)+"x"+str(sec.height),font=("Roboto",10),fill="#FFF",tag="cv_info")
 def unfocus_cv(event):
     cv.delete("focus_check","cv_info")
 
@@ -272,6 +289,7 @@ def go_back_1(event):
 
 def patient_loader():
     global secuencias, obj_master
+    
     
     # MASTER DE SECUENCIAS CARGADAS
     secuencias = []
@@ -295,7 +313,6 @@ def patient_loader():
             secuencias[-1].add_dcm(temp_dcm)
     canvas_creator(1)
     sec_selector()              
-          
 def sec_selector():
     global seq_tab,sec_list
 
@@ -308,6 +325,7 @@ def sec_selector():
     for sec in secuencias:
         sec_list.insert(END,sec.name)
     seq_tab.bind('<Leave>', sec_move)
+
 def sec_move(event):
     seq = sec_list.get(ANCHOR)
     seq_tab.destroy()
@@ -404,7 +422,6 @@ def info_tab_gen():
 def info_tab_destroy(event):
     info_tab.destroy()
 
-
 def bnc(event,tipo: str):
     for sec in secuencias:
         if sec.incv == cv:
@@ -486,7 +503,8 @@ MF_W = IntVar(value=1920)
 MF_H = IntVar(value=980)
 CV_W = IntVar(value=0)
 CV_H = IntVar(value=0)
-
+info_text = StringVar(value="SAURUS V1.2")
+info_cv = BooleanVar(value=0)
 #MAIN WINDOW DISPLAY
 windows_creator()
 menu_creator()
