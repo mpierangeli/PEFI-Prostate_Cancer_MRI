@@ -98,6 +98,8 @@ class secuencia:
         self.realy = 0      # tamaño en mm del pixel en y
         self.plano = ""     # axial/sagital/coronal/mixto(ver si no conviene separar, borrar secuencia o khe)
         self.isloaded = False   # flag para saber si ya estan cargadas las imagenes de la secuencia
+        self.alpha = 0.1
+        self.beta = 0
     def add_dcm(self,dcm):
         self.dcm_serie.append(dcm)  # serie de dicoms
         if dcm.pixel_array.shape[0] > self.height: self.height = dcm.pixel_array.shape[0] 
@@ -122,10 +124,9 @@ class secuencia:
         else: self.plano = "mixta"
         self.isloaded = True
         self.img_serie_cte = np.zeros((self.depth,self.height,self.width))  # serie de imagenes
-        self.alpha = 0.1
-        self.beta = 0
         for n in range(self.depth):
-           self.img_serie_cte[n] = self.img_serie[n]
+            self.img_serie_cte[n] = self.img_serie[n]
+            self.img_serie[n] = cv2.convertScaleAbs(self.img_serie_cte[n], alpha=self.alpha, beta=self.beta)
         
         #temp_max = self.img_serie_cte.max()
         #for n in range(self.depth):
@@ -133,10 +134,10 @@ class secuencia:
     def adjust_img_serie(self,a,b):
         self.alpha += a
         self.beta += b
-        #self.beta += int(round(255*(1-self.alpha)/2))
+
         for n in range(self.depth):
             self.img_serie[n] = cv2.convertScaleAbs(self.img_serie_cte[n], alpha=self.alpha, beta=self.beta)
- 
+            
 ## FUNCIONES
 
 def windows_creator():
@@ -447,17 +448,17 @@ def info_tab_destroy(event):
 def bnc(event,tipo: str):
     for sec in secuencias:
         if sec.incv == cv:
-            if tipo == "c+" and sec.alpha < 3:
-                sec.adjust_img_serie(0.01,0)
+            if tipo == "c+" and sec.alpha < 0.5:
+                sec.adjust_img_serie(0.005,0)
                 break
-            elif tipo == "c-" and sec.alpha > 0:
-                sec.adjust_img_serie(-0.01,0)
+            elif tipo == "c-" and sec.alpha >= 0.01:
+                sec.adjust_img_serie(-0.005,0)
                 break
             elif tipo == "b+" and sec.beta < 100:
-                sec.adjust_img_serie(0,2)
+                sec.adjust_img_serie(0,5)
                 break
-            elif tipo == "b-" and sec.beta > 0:
-                sec.adjust_img_serie(0,-2)
+            elif tipo == "b-" and sec.beta >= 5:
+                sec.adjust_img_serie(0,-5)
                 break
     refresh_canvas(sec.name) 
     
