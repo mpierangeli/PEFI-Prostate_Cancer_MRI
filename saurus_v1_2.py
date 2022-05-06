@@ -122,10 +122,11 @@ class secuencia:
         else: self.plano = "mixta"
         self.isloaded = True
         self.img_serie_cte = np.zeros((self.depth,self.height,self.width))  # serie de imagenes
-        for n in range(self.depth):
-           self.img_serie_cte[n] = self.img_serie[n]
         self.alpha = 0.1
         self.beta = 0
+        for n in range(self.depth):
+           self.img_serie_cte[n] = self.img_serie[n]
+        
         #temp_max = self.img_serie_cte.max()
         #for n in range(self.depth):
         #    self.img_serie[n] =(self.img_serie_cte[n]/temp_max)*255
@@ -267,16 +268,24 @@ def focus_cv(event, arg: Canvas):
     global cv
     cv = arg
     cv.create_text(50,CV_H.get()-20,text="FOCUSED",font=("Roboto",5),fill="#FFF",tag="focus_check")
-    if info_cv.get():
-        for sec in secuencias:
-            if sec.incv == cv:
-                cv.create_text(150,20,text=sec.name,font=("Roboto",10),fill="#FFF",tag="cv_info")
-                cv.create_text(150,40,text="Vista: "+sec.plano,font=("Roboto",10),fill="#FFF",tag="cv_info")
-                cv.create_text(150,60,text="Slice: "+str(sec.slice)+"/"+str(sec.depth),font=("Roboto",10),fill="#FFF",tag="cv_info")
-                cv.create_text(150,80,text="Img. size: "+str(sec.width)+"x"+str(sec.height),font=("Roboto",10),fill="#FFF",tag="cv_info")
+    if info_cv.get(): info_cv_gen(cv)
 def unfocus_cv(event):
     cv.delete("focus_check","cv_info")
 
+def info_cv_gen(temp_cv: Canvas):
+    temp_cv.delete("focus_check","cv_info")
+    if info_cv.get():
+        for sec in secuencias:
+            if sec.incv == temp_cv:
+                temp_cv.create_text(10,20,text="Seq. Name: "+sec.dcm_serie[0].SequenceName,font=("Roboto",10),fill="#FFF",tag="cv_info",anchor=W)
+                temp_cv.create_text(10,40,text="Orientation: "+sec.plano,font=("Roboto",10),fill="#FFF",tag="cv_info",anchor=W)
+                temp_cv.create_text(10,60,text="Slice: "+str(sec.slice+1)+"/"+str(sec.depth),font=("Roboto",10),fill="#FFF",tag="cv_info",anchor=W)
+                temp_cv.create_text(10,80,text="Img. size: "+str(sec.width)+"x"+str(sec.height)+" px.",font=("Roboto",10),fill="#FFF",tag="cv_info",anchor=W)
+                temp_cv.create_text(10,100,text="FoV: "+str(int(sec.width*sec.dcm_serie[0].PixelSpacing[1]))+"x"+str(int(sec.height*sec.dcm_serie[0].PixelSpacing[0]))+" mm2",font=("Roboto",10),fill="#FFF",tag="cv_info",anchor=W)
+                temp_cv.create_text(10,120,text="TE: "+str(sec.dcm_serie[0].EchoTime)+" ms",font=("Roboto",10),fill="#FFF",tag="cv_info",anchor=W)
+                temp_cv.create_text(10,140,text="TR: "+str(sec.dcm_serie[0].RepetitionTime)+" ms",font=("Roboto",10),fill="#FFF",tag="cv_info",anchor=W)
+                temp_cv.create_text(10,160,text="ST: "+str(sec.dcm_serie[0].SliceThickness)+" mm",font=("Roboto",10),fill="#FFF",tag="cv_info",anchor=W)
+                
 def popupmenu(event):
     try:
         portablemenu.tk_popup(event.x_root, event.y_root)
@@ -289,7 +298,6 @@ def go_back_1(event):
 
 def patient_loader():
     global secuencias, obj_master
-    
     
     # MASTER DE SECUENCIAS CARGADAS
     secuencias = []
@@ -379,12 +387,26 @@ def refresh_canvas(to_refresh: str):
                 else:
                     img2cv[3] = ImageTk.PhotoImage(Image.fromarray(temp_img))
                     sec.incv.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=img2cv[3])
-                    
+                 
             # REDIBUJO LOS OBJETOS GUARDADOS EN LOS CANVAS
             for obj in obj_master:
                 if obj.insec == sec and obj.inslice == sec.slice:
                     obj.draw(False)
+            info_cv_gen(sec.incv)
+            sec.incv.delete("pos_info")
+            if sec.plano == "axial":
+                temp_pos = ["A","P","L","R"] # UP, DOWN , LEFT, RIGHT 
+            elif sec.plano == "sagital":
+                temp_pos = ["S","I","A","P"]
+            elif sec.plano == "coronal":
+                temp_pos = ["S","I","L","R"]
+            else:
+                temp_pos = ["U","U","U","U"]
             
+            sec.incv.create_text(CV_W.get()/2,10,text=temp_pos[0],fill="#FFF",font=("Roboto", 9),tags="pos_info")
+            sec.incv.create_text(CV_W.get()/2,CV_H.get()-10,text=temp_pos[1],fill="#FFF",font=("Roboto", 9),tags="pos_info")
+            sec.incv.create_text(CV_W.get()/2-temp_img.shape[1]/2-10,CV_H.get()/2,text=temp_pos[2],fill="#FFF",font=("Roboto", 9),tags="pos_info")
+            sec.incv.create_text(CV_W.get()/2+temp_img.shape[1]/2+10,CV_H.get()/2,text=temp_pos[3],fill="#FFF",font=("Roboto", 9),tags="pos_info")
             
             break 
 
