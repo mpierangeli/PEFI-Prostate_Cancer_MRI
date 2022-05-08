@@ -451,24 +451,21 @@ def refresh_canvas(to_refresh: str):
                     obj.draw(False)
                     
             info_cv_gen(sec.incv)
-            
-            sec.incv.delete("pos_info")
-            if sec.plano == "axial":
-                temp_pos = ["A","P","L","R"] # UP, DOWN , LEFT, RIGHT 
-            elif sec.plano == "sagital":
-                temp_pos = ["S","I","A","P"]
-            elif sec.plano == "coronal":
-                temp_pos = ["S","I","L","R"]
-            else:
-                temp_pos = ["U","U","U","U"]
-            
-            sec.incv.create_text(CV_W.get()/2,10,text=temp_pos[0],fill="#FFF",font=("Roboto", 9),tags="pos_info")
-            sec.incv.create_text(CV_W.get()/2,CV_H.get()-10,text=temp_pos[1],fill="#FFF",font=("Roboto", 9),tags="pos_info")
-            sec.incv.create_text(CV_W.get()/2-temp_img.shape[1]/2+10,CV_H.get()/2,text=temp_pos[2],fill="#FFF",font=("Roboto", 9),tags="pos_info")
-            sec.incv.create_text(CV_W.get()/2+temp_img.shape[1]/2-10,CV_H.get()/2,text=temp_pos[3],fill="#FFF",font=("Roboto", 9),tags="pos_info")
+            pos_info(sec)
             
             break 
 
+def pos_info(sec: secuencia):
+    sec.incv.delete("pos_info")
+    if sec.plano == "axial":        temp_pos = ["A","P","L","R"] # UP, DOWN , LEFT, RIGHT 
+    elif sec.plano == "sagital":    temp_pos = ["S","I","A","P"]
+    elif sec.plano == "coronal":    temp_pos = ["S","I","L","R"]
+    else:                           temp_pos = ["U","U","U","U"]
+    sec.incv.create_text(CV_W.get()/2,10,text=temp_pos[0],fill="#FFF",font=("Roboto", 9),tags="pos_info")
+    sec.incv.create_text(CV_W.get()/2,CV_H.get()-10,text=temp_pos[1],fill="#FFF",font=("Roboto", 9),tags="pos_info")
+    sec.incv.create_text(10,CV_H.get()/2,text=temp_pos[2],fill="#FFF",font=("Roboto", 9),tags="pos_info")
+    sec.incv.create_text(CV_W.get()/2-10,CV_H.get()/2,text=temp_pos[3],fill="#FFF",font=("Roboto", 9),tags="pos_info")
+    
 def slice_selector(event):
     for sec in secuencias:
         if sec.incv == cv:
