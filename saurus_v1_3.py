@@ -100,8 +100,6 @@ class secuencia:
         self.realy = 0      # tamaño en mm del pixel en y
         self.plano = ""     # axial/sagital/coronal/mixto(ver si no conviene separar, borrar secuencia o khe)
         self.isloaded = False   # flag para saber si ya estan cargadas las imagenes de la secuencia
-        self.alpha = 0.1    # parametro de contraste
-        self.beta = 0       # parametro de brillo
         self.aux_view = False   # False = secuencia de vista original / True = secuencia de vista artificial
     def add_dcm(self,dcm):
         self.dcm_serie.append(dcm)  # serie de dicoms
@@ -128,7 +126,8 @@ class secuencia:
             else: self.plano = "mixta"
         else:
             self.parent,tipo = kwargs   # parent es la secuencia a la que le hago la vista artificial
-            self.factor = round(self.parent.dcm_serie[0].SliceThickness*self.parent.dcm_serie[0].PixelSpacing[0])
+            self.factor = int(self.parent.dcm_serie[0].SliceThickness/self.parent.dcm_serie[0].PixelSpacing[0]) # cantidad de pixeles q tengo q poner por tomo para llenar el ST
+            
             if tipo == "atos":
                 self.depth = self.parent.img_serie.shape[2]
                 self.img_serie = np.zeros((self.depth,self.factor*self.parent.img_serie.shape[0],self.parent.img_serie.shape[1]))
@@ -136,6 +135,8 @@ class secuencia:
                     for j in range(self.parent.img_serie.shape[0]): # por cada imagen axial -> altura de la sagital
                         for k in range(self.factor): # por ancho de tomo axial, repito misma muestra
                             self.img_serie[i,j*self.factor+k] = self.parent.img_serie[j,:,i]
+                self.realx = self.parent.realy
+                self.realy = self.realx
             elif tipo == "atoc":
                 self.depth = self.parent.img_serie.shape[1]
                 self.img_serie  =  np.zeros((self.depth,self.factor*self.parent.img_serie.shape[0],self.parent.img_serie.shape[2]))
@@ -143,10 +144,26 @@ class secuencia:
                     for j in range(self.parent.img_serie.shape[0]): # por cada imagen axial -> altura de la coronal
                         for k in range(self.factor): # por ancho de tomo axial, repito misma muestra
                             self.img_serie[i,j*self.factor+k] = self.parent.img_serie[j,i,:]
-                            
+                self.realx = self.parent.realx
+                self.realy = self.realx
+            elif tipo == "stoa":
+                pass
+            elif tipo == "stoc":
+                pass
+            elif tipo == "ctoa":
+                pass
+            elif tipo == "ctos":
+                pass
+                
         self.slice = int(self.depth/2)    # en que slice tengo posicionada la secuencia para mostrarla
         self.img_serie_cte = np.zeros((self.depth,self.img_serie.shape[1],self.img_serie.shape[2]))  # serie de imagenes
         
+        if self.aux_view:
+            self.alpha = 1    # parametro de contraste
+        else:
+            self.alpha = 0.15    # parametro de contraste
+        self.beta = 0       # parametro de brillo
+            
         for n in range(self.depth):
             self.img_serie_cte[n] = self.img_serie[n]
             if not self.aux_view:
@@ -208,6 +225,7 @@ def menu_creator():
     displaymenu.add_cascade(label="Layout", menu = layoutmenu)
     displaymenu.add_separator()
     displaymenu.add_checkbutton(label="Información ON/OFF", onvalue=True, offvalue=False, variable=info_cv)
+    displaymenu.add_checkbutton(label="AXIS ON/OFF", onvalue=True, offvalue=False, variable=axis_cv)
     
     menubar.add_cascade(label="Abrir", menu=filemenu)
     menubar.add_cascade(label="Pantalla", menu=displaymenu)
@@ -326,17 +344,18 @@ def go_back_1(event):
 def patient_loader():
     global secuencias, obj_master
     
+    filepath = filedialog.askdirectory()
+    if not filepath: return
+    
     # MASTER DE SECUENCIAS CARGADAS
     secuencias = []
     # auxiliar de secuencias
     sec_uids = []
-    
     # MASTER DE DIBUJOS
     obj_master = []
     # MASTER DE OBSERVACIONES PARA REPORTE
     #observations = []
     
-    filepath = filedialog.askdirectory()
     for file in sorted(os.listdir(filepath)):
         name, ext = os.path.splitext(file)
         if ext == ".IMA":
@@ -348,6 +367,7 @@ def patient_loader():
             secuencias[-1].add_dcm(temp_dcm)
     canvas_creator(1)
     sec_selector()              
+
 def sec_selector():
     global seq_tab,sec_list
 
@@ -361,7 +381,6 @@ def sec_selector():
         if not sec.aux_view:
             sec_list.insert(END,sec.name)
     seq_tab.bind('<Leave>', sec_move)
-
 def sec_move(event):
     seq = sec_list.get(ANCHOR)
     seq_tab.destroy()
@@ -378,7 +397,6 @@ def sec_setup(event, sec_name: str):
     root.unbind('<Button-1>')
     refresh_canvas(sec_name)
 
-
 def refresh_canvas(to_refresh: str):
     global img2cv
     layout = len(cv_master)
@@ -394,19 +412,13 @@ def refresh_canvas(to_refresh: str):
                 sec.incv_height = temp_img.shape[0]
                 sec.incv_width =  temp_img.shape[1]
             else:
-                if layout == 2:
-                    if sec.parent.plano == "axial" and sec.plano == "sagital": 
-                        temp_width = sec.parent.incv_height
-                        sec.realx = sec.parent.realy
-                        sec.realy = sec.factor
-                    if sec.parent.plano == "axial" and sec.plano == "coronal": 
-                        temp_width = sec.parent.incv_width
-                        sec.realx = sec.parent.realx
-                        sec.realy = sec.factor
-                    temp_img = imutils.resize(sec.img_serie[sec.slice], width=temp_width)
-                else:
-                    temp_img = imutils.resize(sec.img_serie[sec.slice], height=100)
-              
+                if sec.parent.plano == "axial" and sec.plano == "sagital": 
+                    temp_width = sec.parent.incv_height
+                    
+                if sec.parent.plano == "axial" and sec.plano == "coronal": 
+                    temp_width = sec.parent.incv_width
+                    
+                temp_img = imutils.resize(sec.img_serie[sec.slice], width=temp_width)
             
             if layout == 1:
                 img2cv = [0,0,0,0]
@@ -437,7 +449,9 @@ def refresh_canvas(to_refresh: str):
             for obj in obj_master:
                 if obj.insec == sec and obj.inslice == sec.slice:
                     obj.draw(False)
+                    
             info_cv_gen(sec.incv)
+            
             sec.incv.delete("pos_info")
             if sec.plano == "axial":
                 temp_pos = ["A","P","L","R"] # UP, DOWN , LEFT, RIGHT 
@@ -450,8 +464,8 @@ def refresh_canvas(to_refresh: str):
             
             sec.incv.create_text(CV_W.get()/2,10,text=temp_pos[0],fill="#FFF",font=("Roboto", 9),tags="pos_info")
             sec.incv.create_text(CV_W.get()/2,CV_H.get()-10,text=temp_pos[1],fill="#FFF",font=("Roboto", 9),tags="pos_info")
-            sec.incv.create_text(CV_W.get()/2-temp_img.shape[1]/2-10,CV_H.get()/2,text=temp_pos[2],fill="#FFF",font=("Roboto", 9),tags="pos_info")
-            sec.incv.create_text(CV_W.get()/2+temp_img.shape[1]/2+10,CV_H.get()/2,text=temp_pos[3],fill="#FFF",font=("Roboto", 9),tags="pos_info")
+            sec.incv.create_text(CV_W.get()/2-temp_img.shape[1]/2+10,CV_H.get()/2,text=temp_pos[2],fill="#FFF",font=("Roboto", 9),tags="pos_info")
+            sec.incv.create_text(CV_W.get()/2+temp_img.shape[1]/2-10,CV_H.get()/2,text=temp_pos[3],fill="#FFF",font=("Roboto", 9),tags="pos_info")
             
             break 
 
@@ -519,9 +533,23 @@ def view_sec_gen(tipo: str):
                     secuencias[-1].load_img_serie(sec,"atoc")
                     secuencias[-1].plano = "coronal"
             elif sec.plano == "sagital"  and (tipo == "a" or tipo == "c"):  
-                pass
+                secuencias.append(secuencia(sec.name+"_"+tipo))
+                secuencias[-1].aux_view = True
+                if tipo == "a": 
+                    secuencias[-1].load_img_serie(sec,"stoa")
+                    secuencias[-1].plano = "axial"
+                if tipo == "c": 
+                    secuencias[-1].load_img_serie(sec,"stoc")
+                    secuencias[-1].plano = "coronal"
             elif sec.plano == "coronal"  and (tipo == "a" or tipo == "s"):      
-                pass
+                secuencias.append(secuencia(sec.name+"_"+tipo))
+                secuencias[-1].aux_view = True
+                if tipo == "a": 
+                    secuencias[-1].load_img_serie(sec,"ctoa")
+                    secuencias[-1].plano = "axial"
+                if tipo == "s": 
+                    secuencias[-1].load_img_serie(sec,"34")
+                    secuencias[-1].plano = "sagital"
             
             root.config(cursor="plus")
             root.bind('<Button-1>', lambda event, seq=secuencias[-1].name: sec_setup(event, seq))  
@@ -592,6 +620,7 @@ CV_W = IntVar(value=0)
 CV_H = IntVar(value=0)
 info_text = StringVar(value="SAURUS V1.3")
 info_cv = BooleanVar(value=0)
+axis_cv = BooleanVar(value=0)
 #MAIN WINDOW DISPLAY
 windows_creator()
 menu_creator()
