@@ -94,13 +94,15 @@ class secuencia:
         self.incv = 0       # en que cv la quiero mostrar
         self.width = 0      # w del pixel_array de las dicom
         self.height = 0     # h del pixel_array de las dicom
+        self.incv_width = 0     # w en que estoy mostrando la secuencia
+        self.incv_height = 0    # h en que estoy mostrando la secuencia
         self.realx = 0      # tamaño en mm del pixel en x
         self.realy = 0      # tamaño en mm del pixel en y
         self.plano = ""     # axial/sagital/coronal/mixto(ver si no conviene separar, borrar secuencia o khe)
         self.isloaded = False   # flag para saber si ya estan cargadas las imagenes de la secuencia
-        self.alpha = 0.1
-        self.beta = 0
-        self.aux_view = False
+        self.alpha = 0.1    # parametro de contraste
+        self.beta = 0       # parametro de brillo
+        self.aux_view = False   # False = secuencia de vista original / True = secuencia de vista artificial
     def add_dcm(self,dcm):
         self.dcm_serie.append(dcm)  # serie de dicoms
         if dcm.pixel_array.shape[0] > self.height: self.height = dcm.pixel_array.shape[0] 
@@ -125,29 +127,30 @@ class secuencia:
             elif planos[0] == 0 and planos[1] == 0: self.plano = "coronal"
             else: self.plano = "mixta"
         else:
-            self.parent,tipo = kwargs
-            factor = round(self.parent.dcm_serie[0].SliceThickness*self.parent.dcm_serie[0].PixelSpacing[0])
+            self.parent,tipo = kwargs   # parent es la secuencia a la que le hago la vista artificial
+            self.factor = round(self.parent.dcm_serie[0].SliceThickness*self.parent.dcm_serie[0].PixelSpacing[0])
             if tipo == "atos":
                 self.depth = self.parent.img_serie.shape[2]
-                self.img_serie = np.zeros((self.depth,factor*self.parent.img_serie.shape[0],self.parent.img_serie.shape[1]))
+                self.img_serie = np.zeros((self.depth,self.factor*self.parent.img_serie.shape[0],self.parent.img_serie.shape[1]))
                 for i in range(self.depth): # por cada columna de las axiales -> profundidad de la sagital
                     for j in range(self.parent.img_serie.shape[0]): # por cada imagen axial -> altura de la sagital
-                        for k in range(factor): # por ancho de tomo axial, repito misma muestra
-                            self.img_serie[i,j*factor+k] = self.parent.img_serie[j,:,i]
+                        for k in range(self.factor): # por ancho de tomo axial, repito misma muestra
+                            self.img_serie[i,j*self.factor+k] = self.parent.img_serie[j,:,i]
             elif tipo == "atoc":
                 self.depth = self.parent.img_serie.shape[1]
-                self.img_serie  =  np.zeros((self.depth,factor*self.parent.img_serie.shape[0],self.parent.img_serie.shape[2]))
+                self.img_serie  =  np.zeros((self.depth,self.factor*self.parent.img_serie.shape[0],self.parent.img_serie.shape[2]))
                 for i in range(self.parent.img_serie.shape[1]): # por cada fila de las axiales -> profundidad de la coronal
                     for j in range(self.parent.img_serie.shape[0]): # por cada imagen axial -> altura de la coronal
-                        for k in range(factor): # por ancho de tomo axial, repito misma muestra
-                            self.img_serie[i,j*factor+k] = self.parent.img_serie[j,i,:]
+                        for k in range(self.factor): # por ancho de tomo axial, repito misma muestra
+                            self.img_serie[i,j*self.factor+k] = self.parent.img_serie[j,i,:]
                             
         self.slice = int(self.depth/2)    # en que slice tengo posicionada la secuencia para mostrarla
         self.img_serie_cte = np.zeros((self.depth,self.img_serie.shape[1],self.img_serie.shape[2]))  # serie de imagenes
         
         for n in range(self.depth):
             self.img_serie_cte[n] = self.img_serie[n]
-            self.img_serie[n] = cv2.convertScaleAbs(self.img_serie_cte[n], alpha=self.alpha, beta=self.beta)
+            if not self.aux_view:
+                self.img_serie[n] = cv2.convertScaleAbs(self.img_serie_cte[n], alpha=self.alpha, beta=self.beta)
         
     def adjust_img_serie(self,a,b):
         self.alpha += a
@@ -381,12 +384,29 @@ def refresh_canvas(to_refresh: str):
     layout = len(cv_master)
     for sec in secuencias:
         if sec.name == to_refresh:
-            if layout == 2:
-                temp_img = imutils.resize(sec.img_serie[sec.slice], width=CV_W.get())
+            if not sec.aux_view:
+                if layout == 2:
+                    temp_img = imutils.resize(sec.img_serie[sec.slice], width=CV_W.get())
+                else:
+                    temp_img = imutils.resize(sec.img_serie[sec.slice], height=CV_H.get())
+                sec.realx = sec.dcm_serie[0].PixelSpacing[0]*sec.width/temp_img.shape[1]
+                sec.realy = sec.dcm_serie[0].PixelSpacing[1]*sec.height/temp_img.shape[0]
+                sec.incv_height = temp_img.shape[0]
+                sec.incv_width =  temp_img.shape[1]
             else:
-                temp_img = imutils.resize(sec.img_serie[sec.slice], height=CV_H.get())
-            #sec.realx = sec.dcm_serie[0].PixelSpacing[0]*sec.width/temp_img.shape[1]
-            #sec.realy = sec.dcm_serie[0].PixelSpacing[1]*sec.height/temp_img.shape[0]
+                if layout == 2:
+                    if sec.parent.plano == "axial" and sec.plano == "sagital": 
+                        temp_width = sec.parent.incv_height
+                        sec.realx = sec.parent.realy
+                        sec.realy = sec.factor
+                    if sec.parent.plano == "axial" and sec.plano == "coronal": 
+                        temp_width = sec.parent.incv_width
+                        sec.realx = sec.parent.realx
+                        sec.realy = sec.factor
+                    temp_img = imutils.resize(sec.img_serie[sec.slice], width=temp_width)
+                else:
+                    temp_img = imutils.resize(sec.img_serie[sec.slice], height=100)
+              
             
             if layout == 1:
                 img2cv = [0,0,0,0]
@@ -503,8 +523,8 @@ def view_sec_gen(tipo: str):
             elif sec.plano == "coronal"  and (tipo == "a" or tipo == "s"):      
                 pass
             
-                root.config(cursor="plus")
-                root.bind('<Button-1>', lambda event, seq=secuencias[-1].name: sec_setup(event, seq))  
+            root.config(cursor="plus")
+            root.bind('<Button-1>', lambda event, seq=secuencias[-1].name: sec_setup(event, seq))  
                 
                 
 ## HERRAMIENTAS
