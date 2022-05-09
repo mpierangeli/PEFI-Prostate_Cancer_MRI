@@ -158,10 +158,8 @@ class secuencia:
         self.slice = int(self.depth/2)    # en que slice tengo posicionada la secuencia para mostrarla
         self.img_serie_cte = np.zeros((self.depth,self.img_serie.shape[1],self.img_serie.shape[2]))  # serie de imagenes
         
-        if self.aux_view:
-            self.alpha = 1    # parametro de contraste
-        else:
-            self.alpha = 0.15    # parametro de contraste
+        if self.aux_view:   self.alpha = 1    # parametro de contraste
+        else:               self.alpha = 0.15 
         self.beta = 0       # parametro de brillo
             
         for n in range(self.depth):
@@ -172,7 +170,6 @@ class secuencia:
     def adjust_img_serie(self,a,b):
         self.alpha += a
         self.beta += b
-
         for n in range(self.depth):
             self.img_serie[n] = cv2.convertScaleAbs(self.img_serie_cte[n], alpha=self.alpha, beta=self.beta)
             
@@ -389,71 +386,69 @@ def sec_move(event):
 def sec_setup(event, sec_name: str):
     for sec in secuencias:
         if sec.incv == cv: sec.incv = 0
-        if sec.name == sec_name: 
+        elif sec.name == sec_name:
+            try:    sec.incv.delete(ALL)
+            except: pass
             sec.incv = cv
-            if not sec.isloaded:
-                sec.load_img_serie()
+            if not sec.isloaded: sec.load_img_serie()
+            temp_sec = sec
     root.config(cursor="arrow")
     root.unbind('<Button-1>')
-    refresh_canvas(sec_name)
+    refresh_canvas(temp_sec)
 
-def refresh_canvas(to_refresh: str):
+def refresh_canvas(sec: secuencia):
     global img2cv
     layout = len(cv_master)
-    for sec in secuencias:
-        if sec.name == to_refresh:
-            if not sec.aux_view:
-                if layout == 2:
-                    temp_img = imutils.resize(sec.img_serie[sec.slice], width=CV_W.get())
-                else:
-                    temp_img = imutils.resize(sec.img_serie[sec.slice], height=CV_H.get())
-                sec.realx = sec.dcm_serie[0].PixelSpacing[0]*sec.width/temp_img.shape[1]
-                sec.realy = sec.dcm_serie[0].PixelSpacing[1]*sec.height/temp_img.shape[0]
-                sec.incv_height = temp_img.shape[0]
-                sec.incv_width =  temp_img.shape[1]
-            else:
-                if sec.parent.plano == "axial" and sec.plano == "sagital": 
-                    temp_width = sec.parent.incv_height
-                    
-                if sec.parent.plano == "axial" and sec.plano == "coronal": 
-                    temp_width = sec.parent.incv_width
-                    
-                temp_img = imutils.resize(sec.img_serie[sec.slice], width=temp_width)
+   
+    if not sec.aux_view:
+        if layout == 2:
+            temp_img = imutils.resize(sec.img_serie[sec.slice], width=CV_W.get())
+        else:
+            temp_img = imutils.resize(sec.img_serie[sec.slice], height=CV_H.get())
+        sec.realx = sec.dcm_serie[0].PixelSpacing[0]*sec.width/temp_img.shape[1]
+        sec.realy = sec.dcm_serie[0].PixelSpacing[1]*sec.height/temp_img.shape[0]
+        sec.incv_height = temp_img.shape[0]
+        sec.incv_width =  temp_img.shape[1]
+    else:
+        if sec.parent.plano == "axial" and sec.plano == "sagital": 
+            temp_width = sec.parent.incv_height
+        if sec.parent.plano == "axial" and sec.plano == "coronal": 
+            temp_width = sec.parent.incv_width
+        temp_img = imutils.resize(sec.img_serie[sec.slice], width=temp_width)
+    
+    if layout == 1:
+        img2cv = [0,0,0,0]
+        img2cv[0] = ImageTk.PhotoImage(Image.fromarray(temp_img))
+        sec.incv.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=img2cv[0])
+    elif layout == 2:
+        if sec.incv == cv_master[0]:
+            img2cv[0] = ImageTk.PhotoImage(Image.fromarray(temp_img))
+            sec.incv.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=img2cv[0])
+        else:
+            img2cv[1] = ImageTk.PhotoImage(Image.fromarray(temp_img))
+            sec.incv.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=img2cv[1])
+    else:
+        if sec.incv == cv_master[0]:
+            img2cv[0] = ImageTk.PhotoImage(Image.fromarray(temp_img))
+            sec.incv.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=img2cv[0])
+        elif sec.incv == cv_master[1]:
+            img2cv[1] = ImageTk.PhotoImage(Image.fromarray(temp_img))
+            sec.incv.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=img2cv[1])
+        elif sec.incv == cv_master[2]:
+            img2cv[2] = ImageTk.PhotoImage(Image.fromarray(temp_img))
+            sec.incv.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=img2cv[2])
+        else:
+            img2cv[3] = ImageTk.PhotoImage(Image.fromarray(temp_img))
+            sec.incv.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=img2cv[3])
             
-            if layout == 1:
-                img2cv = [0,0,0,0]
-                img2cv[0] = ImageTk.PhotoImage(Image.fromarray(temp_img))
-                sec.incv.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=img2cv[0])
-            elif layout == 2:
-                if sec.incv == cv_master[0]:
-                    img2cv[0] = ImageTk.PhotoImage(Image.fromarray(temp_img))
-                    sec.incv.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=img2cv[0])
-                else:
-                    img2cv[1] = ImageTk.PhotoImage(Image.fromarray(temp_img))
-                    sec.incv.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=img2cv[1])
-            else:
-                if sec.incv == cv_master[0]:
-                    img2cv[0] = ImageTk.PhotoImage(Image.fromarray(temp_img))
-                    sec.incv.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=img2cv[0])
-                elif sec.incv == cv_master[1]:
-                    img2cv[1] = ImageTk.PhotoImage(Image.fromarray(temp_img))
-                    sec.incv.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=img2cv[1])
-                elif sec.incv == cv_master[2]:
-                    img2cv[2] = ImageTk.PhotoImage(Image.fromarray(temp_img))
-                    sec.incv.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=img2cv[2])
-                else:
-                    img2cv[3] = ImageTk.PhotoImage(Image.fromarray(temp_img))
-                    sec.incv.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=img2cv[3])
-                 
-            # REDIBUJO LOS OBJETOS GUARDADOS EN LOS CANVAS
-            for obj in obj_master:
-                if obj.insec == sec and obj.inslice == sec.slice:
-                    obj.draw(False)
-                    
-            info_cv_gen(sec.incv)
-            pos_info(sec)
+    # REDIBUJO LOS OBJETOS GUARDADOS EN LOS CANVAS
+    for obj in obj_master:
+        if obj.insec == sec and obj.inslice == sec.slice:
+            obj.draw(False)
             
-            break 
+    info_cv_gen(sec.incv)
+    pos_info(sec)
+    
 
 def pos_info(sec: secuencia):
     sec.incv.delete("pos_info")
@@ -464,7 +459,7 @@ def pos_info(sec: secuencia):
     sec.incv.create_text(CV_W.get()/2,10,text=temp_pos[0],fill="#FFF",font=("Roboto", 9),tags="pos_info")
     sec.incv.create_text(CV_W.get()/2,CV_H.get()-10,text=temp_pos[1],fill="#FFF",font=("Roboto", 9),tags="pos_info")
     sec.incv.create_text(10,CV_H.get()/2,text=temp_pos[2],fill="#FFF",font=("Roboto", 9),tags="pos_info")
-    sec.incv.create_text(CV_W.get()/2-10,CV_H.get()/2,text=temp_pos[3],fill="#FFF",font=("Roboto", 9),tags="pos_info")
+    sec.incv.create_text(CV_W.get()-10,CV_H.get()/2,text=temp_pos[3],fill="#FFF",font=("Roboto", 9),tags="pos_info")
     
 def slice_selector(event):
     for sec in secuencias:
@@ -472,7 +467,7 @@ def slice_selector(event):
             if event.delta > 0 and sec.slice < sec.depth-1: sec.slice += 1
             elif event.delta < 0 and sec.slice > 0: sec.slice -= 1
             break
-    refresh_canvas(sec.name) 
+    refresh_canvas(sec) 
 
 
 def info_tab_gen():
@@ -564,15 +559,13 @@ def roi_gen(tipo: str):
 def roi_start(event,tipo: str):
     root.bind("<Escape>", lambda event, arg=True: roi_escape(event,arg))
     for sec in secuencias:
-        if sec.incv == cv:
-            temp_sec = sec
-            break
+        if sec.incv == cv:  break
     if tipo == "s":
-        obj_master.append(roi_square(tipo+str(len(obj_master)),temp_sec))
+        obj_master.append(roi_square(tipo+str(len(obj_master)),sec))
     elif tipo == "c":
-        obj_master.append(roi_circle(tipo+str(len(obj_master)),temp_sec))
+        obj_master.append(roi_circle(tipo+str(len(obj_master)),sec))
     elif tipo == "r":
-        obj_master.append(roi_ruler(tipo+str(len(obj_master)),temp_sec))
+        obj_master.append(roi_ruler(tipo+str(len(obj_master)),sec))
     obj_master[-1].init_coord(event.x,event.y)
 def roi_temp(event):
     obj_master[-1].end_coord(event.x,event.y)
