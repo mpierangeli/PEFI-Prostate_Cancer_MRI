@@ -130,7 +130,9 @@ class secuencia:
             
             if tipo == "atos":
                 self.depth = self.parent.img_serie.shape[2]
-                self.img_serie = np.zeros((self.depth,self.factor*self.parent.img_serie.shape[0],self.parent.img_serie.shape[1]))
+                self.width = self.parent.img_serie.shape[1]
+                self.height = self.factor*self.parent.img_serie.shape[0]
+                self.img_serie = np.zeros((self.depth,self.height,self.width))
                 for i in range(self.depth): # por cada columna de las axiales -> profundidad de la sagital
                     for j in range(self.parent.img_serie.shape[0]): # por cada imagen axial -> altura de la sagital
                         for k in range(self.factor): # por ancho de tomo axial, repito misma muestra
@@ -139,7 +141,9 @@ class secuencia:
                 self.realy = self.realx
             elif tipo == "atoc":
                 self.depth = self.parent.img_serie.shape[1]
-                self.img_serie  =  np.zeros((self.depth,self.factor*self.parent.img_serie.shape[0],self.parent.img_serie.shape[2]))
+                self.width = self.parent.img_serie.shape[2]
+                self.height = self.factor*self.parent.img_serie.shape[0]
+                self.img_serie = np.zeros((self.depth,self.height,self.width))
                 for i in range(self.parent.img_serie.shape[1]): # por cada fila de las axiales -> profundidad de la coronal
                     for j in range(self.parent.img_serie.shape[0]): # por cada imagen axial -> altura de la coronal
                         for k in range(self.factor): # por ancho de tomo axial, repito misma muestra
@@ -323,11 +327,11 @@ def info_cv_gen(temp_cv: Canvas):
                     temp_cv.create_text(10,20,text="Seq. Name: "+sec.parent.dcm_serie[0].SequenceName+"_artificial",font=("Roboto",10),fill="#FFF",tag="cv_info",anchor=W)
                     temp_cv.create_text(10,40,text="Orientation: "+sec.plano,font=("Roboto",10),fill="#FFF",tag="cv_info",anchor=W)
                     temp_cv.create_text(10,60,text="Slice: "+str(sec.slice+1)+"/"+str(sec.depth),font=("Roboto",10),fill="#FFF",tag="cv_info",anchor=W)
-                    #temp_cv.create_text(10,80,text="Img. size: "+str(sec.width)+"x"+str(sec.height)+" px.",font=("Roboto",10),fill="#FFF",tag="cv_info",anchor=W)
-                    #temp_cv.create_text(10,100,text="FoV: "+str(int(sec.width*sec.dcm_serie[0].PixelSpacing[1]))+"x"+str(int(sec.height*sec.dcm_serie[0].PixelSpacing[0]))+" mm2",font=("Roboto",10),fill="#FFF",tag="cv_info",anchor=W)
+                    temp_cv.create_text(10,80,text="Img. size: "+str(sec.width)+"x"+str(sec.height)+" px.",font=("Roboto",10),fill="#FFF",tag="cv_info",anchor=W)
+                    temp_cv.create_text(10,100,text="FoV: "+str(int(sec.width*sec.parent.dcm_serie[0].PixelSpacing[1]))+"x"+str(int(sec.height*sec.parent.dcm_serie[0].PixelSpacing[0]))+" mm2",font=("Roboto",10),fill="#FFF",tag="cv_info",anchor=W)
                     temp_cv.create_text(10,120,text="TE: "+str(sec.parent.dcm_serie[0].EchoTime)+" ms",font=("Roboto",10),fill="#FFF",tag="cv_info",anchor=W)
                     temp_cv.create_text(10,140,text="TR: "+str(sec.parent.dcm_serie[0].RepetitionTime)+" ms",font=("Roboto",10),fill="#FFF",tag="cv_info",anchor=W)
-                    #temp_cv.create_text(10,160,text="ST: "+str(sec.dcm_serie[0].SliceThickness)+" mm",font=("Roboto",10),fill="#FFF",tag="cv_info",anchor=W)
+                    temp_cv.create_text(10,160,text="ST: "+str(sec.parent.dcm_serie[0].SliceThickness)+" mm (parent)",font=("Roboto",10),fill="#FFF",tag="cv_info",anchor=W)
                 else:
                     temp_cv.create_text(10,20,text="Seq. Name: "+sec.dcm_serie[0].SequenceName,font=("Roboto",10),fill="#FFF",tag="cv_info",anchor=W)
                     temp_cv.create_text(10,40,text="Orientation: "+sec.plano,font=("Roboto",10),fill="#FFF",tag="cv_info",anchor=W)
