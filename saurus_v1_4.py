@@ -421,15 +421,16 @@ def refresh_canvas(sec: secuencia):
         else:
             temp_img = imutils.resize(sec.img_serie[sec.slice], height=CV_H.get())
         sec.realx = sec.dcm_serie[0].PixelSpacing[0]*sec.width/temp_img.shape[1]
-        sec.realy = sec.dcm_serie[0].PixelSpacing[1]*sec.height/temp_img.shape[0]
-        sec.incv_height = temp_img.shape[0]
-        sec.incv_width =  temp_img.shape[1]
+        sec.realy = sec.dcm_serie[0].PixelSpacing[1]*sec.height/temp_img.shape[0]  
     else:
         if sec.parent.plano == "axial" and sec.plano == "sagital": 
             temp_width = sec.parent.incv_height
         if sec.parent.plano == "axial" and sec.plano == "coronal": 
             temp_width = sec.parent.incv_width
         temp_img = imutils.resize(sec.img_serie[sec.slice], width=temp_width)
+    sec.incv_height = temp_img.shape[0]
+    sec.incv_width =  temp_img.shape[1]
+        
     
     if layout == 1: img2cv = [0,0,0,0]
     img2cv_master(sec,temp_img)
@@ -455,20 +456,46 @@ def axis_gen():
     
     for sec in secuencias:
         if sec.incv != 0 and sec.aux_view and sec.parent.incv != 0:
-            if sec.parent.plano == "axial" and sec.plano == "coronal":
-                # AXIS CORONAL EN IMAGEN AXIAL
-                sec.parent.incv.delete("coronal_depth_marker")
-                offset = CV_H.get()/2-sec.parent.incv_height/2
-                sec.parent.incv.create_line(0, int(sec.parent.incv_height*(sec.slice/sec.depth))+offset, CV_W.get(), int(sec.parent.incv_height*(sec.slice/sec.depth))+offset, fill="#F80", tags="coronal_depth_marker")
-                sec.parent.incv.create_line(0, int(sec.parent.incv_height*((sec.slice+1)/sec.depth))+offset, CV_W.get(), int(sec.parent.incv_height*((sec.slice+1)/sec.depth))+offset, fill="#F80", tags="coronal_depth_marker")
-            if sec.parent.plano == "axial" and sec.plano == "sagital":
-                # AXIS SAGITAL EN IMAGEN AXIAL
-                sec.parent.incv.delete("sagital_depth_marker")
-                offset = CV_W.get()/2-sec.parent.incv_width/2
-                sec.parent.incv.create_line(int(sec.parent.incv_width*(sec.slice/sec.depth))+offset, 0, int(sec.parent.incv_width*(sec.slice/sec.depth))+offset, CV_H.get(), fill="#5D0", tags="sagital_depth_marker")
-                sec.parent.incv.create_line(int(sec.parent.incv_width*((sec.slice+1)/sec.depth))+offset, 0, int(sec.parent.incv_width*((sec.slice+1)/sec.depth))+offset, CV_H.get(), fill="#5D0", tags="sagital_depth_marker")       
+            
+            if sec.parent.plano == "axial":
+                # AXIS AXIAL EN IMAGEN HIJO
+                sec.incv.delete("axial_depth_marker")
+                offset = CV_H.get()/2-sec.incv_height/2
+                sec.incv.create_line(0, int(sec.incv_height*(sec.parent.slice/sec.parent.depth))+offset, CV_W.get(), int(sec.incv_height*(sec.parent.slice/sec.parent.depth))+offset, fill="#2DD", tags="axial_depth_marker")
+                sec.incv.create_line(0, int(sec.incv_height*((sec.parent.slice+1)/sec.parent.depth))+offset, CV_W.get(), int(sec.incv_height*((sec.parent.slice+1)/sec.parent.depth))+offset, fill="#2DD", tags="axial_depth_marker")
                 
+                if sec.plano == "coronal":
+                    # AXIS CORONAL EN IMAGEN AXIAL
+                    sec.parent.incv.delete("coronal_depth_marker")
+                    offset = CV_H.get()/2-sec.parent.incv_height/2
+                    sec.parent.incv.create_line(0, int(sec.parent.incv_height*(sec.slice/sec.depth))+offset, CV_W.get(), int(sec.parent.incv_height*(sec.slice/sec.depth))+offset, fill="#F80", tags="coronal_depth_marker")
+                    sec.parent.incv.create_line(0, int(sec.parent.incv_height*((sec.slice+1)/sec.depth))+offset, CV_W.get(), int(sec.parent.incv_height*((sec.slice+1)/sec.depth))+offset, fill="#F80", tags="coronal_depth_marker")
+                    
+                    for sec2 in secuencias:
+                        if sec2.aux_view and (sec2.parent == sec.parent) and sec2.plano == "sagital" and (sec != sec2):
+                            # AXIS CORONAL EN IMAGEN SAGITAL
+                            sec2.incv.delete("coronal_depth_marker")
+                            offset = CV_W.get()/2-sec2.incv_width/2
+                            sec2.incv.create_line(int(sec2.incv_width*(sec.slice/sec.depth))+offset, 0, int(sec2.incv_width*(sec.slice/sec.depth))+offset, CV_H.get(), fill="#F80", tags="coronal_depth_marker")
+                            sec2.incv.create_line(int(sec2.incv_width*((sec.slice+1)/sec.depth))+offset, 0, int(sec2.incv_width*((sec.slice+1)/sec.depth))+offset, CV_H.get(), fill="#F80", tags="coronal_depth_marker") 
+                            break 
+                            
+                if sec.plano == "sagital":
+                    # AXIS SAGITAL EN IMAGEN AXIAL
+                    sec.parent.incv.delete("sagital_depth_marker")
+                    offset = CV_W.get()/2-sec.parent.incv_width/2
+                    sec.parent.incv.create_line(int(sec.parent.incv_width*(sec.slice/sec.depth))+offset, 0, int(sec.parent.incv_width*(sec.slice/sec.depth))+offset, CV_H.get(), fill="#5D0", tags="sagital_depth_marker")
+                    sec.parent.incv.create_line(int(sec.parent.incv_width*((sec.slice+1)/sec.depth))+offset, 0, int(sec.parent.incv_width*((sec.slice+1)/sec.depth))+offset, CV_H.get(), fill="#5D0", tags="sagital_depth_marker")      
 
+                    for sec2 in secuencias:
+                        if sec2.aux_view and (sec2.parent == sec.parent) and sec2.plano == "coronal" and (sec != sec2):
+                            # AXIS SAGITAL EN IMAGEN CORONAL
+                            sec2.incv.delete("sagital_depth_marker")
+                            offset = CV_W.get()/2-sec2.incv_width/2
+                            sec2.incv.create_line(int(sec2.incv_width*(sec.slice/sec.depth))+offset, 0, int(sec2.incv_width*(sec.slice/sec.depth))+offset, CV_H.get(), fill="#5D0", tags="sagital_depth_marker")
+                            sec2.incv.create_line(int(sec2.incv_width*((sec.slice+1)/sec.depth))+offset, 0, int(sec2.incv_width*((sec.slice+1)/sec.depth))+offset, CV_H.get(), fill="#5D0", tags="sagital_depth_marker")
+                            break
+                            
 def pos_info(sec: secuencia):
     sec.incv.delete("pos_info")
     if sec.plano == "axial":        temp_pos = ["A","P","L","R"] # UP, DOWN , LEFT, RIGHT 
@@ -624,7 +651,7 @@ def roi_escape(event,flag: bool):
         
 root = Tk()
 root.title("S A U R U S")
-root.config(bg="#F00") #para debug
+root.config(bg="#F00") #para debug 
 #root.iconbitmap("unsam.ico")
 
 # GLOBAL VARIABLES
