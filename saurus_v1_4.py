@@ -296,6 +296,7 @@ def canvas_creator(layout: int):
         temp_cv.bind("<Leave>", unfocus_cv)
         temp_cv.bind("<Button-3>", popupmenu)
 
+# CONTROLES DE USUARIO
     root.bind("<Control-MouseWheel>", slice_selector)
     root.bind("<Control-z>",go_back_1)
     root.bind("<Right>",lambda event, arg="c+": bnc(event,arg))
@@ -402,9 +403,9 @@ def sec_setup(event, sec_name: str):
     for sec in secuencias:
         if sec.incv == cv: sec.incv = 0
         elif sec.name == sec_name:
-            try:    sec.incv.delete(ALL)
-            except: pass
+            if sec.incv != 0: sec.incv.delete(ALL)
             sec.incv = cv
+            sec.incv.delete(ALL)
             if not sec.isloaded: sec.load_img_serie()
             refresh_canvas(sec)
     root.config(cursor="arrow")
@@ -454,13 +455,14 @@ def axis_gen():
     
     for sec in secuencias:
         if sec.incv != 0 and sec.aux_view and sec.parent.incv != 0:
-            # AXIS EN AXIAL MADRE
             if sec.parent.plano == "axial" and sec.plano == "coronal":
+                # AXIS CORONAL EN IMAGEN AXIAL
                 sec.parent.incv.delete("coronal_depth_marker")
                 offset = CV_H.get()/2-sec.parent.incv_height/2
                 sec.parent.incv.create_line(0, int(sec.parent.incv_height*(sec.slice/sec.depth))+offset, CV_W.get(), int(sec.parent.incv_height*(sec.slice/sec.depth))+offset, fill="#F80", tags="coronal_depth_marker")
                 sec.parent.incv.create_line(0, int(sec.parent.incv_height*((sec.slice+1)/sec.depth))+offset, CV_W.get(), int(sec.parent.incv_height*((sec.slice+1)/sec.depth))+offset, fill="#F80", tags="coronal_depth_marker")
             if sec.parent.plano == "axial" and sec.plano == "sagital":
+                # AXIS SAGITAL EN IMAGEN AXIAL
                 sec.parent.incv.delete("sagital_depth_marker")
                 offset = CV_W.get()/2-sec.parent.incv_width/2
                 sec.parent.incv.create_line(int(sec.parent.incv_width*(sec.slice/sec.depth))+offset, 0, int(sec.parent.incv_width*(sec.slice/sec.depth))+offset, CV_H.get(), fill="#5D0", tags="sagital_depth_marker")
@@ -533,6 +535,11 @@ def view_sec_gen(tipo: str):
     for sec in secuencias:
         if sec.incv == cv:
             if sec.plano == "axial" and (tipo == "s" or tipo == "c"):
+                for sec2 in secuencias:
+                    if sec2.name == sec.name+"_"+tipo:
+                        root.config(cursor="plus")
+                        root.bind('<Button-1>', lambda event, seq=sec2.name: sec_setup(event, seq))
+                        return
                 secuencias.append(secuencia(sec.name+"_"+tipo))
                 secuencias[-1].aux_view = True
                 if tipo == "s": 
@@ -557,7 +564,7 @@ def view_sec_gen(tipo: str):
                     secuencias[-1].load_img_serie(sec,"ctoa")
                     secuencias[-1].plano = "axial"
                 if tipo == "s": 
-                    secuencias[-1].load_img_serie(sec,"34")
+                    secuencias[-1].load_img_serie(sec,"ctos")
                     secuencias[-1].plano = "sagital"
             
             root.config(cursor="plus")
