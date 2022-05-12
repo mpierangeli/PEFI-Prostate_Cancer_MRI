@@ -138,7 +138,6 @@ class secuencia:
                         for k in range(self.factor): # por ancho de tomo axial, repito misma muestra
                             self.img_serie[i,j*self.factor+k] = self.parent.img_serie[j,:,i]
                 self.realx = self.parent.realy
-                self.realy = self.realx
             elif tipo == "atoc":
                 self.depth = self.parent.img_serie.shape[1]
                 self.width = self.parent.img_serie.shape[2]
@@ -149,7 +148,6 @@ class secuencia:
                         for k in range(self.factor): # por ancho de tomo axial, repito misma muestra
                             self.img_serie[i,j*self.factor+k] = self.parent.img_serie[j,i,:]
                 self.realx = self.parent.realx
-                self.realy = self.realx
             elif tipo == "stoa":
                 pass
             elif tipo == "stoc":
@@ -428,6 +426,7 @@ def refresh_canvas(sec: secuencia):
         if sec.parent.plano == "axial" and sec.plano == "coronal": 
             temp_width = sec.parent.incv_width
         temp_img = imutils.resize(sec.img_serie[sec.slice], width=temp_width)
+        sec.realy = sec.parent.dcm_serie[0].PixelSpacing[0]*sec.parent.depth*sec.factor/temp_img.shape[0]
     sec.incv_height = temp_img.shape[0]
     sec.incv_width =  temp_img.shape[1]
         
