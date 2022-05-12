@@ -518,16 +518,17 @@ def slice_selector(event):
 
 def info_tab_gen():
     global info_tab
+    info = ""
+    for sec in secuencias:
+        if sec.incv == cv:
+            if sec.aux_view: return
+            else:
+                for item in sec.dcm_serie[sec.slice]:
+                    info += (str(item) + "\n")
     info_tab = Frame(root,background="#2CC")
     info_tab.place(relx=0,rely=0, height=MF_H.get())
     Label(info_tab, text="DICOM METADATA",bg="#2CC",font=("Roboto",12),fg="#000").grid(row=0,column=0,pady=10)
     print(cv)
-    info = ""
-    for sec in secuencias:
-        if sec.incv == cv:
-            for item in sec.dcm_serie[sec.slice]:
-                info += (str(item) + "\n")
-    
     text_box = Text(info_tab,width=100,height=58,font=("Roboto",10),fg="#000",bg="#2CC",bd=0)
     text_box.grid(row=1, column=0)
     text_box.insert(END,info)
@@ -575,6 +576,7 @@ def view_sec_gen(tipo: str):
                 if tipo == "c": 
                     secuencias[-1].load_img_serie(sec,"atoc")
                     secuencias[-1].plano = "coronal"
+            # PARA ABAJO NO IMPLEMENTADAS
             elif sec.plano == "sagital"  and (tipo == "a" or tipo == "c"):  
                 secuencias.append(secuencia(sec.name+"_"+tipo))
                 secuencias[-1].aux_view = True
