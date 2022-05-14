@@ -1,6 +1,7 @@
 from tkinter import *
 from PIL import Image, ImageTk#, ImageGrab
 from tkinter import filedialog
+from cv2 import exp
 import pydicom
 import numpy as np
 import math
@@ -262,6 +263,7 @@ def menu_creator():
     portablemenu.add_command(label = "Cargar Secuencia", command = sec_selector)
 
 def report_main():
+    global report_window
     """
         si es la primera vez creo todas las variables
         si no es la primera vez solo cargo los datos temporales -> objetos de reporte (reporte general es una serie de observaciones)
@@ -276,9 +278,33 @@ def report_main():
         las imagenes temporales capaz q las cree en una carpeta temporal dentro del folder de esas imagenes y depsues lo borre (ver permisos de windows)
                 
     """
-    
-    pass
+    if report_flag.get():
+        report_flag.set(False)
+        report_window.destroy()
+    else:
+        report_flag.set(True)
+        report_window = Frame(root,background="#222")
+        report_window.place(relx=0,rely=0, height=MF_H.get(), width=MF_W.get()/2)
+        Label(report_window, text="",bg="#2CC",font=("Roboto",50),fg="#FFF").grid(row=0,column=0,ipadx=1000)
+        Label(report_window, text="REPORTE PI-RADS",bg="#2CC",font=("Roboto",15),fg="#000").place(relx=0.5,y=20,anchor=CENTER)
+        Label(report_window, text="Observaciones",bg="#2CC",font=("Roboto",13),fg="#000").place(relx=0.5,y=60,anchor=CENTER)
+        Button(report_window, text="+ Nueva Observación", font=("Roboto",13), bg="#2CC", bd=0, command=new_obs).place(relx=0.05, y=100)
+        Button(report_window, text="Generar Reporte PDF", font=("Roboto",15), bg="#2CC", bd=0).place(relx=0.5, rely=0.95)
+        for n,obs in enumerate(observaciones):
+            Button(report_window, text=" - ", font=("Roboto",14), bg="#F00", bd=0).place(relx=0.02, y=200+n*50,anchor=CENTER)
+            Button(report_window, text=" Edit ", font=("Roboto",14), bg="#FF0", bd=0).place(relx=0.06, y=200+n*50,anchor=CENTER)
+            Label(report_window, text="Observación N°"+str(obs.id),bg="#2CC",font=("Roboto",15),fg="#000").place(relx=0.2,y=200+n*50,anchor=CENTER)
 
+def new_obs():
+    observaciones.append(observacion(len(observaciones)))
+    try:    
+        Button(report_window, text=" - ", font=("Roboto",14), bg="#F00", bd=0, command= lambda m=len(observaciones): del_obs(m)).place(relx=0.02, y=200+(len(observaciones)-1)*50,anchor=CENTER)
+        Button(report_window, text=" Edit ", font=("Roboto",14), bg="#FF0", bd=0).place(relx=0.06, y=200+(len(observaciones)-1)*50,anchor=CENTER)
+        Label(report_window, text="Observación N°"+str(observaciones[-1].id),bg="#2CC",font=("Roboto",15),fg="#000").place(relx=0.2,y=200+(len(observaciones)-1)*50,anchor=CENTER)
+    except: pass
+def del_obs(to_destroy):
+    observaciones.pop(to_destroy)
+    
 def canvas_creator(layout: int):
     global cv_master, img2cv, info_switch
     img2cv = [0,0,0,0]
@@ -555,7 +581,6 @@ def info_tab_gen():
     info_tab = Frame(root,background="#2CC")
     info_tab.place(relx=0,rely=0, height=MF_H.get())
     Label(info_tab, text="DICOM METADATA",bg="#2CC",font=("Roboto",12),fg="#000").grid(row=0,column=0,pady=10)
-    print(cv)
     text_box = Text(info_tab,width=100,height=58,font=("Roboto",10),fg="#000",bg="#2CC",bd=0)
     text_box.grid(row=1, column=0)
     text_box.insert(END,info)
@@ -691,6 +716,7 @@ CV_H = IntVar(value=0)
 info_text = StringVar(value="SAURUS V1.4")
 info_cv = BooleanVar(value=0)
 axis_cv = BooleanVar(value=0)
+report_flag = BooleanVar(value=0)
 #MAIN WINDOW DISPLAY
 windows_creator()
 menu_creator()
