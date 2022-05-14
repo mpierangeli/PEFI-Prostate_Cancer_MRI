@@ -327,7 +327,7 @@ def canvas_creator(layout: int):
     root.bind("<Up>",lambda event, arg="b+": bnc(event,arg))
     root.bind("<Down>",lambda event, arg="b-": bnc(event,arg))
     
-    
+
 def clear_cv ():
     global obj_master
     for obj in obj_master:                                      # CON ESTO BORRO EL CANVAS PERO NO EL OBJETO
@@ -466,6 +466,9 @@ def refresh_canvas(sec: secuencia):
             
     if info_cv.get(): info_cv_gen(sec)
     if axis_cv.get(): axis_gen()
+    else: 
+        for cvs in cv_master:
+            cvs.delete("axial_depth_marker","sagital_depth_marker","coronal_depth_marker")
     pos_info(sec)
 
 def img2cv_master(sec: secuencia,temp_img):
