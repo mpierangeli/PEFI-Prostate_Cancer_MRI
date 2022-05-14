@@ -263,7 +263,6 @@ def menu_creator():
     portablemenu.add_command(label = "Cargar Secuencia", command = sec_selector)
 
 def report_main():
-    global report_window
     """
         si es la primera vez creo todas las variables
         si no es la primera vez solo cargo los datos temporales -> objetos de reporte (reporte general es una serie de observaciones)
@@ -283,30 +282,35 @@ def report_main():
         report_window.destroy()
     else:
         report_flag.set(True)
-        report_window = Frame(root,background="#222")
-        report_window.place(relx=0,rely=0, height=MF_H.get(), width=MF_W.get()/2)
-        Label(report_window, text="",bg="#2CC",font=("Roboto",50),fg="#FFF").grid(row=0,column=0,ipadx=1000)
-        Label(report_window, text="REPORTE PI-RADS",bg="#2CC",font=("Roboto",15),fg="#000").place(relx=0.5,y=20,anchor=CENTER)
-        Label(report_window, text="Observaciones",bg="#2CC",font=("Roboto",13),fg="#000").place(relx=0.5,y=60,anchor=CENTER)
-        Button(report_window, text="+ Nueva Observación", font=("Roboto",13), bg="#2CC", bd=0, command=new_obs).place(relx=0.05, y=100)
-        Button(report_window, text="Generar Reporte PDF", font=("Roboto",15), bg="#2CC", bd=0).place(relx=0.5, rely=0.95)
-        for n,obs in enumerate(observaciones):
-            Button(report_window, text=" - ", font=("Roboto",14), bg="#F00", bd=0).place(relx=0.02, y=200+n*50,anchor=CENTER)
-            Button(report_window, text=" Edit ", font=("Roboto",14), bg="#FF0", bd=0).place(relx=0.06, y=200+n*50,anchor=CENTER)
-            Label(report_window, text="Observación N°"+str(obs.id),bg="#2CC",font=("Roboto",15),fg="#000").place(relx=0.2,y=200+n*50,anchor=CENTER)
-
+        refresh_report()
+        
+def refresh_report():
+    global report_window
+    report_window = Frame(root,background="#333")
+    report_window.place(relx=0,rely=0, height=MF_H.get(), width=MF_W.get()/2)
+    Label(report_window, text="REPORTE PI-RADS",bg="#2CC",font=("Roboto",15),fg="#000").pack(fill=X,ipady=10)
+    Label(report_window, text="OBSERVACIONES",bg="#2CC",font=("Roboto",13),fg="#000").pack(fill=X,pady=(0,20))
+    Button(report_window, text="NUEVA OBSERVACION", font=("Roboto",10), bg="#2CC", bd=2, cursor="hand2", relief="groove", command=new_obs).pack(pady=(0,20))
+    
+    for n, obs in enumerate(observaciones):
+        mini_report = Frame(report_window,background="#444")
+        mini_report.pack(fill=X,pady=(0,30))
+        Button(mini_report, text=" - ", font=("Roboto",12), bg="#F00", bd=0, command=lambda to_destroy=n:del_obs(to_destroy)).pack(side=LEFT)
+        Button(mini_report, text=" Edit ", font=("Roboto",12), bg="#FF0", bd=0).pack(side=LEFT)
+        Label(mini_report, text="Observación N°"+str(obs.id),bg="#444",font=("Roboto",15),fg="#FFF").pack(anchor=W,padx=(5,0))
+    Button(report_window, text="Generar PDF", font=("Roboto",15), bg="#2CC", bd=2, cursor="hand2", relief="groove").pack()
+    
 def new_obs():
-    observaciones.append(observacion(len(observaciones)))
-    try:    
-        Button(report_window, text=" - ", font=("Roboto",14), bg="#F00", bd=0, command= lambda m=len(observaciones): del_obs(m)).place(relx=0.02, y=200+(len(observaciones)-1)*50,anchor=CENTER)
-        Button(report_window, text=" Edit ", font=("Roboto",14), bg="#FF0", bd=0).place(relx=0.06, y=200+(len(observaciones)-1)*50,anchor=CENTER)
-        Label(report_window, text="Observación N°"+str(observaciones[-1].id),bg="#2CC",font=("Roboto",15),fg="#000").place(relx=0.2,y=200+(len(observaciones)-1)*50,anchor=CENTER)
-    except: pass
+    global obs_id
+    observaciones.append(observacion(obs_id))
+    obs_id += 1
+    refresh_report()
 def del_obs(to_destroy):
     observaciones.pop(to_destroy)
+    refresh_report()
     
 def canvas_creator(layout: int):
-    global cv_master, img2cv, info_switch
+    global cv_master, img2cv
     img2cv = [0,0,0,0]
     try:
         for temp_cv in cv_master:
@@ -404,7 +408,7 @@ def go_back_1(event):
     obj_master.pop()
 
 def patient_loader():
-    global secuencias, obj_master, observaciones
+    global secuencias, obj_master, observaciones, obs_id
     
     filepath = filedialog.askdirectory()
     if not filepath: return 
@@ -417,6 +421,7 @@ def patient_loader():
     obj_master = []
     # MASTER DE OBSERVACIONES PARA REPORTE
     observaciones = []
+    obs_id = 0 # para identificar las observaciones si se borran/modifican
     
     for file in sorted(os.listdir(filepath)):
         name, ext = os.path.splitext(file)
