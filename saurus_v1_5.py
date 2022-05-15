@@ -1,4 +1,5 @@
 from tkinter import *
+from turtle import st
 from PIL import Image, ImageTk#, ImageGrab
 from tkinter import filedialog
 from cv2 import exp
@@ -180,7 +181,7 @@ class observacion:
     def __init__(self,id):
         self.id = id        #numero de observacion para identificacion
         self.imagenes = []  #donde guardo los strings de direccion de imagenes para el html
-        self.location = 0   #numero codificado de locacion / puede ser el nombre de la locacion
+        self.location = ""   #numero codificado de locacion / puede ser el nombre de la locacion
         self.is_a = False   #checkbox de a
         self.is_b = False
         self.is_c = False
@@ -300,22 +301,33 @@ def refresh_report():
     
     for n, obs in enumerate(observaciones):
         mini_report = Frame(report_window,background="#444")
-        mini_report.pack(fill=X,pady=(0,30))
+        mini_report.pack(fill=X,pady=(0,30),ipadx=2, ipady=2)
         Button(mini_report, text="Del.", font=("Roboto",12), bg="#F00", bd=0, command=lambda to_destroy=n:del_obs(to_destroy)).pack(side=LEFT,ipadx=1,ipady=1)
         Button(mini_report, text="Edit", font=("Roboto",12), bg="#FF0", bd=0).pack(side=LEFT,ipadx=1,ipady=1)
-        Label(mini_report, text="Observación N°"+str(obs.id),bg="#444",font=("Roboto",15),fg="#FFF").pack(anchor=W,padx=(15,0))
-        Label(mini_report, text="XEYasd",bg="#444",font=("Roboto",12),fg="#FFF").pack(anchor=W,padx=(15,0))
-        Label(mini_report, text="PI-RADS 5",bg="#444",font=("Roboto",12),fg="#FFF").pack(side=RIGHT,padx=(0,30))
+        Label(mini_report, text="Clasificación\nPI-RADS 5",bg="#444",font=("Roboto",12),fg="#FFF").pack(side=RIGHT,padx=(0,30))
+        Label(mini_report, text="ID:"+str(obs.id),bg="#444",font=("Roboto",9),fg="#FFF").pack(anchor=W,padx=(15,0))
+        Label(mini_report, text="Ubicación: Zona Periférica Anterior",bg="#444",font=("Roboto",10),fg="#FFF").pack(anchor=W,padx=(15,0))
+        Label(mini_report, text="Tamaño: 1.2x5x3mm3, Vol. 40ml",bg="#444",font=("Roboto",10),fg="#FFF").pack(anchor=W,padx=(15,0))
         des = Text(mini_report,bg="#444",font=("Roboto",9),fg="#FFF",height=4,width=100,bd=0)
         des.pack(anchor=W,padx=(15,0))
         T =  "Descripción: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum"
         des.insert(END,T) 
-    Button(report_window, text="Generar PDF", font=("Roboto",15), bg="#2CC", bd=2, cursor="hand2", relief="groove").pack()
+    Button(report_window, text="INICIAR REPORTE", font=("Roboto",11), bg="#2CC", bd=2, cursor="hand2", relief="groove").pack()
     
 def new_obs():
     global obs_id
     observaciones.append(observacion(obs_id))
     obs_id += 1
+    """
+        borro la ventana de reporte
+        con la ventana de canvas abierta creo una lateral que guie los pasos/ creo una nueva ventana?
+            1-  opciones (por ahora en letras) de zona de lesion
+            2-  tamaño -> tengo que marcar los 3 ejes (2 en sagital y 1 en axial) (tengo q tenerlas abiertas?, tengo que seleccionar a mano los ejes o son seguidos?). Despues calculo el volumen
+            3-  opcion de checkbox o opciones(4) de existencia de volumen extraprostatico de esa lesion
+            4-  marco el numero segun pirads para cada vista o opciones de lesion y algoritmicamente se determina la clasificacion
+            5-  escribo info adicional si quiero
+            6-  guardo y se abre la ventana de reporte con la observacion agregada, puedo repetir el proceso.
+    """
     refresh_report()
 def del_obs(to_destroy):
     observaciones.pop(to_destroy)
@@ -447,7 +459,8 @@ def patient_loader():
 
 def sec_selector():
     global seq_tab,sec_list
-
+    try: seq_tab.destroy()
+    except: pass
     seq_tab = Frame(root,background="#2CC")
     seq_tab.place(relx=0,rely=0, height=MF_H.get())
     Label(seq_tab, text="SECUENCIAS DISPONIBLES",bg="#2CC",font=("Roboto",12),fg="#000").grid(row=0,column=0,pady=20)
@@ -586,18 +599,20 @@ def slice_selector(event):
 
 def info_tab_gen():
     global info_tab
+    try: info_tab.destroy()
+    except: pass
     info = ""
     for sec in secuencias:
         if sec.incv == cv:
             if sec.aux_view: return
             else:
                 for item in sec.dcm_serie[sec.slice]:
-                    info += (str(item) + "\n")
-    info_tab = Frame(root,background="#2CC")
+                    info += (" " + str(item) + "\n")
+    info_tab = Frame(root,background="#333")
     info_tab.place(relx=0,rely=0, height=MF_H.get())
-    Label(info_tab, text="DICOM METADATA",bg="#2CC",font=("Roboto",12),fg="#000").grid(row=0,column=0,pady=10)
-    text_box = Text(info_tab,width=100,height=58,font=("Roboto",10),fg="#000",bg="#2CC",bd=0)
-    text_box.grid(row=1, column=0)
+    Label(info_tab, text="DICOM METADATA",bg="#2CC",font=("Roboto",12),fg="#000").grid(row=0,column=0,columnspan=2,sticky=NSEW,ipady=10)
+    text_box = Text(info_tab,width=100,height=58,font=("Roboto",10),fg="#FFF",bg="#333",bd=0)
+    text_box.grid(row=1, column=0,pady=(10,0))
     text_box.insert(END,info)
     sb = Scrollbar(info_tab,orient=VERTICAL)
     sb.grid(row=1, column=1, sticky=NS)
@@ -666,7 +681,7 @@ def view_sec_gen(tipo: str):
             root.config(cursor="plus")
             root.bind('<Button-1>', lambda event, seq=secuencias[-1].name: sec_setup(event, seq))  
                 
-                
+             
 ## HERRAMIENTAS
 
 #ROI GENERATORS
@@ -703,7 +718,7 @@ def roi_end(event):
             return
     obj_master[-1].end_coord(event.x,event.y)
     obj_master[-1].draw(False)
-    roi_gen(obj_master[-1].name[0])
+    roi_gen(obj_master[-1].name[0])        
 def roi_escape(event,flag: bool):
     root.config(cursor="arrow")
     root.unbind('<Button-1>')
