@@ -202,6 +202,10 @@ def windows_creator():
     bot_frame.grid_propagate(0)
 
     info_label = Label(bot_frame, textvariable=info_text,bg="#2CC",font=("Roboto",9),fg="#000").grid(row=0,column=0,padx=10)
+    global observaciones, obs_id
+    # MASTER DE OBSERVACIONES PARA REPORTE
+    observaciones = []
+    obs_id = 0 # para identificar las observaciones si se borran/modifican
 
 def menu_creator():
     
@@ -278,14 +282,16 @@ def report_main():
                 
     """
     if report_flag.get():
-        report_flag.set(False)
         report_window.destroy()
+        report_flag.set(False)
     else:
         report_flag.set(True)
         refresh_report()
         
 def refresh_report():
     global report_window
+    try: report_window.destroy()
+    except: pass
     report_window = Frame(root,background="#333")
     report_window.place(relx=0,rely=0, height=MF_H.get(), width=MF_W.get()/2)
     Label(report_window, text="REPORTE PI-RADS",bg="#2CC",font=("Roboto",15),fg="#000").pack(fill=X,ipady=10)
@@ -295,9 +301,15 @@ def refresh_report():
     for n, obs in enumerate(observaciones):
         mini_report = Frame(report_window,background="#444")
         mini_report.pack(fill=X,pady=(0,30))
-        Button(mini_report, text=" - ", font=("Roboto",12), bg="#F00", bd=0, command=lambda to_destroy=n:del_obs(to_destroy)).pack(side=LEFT)
-        Button(mini_report, text=" Edit ", font=("Roboto",12), bg="#FF0", bd=0).pack(side=LEFT)
-        Label(mini_report, text="Observación N°"+str(obs.id),bg="#444",font=("Roboto",15),fg="#FFF").pack(anchor=W,padx=(5,0))
+        Button(mini_report, text="Del.", font=("Roboto",12), bg="#F00", bd=0, command=lambda to_destroy=n:del_obs(to_destroy)).pack(side=LEFT,ipadx=1,ipady=1)
+        Button(mini_report, text="Edit", font=("Roboto",12), bg="#FF0", bd=0).pack(side=LEFT,ipadx=1,ipady=1)
+        Label(mini_report, text="Observación N°"+str(obs.id),bg="#444",font=("Roboto",15),fg="#FFF").pack(anchor=W,padx=(15,0))
+        Label(mini_report, text="XEYasd",bg="#444",font=("Roboto",12),fg="#FFF").pack(anchor=W,padx=(15,0))
+        Label(mini_report, text="PI-RADS 5",bg="#444",font=("Roboto",12),fg="#FFF").pack(side=RIGHT,padx=(0,30))
+        des = Text(mini_report,bg="#444",font=("Roboto",9),fg="#FFF",height=4,width=100,bd=0)
+        des.pack(anchor=W,padx=(15,0))
+        T =  "Descripción: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum"
+        des.insert(END,T) 
     Button(report_window, text="Generar PDF", font=("Roboto",15), bg="#2CC", bd=2, cursor="hand2", relief="groove").pack()
     
 def new_obs():
@@ -419,9 +431,7 @@ def patient_loader():
     sec_uids = []
     # MASTER DE DIBUJOS
     obj_master = []
-    # MASTER DE OBSERVACIONES PARA REPORTE
-    observaciones = []
-    obs_id = 0 # para identificar las observaciones si se borran/modifican
+    
     
     for file in sorted(os.listdir(filepath)):
         name, ext = os.path.splitext(file)
@@ -718,7 +728,7 @@ MF_W = IntVar(value=1920)
 MF_H = IntVar(value=980)
 CV_W = IntVar(value=0)
 CV_H = IntVar(value=0)
-info_text = StringVar(value="SAURUS V1.4")
+info_text = StringVar(value="SAURUS V1.5")
 info_cv = BooleanVar(value=0)
 axis_cv = BooleanVar(value=0)
 report_flag = BooleanVar(value=0)
