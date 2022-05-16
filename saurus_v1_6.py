@@ -753,6 +753,21 @@ def vol_calculator():
     vol = 0         # el volumen medido
     roi_gen("r")
 
+def obs_setup(tipo: str):
+    # si tipo es "new" o si es "edit" (si es edit y quiero cambiar el volumen se hace solo eso, etc)
+    # primero borro el report menu
+    # hago que aparezca cartelito con los pasos
+        # marque 3 ejes 
+        # aparece ventana de observacion
+            #seleccionar zona
+            #seleccionar otras opciones /checkboxes
+            #escribibir info
+        #calculo den background de piradsm, volumen y coso
+        #le doy a "guardar" -> sirve para modo edit
+    #se cierra la ventana de observacion
+    #se abre la ventana de report actualizada
+        
+    pass
 #-------------- MAIN LOOP ---------------------------------------------------------
       
         
