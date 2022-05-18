@@ -180,13 +180,14 @@ class observacion:
         self.id = id        #numero de observacion para identificacion
         self.imagenes = []  #donde guardo los strings de direccion de imagenes para el html
         self.location = ""   #nombre de la zona afectada
-        self.eep = ""   #checkbox de eep
-        self.lesionT2 = ""
+        self.eep = ""       #checkbox de eep
+        self.lesionT2 = ""  #Tipo de lesion en T2
         self.lesionADC = ""
         self.lesionDWI = ""
         self.info = ""      #texto informativo escrito a mano
-        self.volumen = 0
-        self.categoria = 0
+        self.volumen = 0    #volumen de lesion
+        self.medidas = [0,0,0]  #largo ejes de lesion
+        self.categoria = 0  #SEGUN PIRADS
         
         
 ## FUNCIONES
@@ -308,7 +309,7 @@ def refresh_report():
         Label(mini_report, text="Clasificación\nPI-RADS "+str(obs.categoria),bg="#444",font=("Roboto",12),fg="#FFF").pack(side=RIGHT,padx=(0,30))
         Label(mini_report, text="ID:"+str(obs.id),bg="#444",font=("Roboto",9),fg="#FFF").pack(anchor=W,padx=(15,0))
         Label(mini_report, text="Ubicación: "+obs.location,bg="#444",font=("Roboto",10),fg="#FFF").pack(anchor=W,padx=(15,0))
-        Label(mini_report, text="Tamaño: 1.2x5x3mm3, Vol: "+str(obs.volumen)+"ml",bg="#444",font=("Roboto",10),fg="#FFF").pack(anchor=W,padx=(15,0))
+        Label(mini_report, text="Tamaño: "+str(obs.medidas[0])+"x"+str(obs.medidas[1])+"x"+str(obs.medidas[2])+"mm --> Vol: "+str(obs.volumen)+"ml",bg="#444",font=("Roboto",10),fg="#FFF").pack(anchor=W,padx=(15,0))
         Label(mini_report, text="Descripción:",bg="#444",font=("Roboto",10),fg="#FFF").pack(anchor=W,padx=(15,0))
         des = Text(mini_report,bg="#444",font=("Roboto",9),fg="#FFF",height=4,width=100,bd=0)
         des.pack(anchor=W,padx=(15,0))
@@ -333,31 +334,9 @@ def obs_setup(tipo: str):
         steps_main(1)
     elif tipo == "bypassed":
         observaciones[-1].volumen = vol
+        observaciones[-1].medidas = medidas
         steps_window.destroy()
         steps_main(2)
-        #refresh_report()   
-    # si tipo es "new" o si es "edit" (si es edit y quiero cambiar el volumen se hace solo eso, etc)
-    # primero borro el report menu
-    # hago que aparezca cartelito con los pasos
-        # marque 3 ejes 
-        # aparece ventana de observacion
-            #seleccionar zona
-            #seleccionar otras opciones /checkboxes
-            #escribibir info
-        #calculo den background de piradsm, volumen y coso
-        #le doy a "guardar" -> sirve para modo edit
-    #se cierra la ventana de observacion
-    #se abre la ventana de report actualizada
-    """
-        borro la ventana de reporte
-        con la ventana de canvas abierta creo una lateral que guie los pasos/ creo una nueva ventana?
-            1-  opciones (por ahora en letras) de zona de lesion
-            2-  tamaño -> tengo que marcar los 3 ejes (2 en sagital y 1 en axial) (tengo q tenerlas abiertas?, tengo que seleccionar a mano los ejes o son seguidos?). Despues calculo el volumen
-            3-  opcion de checkbox o opciones(4) de existencia de volumen extraprostatico de esa lesion
-            4-  marco el numero segun pirads para cada vista o opciones de lesion y algoritmicamente se determina la clasificacion
-            5-  escribo info adicional si quiero
-            6-  guardo y se abre la ventana de reporte con la observacion agregada, puedo repetir el proceso.
-    """
      
 def steps_main(step: int):
     global steps_window, zonas, lesionT2, lesionDWI, lesionADC, eep, info
@@ -412,6 +391,7 @@ def steps_main(step: int):
         observaciones[-1].lesionDWI = lesionDWI.get()
         observaciones[-1].eep = eep.get()
         observaciones[-1].info= info.get("1.0","end-1c")
+        #calculo de pirads ==> IMPORTANTEEEE !!!
         steps_window.destroy()
         refresh_report()
         
@@ -548,12 +528,12 @@ def sec_selector():
     global seq_tab,sec_list
     try: seq_tab.destroy()
     except: pass
-    seq_tab = Frame(root,background="#2CC")
+    seq_tab = Frame(root,background="#333")
     seq_tab.place(relx=0,rely=0, height=MF_H.get())
-    Label(seq_tab, text="SECUENCIAS DISPONIBLES",bg="#2CC",font=("Roboto",12),fg="#000").grid(row=0,column=0,pady=20)
+    Label(seq_tab, text="SECUENCIAS DISPONIBLES",bg="#2CC",font=("Roboto",12),fg="#000").pack(fill=X,ipady=10)
 
-    sec_list = Listbox(seq_tab, height=100, width=50, relief=FLAT, bg="#2CC",font=("Roboto",9), fg="#000",selectbackground="#222",highlightthickness=0)
-    sec_list.grid(row=1,column=0,padx=10)
+    sec_list = Listbox(seq_tab, height=100, width=50, relief=FLAT, bg="#333",font=("Roboto",9), fg="#FFF",selectbackground="#222",highlightthickness=0)
+    sec_list.pack(padx=5,pady=10)
     for sec in secuencias:
         if not sec.aux_view:
             sec_list.insert(END,sec.name)
@@ -683,7 +663,6 @@ def slice_selector(event):
             break
     refresh_canvas(sec) 
 
-
 def info_tab_gen():
     global info_tab
     try: info_tab.destroy()
@@ -707,7 +686,6 @@ def info_tab_gen():
     sb.config(command=text_box.yview)
     
     root.bind("<Escape>",info_tab_destroy)
-    
 def info_tab_destroy(event):
     info_tab.destroy()
 
@@ -810,6 +788,7 @@ def roi_end(event):
     global vol_cont, vol_flag, vol
     if vol_flag:
         vol_cont += 1
+        medidas.append(round(obj_master[-1].rdis,1))
         if vol_cont == 3:
             vol_cont = 0
             vol_flag = False
@@ -821,8 +800,7 @@ def roi_end(event):
             root.unbind('<Button-1>')
             root.unbind('<B1-Motion>')
             root.unbind('<ButtonRelease-1>')
-            obs_setup("bypassed")
-                 
+            obs_setup("bypassed")              
 def roi_escape(event,flag: bool):
     root.config(cursor="arrow")
     root.unbind('<Button-1>')
@@ -833,10 +811,11 @@ def roi_escape(event,flag: bool):
         obj_master.pop()
         
 def vol_calculator():
-    global vol_cont, vol_flag, vol
+    global vol_cont, vol_flag, vol, medidas
     vol_cont = 0    # cantidad de mediciones de axis elipsoide
     vol_flag = True # las rois de mediciones son para volumen
     vol = 0         # el volumen medido
+    medidas = []
     roi_gen("r")
 
 
@@ -846,7 +825,7 @@ def vol_calculator():
 root = Tk()
 root.title("S A U R U S")
 root.config(bg="#F00") #para debug 
-#root.iconbitmap("unsam.ico")
+root.iconbitmap("unsam.ico")
 
 # GLOBAL VARIABLES
 MF_W = IntVar(value=1920)
