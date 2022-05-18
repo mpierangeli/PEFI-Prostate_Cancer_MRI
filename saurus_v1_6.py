@@ -1,7 +1,8 @@
+from msilib.schema import CheckBox, ComboBox
+from optparse import Values
 from tkinter import *
-from turtle import st
 from PIL import Image, ImageTk#, ImageGrab
-from tkinter import filedialog
+from tkinter import filedialog,ttk
 from cv2 import exp
 import pydicom
 import numpy as np
@@ -186,6 +187,7 @@ class observacion:
         self.is_b = False
         self.is_c = False
         self.info = ""      #texto informativo escrito a mano
+        self.volumen = 0
         
         
 ## FUNCIONES
@@ -297,7 +299,7 @@ def refresh_report():
     report_window.place(relx=0,rely=0, height=MF_H.get(), width=MF_W.get()/2)
     Label(report_window, text="REPORTE PI-RADS",bg="#2CC",font=("Roboto",15),fg="#000").pack(fill=X,ipady=10)
     Label(report_window, text="OBSERVACIONES",bg="#2CC",font=("Roboto",13),fg="#000").pack(fill=X,pady=(0,20))
-    Button(report_window, text="NUEVA OBSERVACION", font=("Roboto",10), bg="#2CC", bd=2, cursor="hand2", relief="groove", command=new_obs).pack(pady=(0,20))
+    Button(report_window, text="NUEVA OBSERVACION", font=("Roboto",10), bg="#2CC", bd=2, cursor="hand2", relief="groove", command=lambda tipo="new":obs_setup(tipo)).pack(pady=(0,20))
     
     for n, obs in enumerate(observaciones):
         mini_report = Frame(report_window,background="#444")
@@ -307,17 +309,42 @@ def refresh_report():
         Label(mini_report, text="Clasificación\nPI-RADS 5",bg="#444",font=("Roboto",12),fg="#FFF").pack(side=RIGHT,padx=(0,30))
         Label(mini_report, text="ID:"+str(obs.id),bg="#444",font=("Roboto",9),fg="#FFF").pack(anchor=W,padx=(15,0))
         Label(mini_report, text="Ubicación: Zona Periférica Anterior",bg="#444",font=("Roboto",10),fg="#FFF").pack(anchor=W,padx=(15,0))
-        Label(mini_report, text="Tamaño: 1.2x5x3mm3, Vol. 40ml",bg="#444",font=("Roboto",10),fg="#FFF").pack(anchor=W,padx=(15,0))
+        Label(mini_report, text="Tamaño: 1.2x5x3mm3, Vol: "+str(obs.volumen)+"ml",bg="#444",font=("Roboto",10),fg="#FFF").pack(anchor=W,padx=(15,0))
         des = Text(mini_report,bg="#444",font=("Roboto",9),fg="#FFF",height=4,width=100,bd=0)
         des.pack(anchor=W,padx=(15,0))
         T =  "Descripción: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum"
         des.insert(END,T) 
     Button(report_window, text="INICIAR REPORTE", font=("Roboto",11), bg="#2CC", bd=2, cursor="hand2", relief="groove").pack()
-    
-def new_obs():
+
+def obs_setup(tipo: str):
     global obs_id
-    observaciones.append(observacion(obs_id))
-    obs_id += 1
+    if tipo == "new":
+        observaciones.append(observacion(obs_id))
+        obs_id += 1
+        report_window.destroy()
+        steps_main(1)
+        vol_calculator()
+    elif tipo == "edit":
+        report_window.destroy()
+        steps_main(1)
+        vol_calculator()
+    elif tipo == "bypassed":
+        observaciones[-1].volumen = vol
+        steps_window.destroy()
+        steps_main(2)
+        #refresh_report()   
+    # si tipo es "new" o si es "edit" (si es edit y quiero cambiar el volumen se hace solo eso, etc)
+    # primero borro el report menu
+    # hago que aparezca cartelito con los pasos
+        # marque 3 ejes 
+        # aparece ventana de observacion
+            #seleccionar zona
+            #seleccionar otras opciones /checkboxes
+            #escribibir info
+        #calculo den background de piradsm, volumen y coso
+        #le doy a "guardar" -> sirve para modo edit
+    #se cierra la ventana de observacion
+    #se abre la ventana de report actualizada
     """
         borro la ventana de reporte
         con la ventana de canvas abierta creo una lateral que guie los pasos/ creo una nueva ventana?
@@ -328,11 +355,35 @@ def new_obs():
             5-  escribo info adicional si quiero
             6-  guardo y se abre la ventana de reporte con la observacion agregada, puedo repetir el proceso.
     """
-    refresh_report()
+     
+def steps_main(step: int):
+    global steps_window
+    
+    if step == 1:
+        steps_window = Frame(root,background="#2CC")
+        steps_window.place(relx=0.5,rely=0.05, height=40,anchor=CENTER)
+        Label(steps_window, text="Seleccione 3 ejes de la lesión",bg="#2CC",font=("Roboto",12),fg="#000").pack(ipady=5,ipadx=20)
+    elif step == 2:
+        steps_window = Frame(root,background="#444")
+        steps_window.place(relx=0.5,rely=0.5, width=500,height=700,anchor=CENTER)
+        Label(steps_window, text="Sobre la lesión...",bg="#2CC",font=("Roboto",12),fg="#000").pack(fill=X,ipady=5,ipadx=20)
+        Label(steps_window, text="Seleccione la zona afectada",bg="#444",font=("Roboto",12),fg="#FFF").pack(fill=X,ipady=5,ipadx=5,pady=10)
+        zonas = ttk.Combobox(steps_window, state="readonly", values=["Zona A","Zona B","Zona C"],width=60)
+        zonas.pack()
+        opcion = IntVar()
+        Label(steps_window, text="Hay EEP?",bg="#444",font=("Roboto",12),fg="#FFF").pack(fill=X,ipady=5,ipadx=5,pady=10)
+        Radiobutton(steps_window, text="No se observa", variable=opcion,value=0,bg="#444",fg="#FFF").pack()
+        Radiobutton(steps_window, text="Leve", variable=opcion,value=1,bg="#444",fg="#FFF").pack()
+        Radiobutton(steps_window, text="Media", variable=opcion,value=2,bg="#444",fg="#FFF").pack()
+        Radiobutton(steps_window, text="Grave", variable=opcion,value=3,bg="#444",fg="#FFF").pack()
+        Label(steps_window, text="Información Adicional",bg="#444",font=("Roboto",12),fg="#FFF").pack(fill=X,ipady=5,ipadx=5,pady=10)
+        info = Text(steps_window,width=60,font=("Roboto",10),height=20,bg="#555",fg="#FFF",bd=0)
+        info.pack()
+        Button(steps_window, text="Guardar Observación", font=("Roboto",12), bg="#2CC", bd=2, cursor="hand2", relief="groove").pack(fill=X,side=BOTTOM)
 def del_obs(to_destroy):
     observaciones.pop(to_destroy)
     refresh_report()
-    
+
 def canvas_creator(layout: int):
     global cv_master, img2cv
     img2cv = [0,0,0,0]
@@ -731,11 +782,11 @@ def roi_end(event):
             for n in range(3):
                 obj_master[-1].insec.incv.delete(obj_master[-1].name)
                 obj_master.pop()
-            print("CALCULE EL VOLUMEN Y VALE: ",vol)
             root.config(cursor="arrow")
             root.unbind('<Button-1>')
             root.unbind('<B1-Motion>')
             root.unbind('<ButtonRelease-1>')
+            obs_setup("bypassed")
                  
 def roi_escape(event,flag: bool):
     root.config(cursor="arrow")
@@ -753,21 +804,7 @@ def vol_calculator():
     vol = 0         # el volumen medido
     roi_gen("r")
 
-def obs_setup(tipo: str):
-    # si tipo es "new" o si es "edit" (si es edit y quiero cambiar el volumen se hace solo eso, etc)
-    # primero borro el report menu
-    # hago que aparezca cartelito con los pasos
-        # marque 3 ejes 
-        # aparece ventana de observacion
-            #seleccionar zona
-            #seleccionar otras opciones /checkboxes
-            #escribibir info
-        #calculo den background de piradsm, volumen y coso
-        #le doy a "guardar" -> sirve para modo edit
-    #se cierra la ventana de observacion
-    #se abre la ventana de report actualizada
-        
-    pass
+
 #-------------- MAIN LOOP ---------------------------------------------------------
       
         
