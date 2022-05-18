@@ -365,21 +365,43 @@ def steps_main(step: int):
         Label(steps_window, text="Seleccione 3 ejes de la lesión",bg="#2CC",font=("Roboto",12),fg="#000").pack(ipady=5,ipadx=20)
     elif step == 2:
         steps_window = Frame(root,background="#444")
-        steps_window.place(relx=0.5,rely=0.5, width=500,height=700,anchor=CENTER)
+        steps_window.place(relx=0.5,rely=0.5, width=500,height=800,anchor=CENTER)
         Label(steps_window, text="Sobre la lesión...",bg="#2CC",font=("Roboto",12),fg="#000").pack(fill=X,ipady=5,ipadx=20)
-        Label(steps_window, text="Seleccione la zona afectada",bg="#444",font=("Roboto",12),fg="#FFF").pack(fill=X,ipady=5,ipadx=5,pady=10)
-        zonas = ttk.Combobox(steps_window, state="readonly", values=["Zona A","Zona B","Zona C"],width=60)
+
+        Label(steps_window, text="Zona afectada",bg="#444",font=("Roboto",10),fg="#FFF",anchor=W).pack(fill=X,pady=(20,10),padx=30)
+        zonas = ttk.Combobox(steps_window, state="readonly", values=["Zona A","Zona B","Zona C"],width=70)
         zonas.pack()
-        opcion = IntVar()
-        Label(steps_window, text="Hay EEP?",bg="#444",font=("Roboto",12),fg="#FFF").pack(fill=X,ipady=5,ipadx=5,pady=10)
-        Radiobutton(steps_window, text="No se observa", variable=opcion,value=0,bg="#444",fg="#FFF").pack()
-        Radiobutton(steps_window, text="Leve", variable=opcion,value=1,bg="#444",fg="#FFF").pack()
-        Radiobutton(steps_window, text="Media", variable=opcion,value=2,bg="#444",fg="#FFF").pack()
-        Radiobutton(steps_window, text="Grave", variable=opcion,value=3,bg="#444",fg="#FFF").pack()
-        Label(steps_window, text="Información Adicional",bg="#444",font=("Roboto",12),fg="#FFF").pack(fill=X,ipady=5,ipadx=5,pady=10)
-        info = Text(steps_window,width=60,font=("Roboto",10),height=20,bg="#555",fg="#FFF",bd=0)
+
+        Label(steps_window, text="Lesión en T2",bg="#444",font=("Roboto",10),fg="#FFF",anchor=W).pack(fill=X,pady=10,padx=30)
+        lesionT2 = ttk.Combobox(steps_window, state="readonly", values=["Zona A","Zona B","Zona C"],width=70)
+        lesionT2.pack()
+
+        Label(steps_window, text="Lesión en ADC",bg="#444",font=("Roboto",10),fg="#FFF",anchor=W).pack(fill=X,pady=10,padx=30)
+        lesionADC = ttk.Combobox(steps_window, state="readonly", values=["Zona A","Zona B","Zona C"],width=70)
+        lesionADC.pack()
+
+        Label(steps_window, text="Lesión en DWI",bg="#444",font=("Roboto",10),fg="#FFF",anchor=W).pack(fill=X,pady=10,padx=30)
+        lesionDWI = ttk.Combobox(steps_window, state="readonly", values=["Zona A","Zona B","Zona C"],width=70)
+        lesionDWI.pack()
+
+        Label(steps_window, text="Extensión Extraprostática",bg="#444",font=("Roboto",10),fg="#FFF",anchor=W).pack(fill=X,pady=10,padx=30)
+        eep = StringVar()
+        auxframe = Frame(steps_window)
+        auxframe.pack(padx=(30,0),anchor=W)
+        Radiobutton(auxframe, text="No se observa", variable=eep, value="No se observa", bg="#444",anchor=W,foreground="#FFF",selectcolor="#444",activebackground="#2CC").pack(side=LEFT)
+        Radiobutton(auxframe, text="Leve", variable=eep, value="Leve", bg="#444",anchor=W,foreground="#FFF",selectcolor="#444",activebackground="#2CC").pack(side=LEFT)
+        Radiobutton(auxframe, text="Media", variable=eep, value="Media", bg="#444",anchor=W,foreground="#FFF",selectcolor="#444",activebackground="#2CC").pack(side=LEFT)
+        Radiobutton(auxframe, text="Grave", variable=eep, value="Grave", bg="#444",anchor=W,foreground="#FFF",selectcolor="#444",activebackground="#2CC").pack(side=LEFT)
+
+        Label(steps_window, text="Información Adicional",bg="#444",font=("Roboto",10),fg="#FFF",anchor=W).pack(fill=X,pady=(20,10),padx=30)
+        info = Text(steps_window,width=62,font=("Roboto",10),height=10,bg="#555",fg="#FFF",bd=0,insertbackground="#2CC")
         info.pack()
-        Button(steps_window, text="Guardar Observación", font=("Roboto",12), bg="#2CC", bd=2, cursor="hand2", relief="groove").pack(fill=X,side=BOTTOM)
+        auxframe2 = Frame(steps_window)
+        auxframe2.pack(padx=30,pady=30,anchor=W)
+        Button(auxframe2, text="Agregar Imágenes", font=("Roboto",10), bg="#2CC", bd=0, cursor="hand2").pack(ipadx=2,ipady=2)
+
+        Button(steps_window, text="Guardar Observación", font=("Roboto",12), bg="#2CC", bd=0, cursor="hand2",height=3).pack(fill=X,side=BOTTOM)
+        
 def del_obs(to_destroy):
     observaciones.pop(to_destroy)
     refresh_report()
