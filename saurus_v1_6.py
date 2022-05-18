@@ -179,12 +179,14 @@ class observacion:
     def __init__(self,id):
         self.id = id        #numero de observacion para identificacion
         self.imagenes = []  #donde guardo los strings de direccion de imagenes para el html
-        self.location = ""   #numero codificado de locacion / puede ser el nombre de la locacion
-        self.is_a = False   #checkbox de a
-        self.is_b = False
-        self.is_c = False
+        self.location = ""   #nombre de la zona afectada
+        self.eep = ""   #checkbox de eep
+        self.lesionT2 = ""
+        self.lesionADC = ""
+        self.lesionDWI = ""
         self.info = ""      #texto informativo escrito a mano
         self.volumen = 0
+        self.categoria = 0
         
         
 ## FUNCIONES
@@ -295,24 +297,30 @@ def refresh_report():
     report_window = Frame(root,background="#333")
     report_window.place(relx=0,rely=0, height=MF_H.get(), width=MF_W.get()/2)
     Label(report_window, text="REPORTE PI-RADS",bg="#2CC",font=("Roboto",15),fg="#000").pack(fill=X,ipady=10)
-    Label(report_window, text="OBSERVACIONES",bg="#2CC",font=("Roboto",13),fg="#000").pack(fill=X,pady=(0,20))
-    Button(report_window, text="NUEVA OBSERVACION", font=("Roboto",10), bg="#2CC", bd=2, cursor="hand2", relief="groove", command=lambda tipo="new":obs_setup(tipo)).pack(pady=(0,20))
-    
+    Label(report_window, text="PANEL DE OBSERVACIONES",bg="#2CC",font=("Roboto",13),fg="#000").pack(fill=X,pady=(0,20))
+    Button(report_window, text="NUEVA OBSERVACION", font=("Roboto",12), bg="#2CC", bd=0, cursor="hand2", relief="groove", 
+                command=lambda tipo="new":obs_setup(tipo)).pack(fill=X,pady=(0,20), ipady=10)
     for n, obs in enumerate(observaciones):
         mini_report = Frame(report_window,background="#444")
         mini_report.pack(fill=X,pady=(0,30),ipadx=2, ipady=2)
         Button(mini_report, text="Del.", font=("Roboto",12), bg="#F00", bd=0, command=lambda to_destroy=n:del_obs(to_destroy)).pack(side=LEFT,ipadx=1,ipady=1)
         Button(mini_report, text="Edit", font=("Roboto",12), bg="#FF0", bd=0, command=vol_calculator).pack(side=LEFT,ipadx=1,ipady=1)
-        Label(mini_report, text="Clasificación\nPI-RADS 5",bg="#444",font=("Roboto",12),fg="#FFF").pack(side=RIGHT,padx=(0,30))
+        Label(mini_report, text="Clasificación\nPI-RADS "+str(obs.categoria),bg="#444",font=("Roboto",12),fg="#FFF").pack(side=RIGHT,padx=(0,30))
         Label(mini_report, text="ID:"+str(obs.id),bg="#444",font=("Roboto",9),fg="#FFF").pack(anchor=W,padx=(15,0))
-        Label(mini_report, text="Ubicación: Zona Periférica Anterior",bg="#444",font=("Roboto",10),fg="#FFF").pack(anchor=W,padx=(15,0))
+        Label(mini_report, text="Ubicación: "+obs.location,bg="#444",font=("Roboto",10),fg="#FFF").pack(anchor=W,padx=(15,0))
         Label(mini_report, text="Tamaño: 1.2x5x3mm3, Vol: "+str(obs.volumen)+"ml",bg="#444",font=("Roboto",10),fg="#FFF").pack(anchor=W,padx=(15,0))
+        Label(mini_report, text="Descripción:",bg="#444",font=("Roboto",10),fg="#FFF").pack(anchor=W,padx=(15,0))
         des = Text(mini_report,bg="#444",font=("Roboto",9),fg="#FFF",height=4,width=100,bd=0)
         des.pack(anchor=W,padx=(15,0))
-        T =  "Descripción: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum"
-        des.insert(END,T) 
-    Button(report_window, text="INICIAR REPORTE", font=("Roboto",11), bg="#2CC", bd=2, cursor="hand2", relief="groove").pack()
-
+        T =  obs.info
+        des.insert(END,T)
+    if len(observaciones) == 0: 
+        Button(report_window, text="INICIAR REPORTE", font=("Roboto",12), bg="#2CC", bd=0, cursor="hand2", relief="groove", state="disabled").pack(side=BOTTOM,fill=X,ipady=10,pady=10)
+    else:
+        Button(report_window, text="INICIAR REPORTE", font=("Roboto",12), bg="#2CC", bd=0, cursor="hand2", relief="groove").pack(side=BOTTOM,fill=X,ipady=10,pady=10)
+    
+   
+        
 def obs_setup(tipo: str):
     global obs_id
     if tipo == "new":
@@ -320,11 +328,9 @@ def obs_setup(tipo: str):
         obs_id += 1
         report_window.destroy()
         steps_main(1)
-        vol_calculator()
     elif tipo == "edit":
         report_window.destroy()
         steps_main(1)
-        vol_calculator()
     elif tipo == "bypassed":
         observaciones[-1].volumen = vol
         steps_window.destroy()
@@ -354,12 +360,13 @@ def obs_setup(tipo: str):
     """
      
 def steps_main(step: int):
-    global steps_window
+    global steps_window, zonas, lesionT2, lesionDWI, lesionADC, eep, info
     
     if step == 1:
         steps_window = Frame(root,background="#2CC")
         steps_window.place(relx=0.5,rely=0.05, height=40,anchor=CENTER)
         Label(steps_window, text="Seleccione 3 ejes de la lesión",bg="#2CC",font=("Roboto",12),fg="#000").pack(ipady=5,ipadx=20)
+        vol_calculator()
     elif step == 2:
         steps_window = Frame(root,background="#444")
         steps_window.place(relx=0.5,rely=0.5, width=500,height=800,anchor=CENTER)
@@ -397,7 +404,16 @@ def steps_main(step: int):
         auxframe2.pack(padx=30,pady=30,anchor=W)
         Button(auxframe2, text="Agregar Imágenes", font=("Roboto",10), bg="#2CC", bd=0, cursor="hand2").pack(ipadx=2,ipady=2)
 
-        Button(steps_window, text="Guardar Observación", font=("Roboto",12), bg="#2CC", bd=0, cursor="hand2",height=3).pack(fill=X,side=BOTTOM)
+        Button(steps_window, text="Guardar Observación", font=("Roboto",12), bg="#2CC", bd=0, cursor="hand2",height=3,command=lambda step=3:steps_main(step)).pack(fill=X,side=BOTTOM)
+    elif step == 3:
+        observaciones[-1].location = zonas.get()
+        observaciones[-1].lesionT2 = lesionT2.get()
+        observaciones[-1].lesionADC = lesionADC.get()
+        observaciones[-1].lesionDWI = lesionDWI.get()
+        observaciones[-1].eep = eep.get()
+        observaciones[-1].info= info.get("1.0","end-1c")
+        steps_window.destroy()
+        refresh_report()
         
 def del_obs(to_destroy):
     observaciones.pop(to_destroy)
