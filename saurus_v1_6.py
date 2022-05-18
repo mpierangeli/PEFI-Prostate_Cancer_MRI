@@ -1,9 +1,6 @@
-from msilib.schema import CheckBox, ComboBox
-from optparse import Values
 from tkinter import *
 from PIL import Image, ImageTk#, ImageGrab
 from tkinter import filedialog,ttk
-from cv2 import exp
 import pydicom
 import numpy as np
 import math
