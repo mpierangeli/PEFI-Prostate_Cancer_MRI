@@ -292,15 +292,17 @@ def report_main():
         refresh_report()
         
 def refresh_report():
-    global report_window
+    global report_window,b1,b2
     try: report_window.destroy()
     except: pass
     report_window = Frame(root,background="#333")
     report_window.place(relx=0,rely=0, height=MF_H.get(), width=MF_W.get()/2)
     Label(report_window, text="REPORTE PI-RADS",bg="#2CC",font=("Roboto",15),fg="#000").pack(fill=X,ipady=10)
     Label(report_window, text="PANEL DE OBSERVACIONES",bg="#2CC",font=("Roboto",13),fg="#000").pack(fill=X,pady=(0,20))
-    Button(report_window, text="NUEVA OBSERVACION", font=("Roboto",12), bg="#2CC", bd=0, cursor="hand2", relief="groove", 
-                command=lambda tipo="new":obs_setup(tipo)).pack(fill=X,pady=(0,20), ipady=10)
+    b1 = Button(report_window, text="NUEVA OBSERVACION", font=("Roboto",12), bg="#2CC", bd=0, cursor="hand2", command=lambda tipo="new":obs_setup(tipo))
+    b1.pack(fill=X,pady=(0,20), ipady=10)
+    b1.bind("<Enter>",lambda b=b1:colorOnFocus(b,True))
+    b1.bind("<Leave>",lambda b=b1:colorOnFocus(b,False))
     for n, obs in enumerate(observaciones):
         mini_report = Frame(report_window,background="#444")
         mini_report.pack(fill=X,pady=(0,30),ipadx=2, ipady=2)
@@ -316,14 +318,23 @@ def refresh_report():
         T =  obs.info
         des.insert(END,T)
     if len(observaciones) == 0: 
-        Button(report_window, text="INICIAR REPORTE", font=("Roboto",12), bg="#2CC", bd=0, cursor="hand2", relief="groove", state="disabled").pack(side=BOTTOM,fill=X,ipady=10,pady=10)
+        b2 = Button(report_window, text="INICIAR REPORTE", font=("Roboto",12), bg="#2CC", bd=0, cursor="hand2", state="disabled")
+        b2.pack(side=BOTTOM,fill=X,ipady=10,pady=10)
     else:
-        Button(report_window, text="INICIAR REPORTE", font=("Roboto",12), bg="#2CC", bd=0, cursor="hand2", relief="groove").pack(side=BOTTOM,fill=X,ipady=10,pady=10)
-    
+        b2 = Button(report_window, text="INICIAR REPORTE", font=("Roboto",12), bg="#2CC", bd=0, cursor="hand2",command=lambda tipo="create":obs_setup(tipo))
+        b2.pack(side=BOTTOM,fill=X,ipady=10,pady=10)
+    b2.bind("<Enter>",lambda b=b2:colorOnFocus(b,True))
+    b2.bind("<Leave>",lambda b=b2:colorOnFocus(b,False))
    
-        
+def colorOnFocus(b: Button, n=bool):
+    if n:   b.widget.config(background="#F80")
+    else:   b.widget.config(background="#2CC")
+           
 def obs_setup(tipo: str):
-    global obs_id
+    global obs_id,prostata_flag,prostata_vol,prostata_medidas
+    prostata_flag = False
+    prostata_vol = 0
+    prostata_medidas = []
     if tipo == "new":
         observaciones.append(observacion(obs_id))
         obs_id += 1
@@ -337,6 +348,16 @@ def obs_setup(tipo: str):
         observaciones[-1].medidas = medidas
         steps_window.destroy()
         steps_main(2)
+    elif tipo == "create":
+        report_window.destroy()
+        prostata_flag = True
+        steps_main(1)
+    elif tipo == "end":
+        prostata_vol = vol
+        prostata_medidas = medidas
+        steps_window.destroy()
+        steps_main(4)
+        
      
 def steps_main(step: int):
     global steps_window, zonas, lesionT2, lesionDWI, lesionADC, eep, info
@@ -344,7 +365,8 @@ def steps_main(step: int):
     if step == 1:
         steps_window = Frame(root,background="#2CC")
         steps_window.place(relx=0.5,rely=0.05, height=40,anchor=CENTER)
-        Label(steps_window, text="Seleccione 3 ejes de la lesión",bg="#2CC",font=("Roboto",12),fg="#000").pack(ipady=5,ipadx=20)
+        to_vol = "próstata" if prostata_flag else "lesión"
+        Label(steps_window, text="Seleccione 3 ejes de la "+to_vol,bg="#2CC",font=("Roboto",12),fg="#000").pack(ipady=5,ipadx=20)
         vol_calculator()
     elif step == 2:
         steps_window = Frame(root,background="#444")
@@ -381,9 +403,15 @@ def steps_main(step: int):
         info.pack()
         auxframe2 = Frame(steps_window)
         auxframe2.pack(padx=30,pady=30,anchor=W)
-        Button(auxframe2, text="Agregar Imágenes", font=("Roboto",10), bg="#2CC", bd=0, cursor="hand2").pack(ipadx=2,ipady=2)
-
-        Button(steps_window, text="Guardar Observación", font=("Roboto",12), bg="#2CC", bd=0, cursor="hand2",height=3,command=lambda step=3:steps_main(step)).pack(fill=X,side=BOTTOM)
+        b3 = Button(auxframe2, text="Agregar Imágenes", font=("Roboto",10), bg="#2CC", bd=0, cursor="hand2")
+        b3.pack(ipadx=2,ipady=2)
+        b4 = Button(steps_window, text="Guardar Observación", font=("Roboto",12), bg="#2CC", bd=0, cursor="hand2",height=3,command=lambda step=3:steps_main(step))
+        b4.pack(fill=X,side=BOTTOM)
+        b3.bind("<Enter>",lambda b=b3:colorOnFocus(b,True))
+        b3.bind("<Leave>",lambda b=b3:colorOnFocus(b,False))
+        b4.bind("<Enter>",lambda b=b4:colorOnFocus(b,True))
+        b4.bind("<Leave>",lambda b=b4:colorOnFocus(b,False))
+        
     elif step == 3:
         observaciones[-1].location = zonas.get()
         observaciones[-1].lesionT2 = lesionT2.get()
@@ -395,6 +423,10 @@ def steps_main(step: int):
         steps_window.destroy()
         refresh_report()
         
+    elif step == 4:
+        #crear ventana de info final con boton de crear PDF y listo.
+        pass
+     
 def del_obs(to_destroy):
     observaciones.pop(to_destroy)
     refresh_report()
@@ -532,7 +564,7 @@ def sec_selector():
     seq_tab.place(relx=0,rely=0, height=MF_H.get())
     Label(seq_tab, text="SECUENCIAS DISPONIBLES",bg="#2CC",font=("Roboto",12),fg="#000").pack(fill=X,ipady=10)
 
-    sec_list = Listbox(seq_tab, height=100, width=50, relief=FLAT, bg="#333",font=("Roboto",9), fg="#FFF",selectbackground="#222",highlightthickness=0)
+    sec_list = Listbox(seq_tab, height=100, width=50, relief=FLAT, bg="#333",font=("Roboto",9), cursor="hand2",selectmode="",activestyle="dotbox",fg="#FFF",selectbackground="#222",highlightthickness=0)
     sec_list.pack(padx=5,pady=10)
     for sec in secuencias:
         if not sec.aux_view:
@@ -800,7 +832,8 @@ def roi_end(event):
             root.unbind('<Button-1>')
             root.unbind('<B1-Motion>')
             root.unbind('<ButtonRelease-1>')
-            obs_setup("bypassed")              
+            if prostata_flag: obs_setup("end")
+            else:   obs_setup("bypassed")              
 def roi_escape(event,flag: bool):
     root.config(cursor="arrow")
     root.unbind('<Button-1>')
