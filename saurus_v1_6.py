@@ -562,13 +562,17 @@ def sec_selector():
     except: pass
     seq_tab = Frame(root,background="#333")
     seq_tab.place(relx=0,rely=0, height=MF_H.get())
-    Label(seq_tab, text="SECUENCIAS DISPONIBLES",bg="#2CC",font=("Roboto",12),fg="#000").pack(fill=X,ipady=10)
+    Label(seq_tab, text="SECUENCIAS DISPONIBLES",bg="#2CC",font=("Roboto",12),fg="#000").grid(row=0,column=0,ipadx=80,ipady=10,columnspan=2)
 
-    sec_list = Listbox(seq_tab, height=100, width=50, relief=FLAT, bg="#333",font=("Roboto",9), cursor="hand2",selectmode="",activestyle="dotbox",fg="#FFF",selectbackground="#222",highlightthickness=0)
-    sec_list.pack(padx=5,pady=10)
+    sec_list = Listbox(seq_tab, height=57, width=50, relief=FLAT, bg="#333",font=("Roboto",9), cursor="hand2",selectmode="",activestyle="dotbox",fg="#FFF",selectbackground="#222",highlightthickness=0)
+    sec_list.grid(row=1, column=0,padx=5,pady=10)
     for sec in secuencias:
         if not sec.aux_view:
             sec_list.insert(END,sec.name)
+    sb = Scrollbar(seq_tab,orient=VERTICAL)
+    sb.grid(row=1, column=1, sticky=NS)
+    sec_list.config(yscrollcommand=sb.set)
+    sb.config(command=sec_list.yview)
     seq_tab.bind('<Leave>', sec_move)
 def sec_move(event):
     seq = sec_list.get(ANCHOR)
