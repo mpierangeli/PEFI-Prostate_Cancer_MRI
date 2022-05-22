@@ -336,10 +336,8 @@ def colorOnFocus(b: Button, n=bool):
     else:   b.widget.config(background="#2CC")
            
 def obs_setup(tipo: str):
-    global obs_id,prostata_flag,prosta
+    global obs_id,prostata_flag,prosta,medidas
     prostata_flag = False
-    prostata_vol = 0
-    prostata_medidas = []
     if tipo == "new":
         observaciones.append(observacion(obs_id))
         obs_id += 1
@@ -351,6 +349,7 @@ def obs_setup(tipo: str):
     elif tipo == "bypassed":
         observaciones[-1].volumen = vol
         observaciones[-1].medidas = medidas
+        medidas = []
         steps_window.destroy()
         steps_main(2)
     elif tipo == "create":
@@ -361,6 +360,7 @@ def obs_setup(tipo: str):
     elif tipo == "end":
         prosta.volumen = vol
         prosta.medidas = medidas
+        medidas = []
         steps_window.destroy()
         steps_main(4)
         
@@ -435,14 +435,15 @@ def steps_main(step: int):
         Label(steps_window, text="Sobre el paciente...",bg="#2CC",font=("Roboto",12),fg="#000").pack(fill=X,ipady=5,ipadx=20,)
 
         info_general = Frame(steps_window,background="#555")
-        info_general.pack(fill=X,pady=(0,10),ipadx=2, ipady=2)
+        info_general.pack(fill=X,ipadx=2, ipady=2,pady=(0,5))
         Label(info_general, text="Paciente:     JUAN CARLOS PELOTUDO",bg="#555",font=("Roboto",10),fg="#FFF").pack(ipady=5,ipadx=20,anchor=W)
         Label(info_general, text="Edad: 65 años | Sexo: Masculino",bg="#555",font=("Roboto",10),fg="#FFF").pack(ipady=1,ipadx=20,anchor=W)
         Label(info_general, text="Peso: 90 kg | Altura: 180 cm | IMC: 23",bg="#555",font=("Roboto",10),fg="#FFF").pack(ipady=1,ipadx=20,anchor=W)
+        Label(info_general, text="Volúmen Prostático: "+str(prosta.volumen)+" ml | Dimensiones: "+str(prosta.medidas[0])+"x"+str(prosta.medidas[1])+"x"+str(prosta.medidas[2])+" mm",bg="#555",font=("Roboto",10),fg="#FFF").pack(ipady=1,ipadx=20,anchor=W)
         
-        Label(steps_window, text="Historial Clínico",bg="#444",font=("Roboto",12),fg="#FFF").pack(ipady=1,ipadx=20,anchor=W)
+        Label(steps_window, text="Historial Clínico",bg="#444",font=("Roboto",11),fg="#FFF").pack(ipady=1,ipadx=20,anchor=W)
         historial = Frame(steps_window,background="#555")
-        historial.pack(fill=X,ipadx=2, ipady=2, pady=(0,10))
+        historial.pack(fill=X,ipadx=2, ipady=2, pady=(0,5))
         auxframe1 = Frame(historial,bg="#555")
         auxframe1.pack(anchor=W,pady=5)
         Label(auxframe1, text="PSA:",bg="#555",font=("Roboto",10),fg="#FFF",width=10).pack(side=LEFT,padx=5)
@@ -464,47 +465,83 @@ def steps_main(step: int):
         t1 = Text(auxframe5,width=55,height=4,font=("Roboto",10),fg="#FFF",bd=0,bg="#666",insertbackground="#2CC")
         t1.pack(side=LEFT)
         
-        Label(steps_window, text="Sobre la próstata...",bg="#444",font=("Roboto",12),fg="#FFF").pack(ipady=1,ipadx=20,anchor=W)
+        Label(steps_window, text="Informe de Resultados",bg="#444",font=("Roboto",11),fg="#FFF").pack(ipady=1,ipadx=20,anchor=W)
         
         estudio_info = Frame(steps_window,background="#555")
-        estudio_info.pack(fill=X,ipadx=2, ipady=2, pady=(0,10))
-        pros_info = Frame(estudio_info,bg="#555")
-        pros_info.pack(pady=5)
-        Label(pros_info, text="Volúmen: 35 ml(*)",bg="#555",font=("Roboto",10),fg="#FFF").pack(side=LEFT)
-        Label(pros_info, text=" | Dimensiones: 10x10x20 mm3",bg="#555",font=("Roboto",10),fg="#FFF").pack(side=LEFT)
+        estudio_info.pack(fill=X,ipadx=2, ipady=2, pady=(0,5))
         hemo = StringVar()
-        auxframe = Frame(estudio_info,bg="#555")
-        auxframe.pack(anchor=W,pady=5)
-        Label(auxframe, text="Hemorragia:",bg="#555",font=("Roboto",10),fg="#FFF",width=10).pack(side=LEFT,padx=10)
-        Radiobutton(auxframe, text="Si", variable=hemo, value="Si", bg="#555",anchor=W,foreground="#FFF",selectcolor="#444",activebackground="#2CC").pack(side=LEFT)
-        Radiobutton(auxframe, text="No", variable=hemo, value="No", bg="#555",anchor=W,foreground="#FFF",selectcolor="#444",activebackground="#2CC").pack(side=LEFT)
-        auxframe2 = Frame(estudio_info,bg="#555")
+        neuro = StringVar()
+        vesi = StringVar()
+        linfa = StringVar()
+        huesos = StringVar()
+        organos = StringVar()
+        m0 = Frame(estudio_info,bg="#555")
+        m0.pack(side=LEFT)
+        a0 = Frame(m0,bg="#555")
+        a0.pack(pady=1)
+        Label(a0, text="Hemorragia:",bg="#555",font=("Roboto",10),fg="#FFF",width=18).pack(side=LEFT,padx=5)
+        Radiobutton(a0, text="Si", variable=hemo, value="Si", bg="#555",foreground="#FFF",selectcolor="#444",activebackground="#2CC").pack(side=LEFT)
+        Radiobutton(a0, text="No", variable=hemo, value="No", bg="#555",foreground="#FFF",selectcolor="#444",activebackground="#2CC").pack(side=LEFT)
+        a1 = Frame(m0,bg="#555")
+        a1.pack(pady=1)
+        Label(a1, text="Lesión Neurovascular:",bg="#555",font=("Roboto",10),fg="#FFF",width=18).pack(side=LEFT,padx=5)
+        Radiobutton(a1, text="Si", variable=neuro, value="Si", bg="#555",foreground="#FFF",selectcolor="#444",activebackground="#2CC").pack(side=LEFT)
+        Radiobutton(a1, text="No", variable=neuro, value="No", bg="#555",foreground="#FFF",selectcolor="#444",activebackground="#2CC").pack(side=LEFT)
+        a2 = Frame(m0,bg="#555")
+        a2.pack(pady=1)
+        Label(a2, text="Lesión Vesicula Seminal:",bg="#555",font=("Roboto",10),fg="#FFF",width=18).pack(side=LEFT,padx=5)
+        Radiobutton(a2, text="Si", variable=vesi, value="Si", bg="#555",foreground="#FFF",selectcolor="#444",activebackground="#2CC").pack(side=LEFT)
+        Radiobutton(a2, text="No", variable=vesi, value="No", bg="#555",foreground="#FFF",selectcolor="#444",activebackground="#2CC").pack(side=LEFT)
+        m1 = Frame(estudio_info,bg="#555")
+        m1.pack(side=LEFT)
+        a3 = Frame(m1,bg="#555")
+        a3.pack(pady=1)
+        Label(a3, text="Lesión Nodos Linfáticos:",bg="#555",font=("Roboto",10),fg="#FFF",width=18).pack(side=LEFT,padx=5)
+        Radiobutton(a3, text="Si", variable=linfa, value="Si", bg="#555",foreground="#FFF",selectcolor="#444",activebackground="#2CC").pack(side=LEFT)
+        Radiobutton(a3, text="No", variable=linfa, value="No", bg="#555",foreground="#FFF",selectcolor="#444",activebackground="#2CC").pack(side=LEFT)
+        a4 = Frame(m1,bg="#555")
+        a4.pack(pady=1)
+        Label(a4, text="Lesión Huesos:",bg="#555",font=("Roboto",10),fg="#FFF",width=18).pack(side=LEFT,padx=5)
+        Radiobutton(a4, text="Si", variable=huesos, value="Si", bg="#555",foreground="#FFF",selectcolor="#444",activebackground="#2CC").pack(side=LEFT)
+        Radiobutton(a4, text="No", variable=huesos, value="No", bg="#555",foreground="#FFF",selectcolor="#444",activebackground="#2CC").pack(side=LEFT)
+        a5 = Frame(m1,bg="#555")
+        a5.pack(pady=1)
+        Label(a5, text="Lesión Órganos:",bg="#555",font=("Roboto",10),fg="#FFF",width=18).pack(side=LEFT,padx=5)
+        Radiobutton(a5, text="Si", variable=organos, value="Si", bg="#555",foreground="#FFF",selectcolor="#444",activebackground="#2CC").pack(side=LEFT)
+        Radiobutton(a5, text="No", variable=organos, value="No", bg="#555",foreground="#FFF",selectcolor="#444",activebackground="#2CC").pack(side=LEFT)
+        
+        estudio_info2 = Frame(steps_window,background="#555")
+        estudio_info2.pack(fill=X,ipadx=2, ipady=2)
+        auxframe2 = Frame(estudio_info2,bg="#555")
         auxframe2.pack(anchor=W,pady=5)
         Label(auxframe2, text="Calidad\nImágenes: ",bg="#555",font=("Roboto",10),fg="#FFF",width=9).pack(side=LEFT,padx=10)
         t2 = Text(auxframe2,width=55,height=4,font=("Roboto",10),fg="#FFF",bd=0,bg="#666",insertbackground="#2CC")
         t2.pack(side=LEFT)
-        auxframe3 = Frame(estudio_info,bg="#555")
+        auxframe3 = Frame(estudio_info2,bg="#555")
         auxframe3.pack(anchor=W,pady=5)
         Label(auxframe3, text="Zona\nPeriférica: ",bg="#555",font=("Roboto",10),fg="#FFF",width=9).pack(side=LEFT,padx=10)
         t3 = Text(auxframe3,width=55,height=4,font=("Roboto",10),fg="#FFF",bd=0,bg="#666",insertbackground="#2CC")
         t3.pack(side=LEFT)
-        auxframe4 = Frame(estudio_info,bg="#555")
+        auxframe4 = Frame(estudio_info2,bg="#555")
         auxframe4.pack(anchor=W,pady=5)
         Label(auxframe4, text="Zona\nTransicional: ",bg="#555",font=("Roboto",10),fg="#FFF",width=9).pack(side=LEFT,padx=10)
         t4 = Text(auxframe4,width=55,height=4,font=("Roboto",10),fg="#FFF",bd=0,bg="#666",insertbackground="#2CC")
         t4.pack(side=LEFT)
         
-        Label(steps_window, text="Sobre las lesiones...",bg="#444",font=("Roboto",12),fg="#FFF").pack(ipady=1,ipadx=20,anchor=W)
+        Label(steps_window, text="Observaciones Realizadas",bg="#444",font=("Roboto",11),fg="#FFF").pack(ipady=2,ipadx=20,anchor=W)
         
         lesiones_info = Frame(steps_window,background="#555")
-        lesiones_info.pack(fill=X,ipadx=2, ipady=2, pady=(0,10))
-        
+        lesiones_info.pack(fill=X,ipadx=2, ipady=2, pady=(0,5))
+        l1 = Frame(lesiones_info,background="#555")
+        l1.pack(side=LEFT)
         for obs in observaciones:
-            mini_report = Frame(lesiones_info,background="#555")
-            mini_report.pack(fill=X,pady=(0,2),padx=20)
+            mini_report = Frame(l1,background="#555")
+            mini_report.pack(padx=20)
             Label(mini_report, text="ID: "+str(obs.id),bg="#555",font=("Roboto",10),fg="#FFF").pack(side=LEFT)
             Label(mini_report, text=" | PI-RADS: "+str(obs.categoria),bg="#555",font=("Roboto",10),fg="#FFF").pack(side=LEFT)
-        Label(lesiones_info, text="PI-RADS General: 5",bg="#666",font=("Roboto",12),fg="#FFF").pack(fill=X,ipady=1) 
+        l2 = Frame(lesiones_info,background="#555")
+        l2.pack(side=RIGHT)
+        Label(l2, text="PI-RADS\nGeneral\n"+str(prosta.categoria),bg="#666",font=("Roboto",12),fg="#FFF").pack(fill=Y,ipadx=20,ipady=5) 
         
         Label(steps_window, text="Conclusiones",bg="#444",font=("Roboto",12),fg="#FFF").pack(ipady=1,ipadx=20,anchor=W) 
         t5 = Text(steps_window,width=65,height=7,font=("Roboto",10),fg="#FFF",bd=0,bg="#666",insertbackground="#2CC")
