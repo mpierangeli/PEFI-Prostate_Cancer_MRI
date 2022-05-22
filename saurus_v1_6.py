@@ -424,8 +424,8 @@ def steps_main(step: int):
         observaciones[-1].lesionADC = lesionADC.get()
         observaciones[-1].lesionDWI = lesionDWI.get()
         observaciones[-1].eep = eep.get()
-        observaciones[-1].info= info.get("1.0","end-1c")
-        #calculo de pirads ==> IMPORTANTEEEE !!!
+        observaciones[-1].info = info.get("1.0","end-1c")
+        observaciones[-1].categoria = pirads_lesion()
         steps_window.destroy()
         refresh_report()
         
@@ -436,9 +436,9 @@ def steps_main(step: int):
 
         info_general = Frame(steps_window,background="#555")
         info_general.pack(fill=X,ipadx=2, ipady=2,pady=(0,5))
-        Label(info_general, text="Paciente:     JUAN CARLOS PELOTUDO",bg="#555",font=("Roboto",10),fg="#FFF").pack(ipady=5,ipadx=20,anchor=W)
-        Label(info_general, text="Edad: 65 años | Sexo: Masculino",bg="#555",font=("Roboto",10),fg="#FFF").pack(ipady=1,ipadx=20,anchor=W)
-        Label(info_general, text="Peso: 90 kg | Altura: 180 cm | IMC: 23",bg="#555",font=("Roboto",10),fg="#FFF").pack(ipady=1,ipadx=20,anchor=W)
+        Label(info_general, text="Paciente:     "+str(secuencias[0].dcm_serie[0].PatientName),bg="#555",font=("Roboto",10),fg="#FFF").pack(ipady=5,ipadx=20,anchor=W)
+        Label(info_general, text="Edad: XX años | Sexo: "+str(secuencias[0].dcm_serie[0].PatientSex),bg="#555",font=("Roboto",10),fg="#FFF").pack(ipady=1,ipadx=20,anchor=W)
+        #Label(info_general, text="Peso: 90 kg | Altura: 180 cm | IMC: 23",bg="#555",font=("Roboto",10),fg="#FFF").pack(ipady=1,ipadx=20,anchor=W)
         Label(info_general, text="Volúmen Prostático: "+str(prosta.volumen)+" ml | Dimensiones: "+str(prosta.medidas[0])+"x"+str(prosta.medidas[1])+"x"+str(prosta.medidas[2])+" mm",bg="#555",font=("Roboto",10),fg="#FFF").pack(ipady=1,ipadx=20,anchor=W)
         
         Label(steps_window, text="Historial Clínico",bg="#444",font=("Roboto",11),fg="#FFF").pack(ipady=1,ipadx=20,anchor=W)
@@ -983,6 +983,13 @@ def vol_calculator():
     medidas = []
     roi_gen("r")
 
+def pirads_lesion():
+    #depende las opciones de la lesion determina el pirads particular
+    return 0
+
+def pirads_prostata():
+    #depende de los resultados de las observaciones determina el pirads general
+    return 0
 
 #-------------- MAIN LOOP ---------------------------------------------------------
       
