@@ -1,17 +1,33 @@
 
 from tkinter import *
 from tkinter import ttk
+from PIL import ImageTk, Image
+
+def img_setup():
+    global mapa_setup
+    try: mapa_setup.destroy()
+    except:
+        mapa_setup = Frame(root,background="#444")
+        mapa_setup.place(relx=0.78,rely=0.5, width=570,height=700,anchor=CENTER)
+        img = ImageTk.PhotoImage(Image.open("sector_map.jpg"))
+        l1 = Label(mapa_setup, image = img)
+        l1.image = img
+        l1.pack(pady=20,padx=5)
+    
 
 def test():
     
     steps_window = Frame(root,background="#444")
     steps_window.place(relx=0.5,rely=0.5, width=500,height=1000,anchor=CENTER)
     Label(steps_window, text="Sobre la lesión...",bg="#2CC",font=("Roboto",12),fg="#000").pack(fill=X,ipady=5,ipadx=20)
-
-    Label(steps_window, text="Zona afectada",bg="#444",font=("Roboto",10),fg="#FFF",anchor=W).pack(fill=X,pady=(20,5),padx=20)
+    aux1 = Frame(steps_window,background="#555")
+    aux1.pack(fill=X,ipady=5,pady=10)
+    Label(aux1, text="Zona afectada",bg="#555",font=("Roboto",11),fg="#FFF").pack(side=LEFT,padx=20)
     zonasprostata = [""]
-    zonas = ttk.Combobox(steps_window, state="readonly", values=["Zona A","Zona B","Zona C"],width=70)
-    zonas.pack()
+    zonas = ttk.Combobox(aux1, state="readonly", values=["Zona A","Zona B","Zona C"],width=45)
+    zonas.pack(side=LEFT,padx=5)
+    b1 = Button(aux1, text="Mapa >>", font=("Roboto",10), bg="#2CC", bd=0, cursor="hand2",height=1,command=img_setup)
+    b1.pack(side=RIGHT,ipadx=5)
 
     Label(steps_window, text="Lesión en T2",bg="#444",font=("Roboto",10),fg="#FFF",anchor=W).pack(fill=X,pady=10,padx=30)
     lesionT2 = ttk.Combobox(steps_window, state="readonly", values=["Zona A","Zona B","Zona C"],width=70)
@@ -45,6 +61,6 @@ def test():
     b4.pack(fill=X,side=BOTTOM)
 
 root = Tk()
-root.minsize(width=800,height=1000)
+root.minsize(width=1900,height=1000)
 test()
 root.mainloop()
