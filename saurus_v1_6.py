@@ -181,13 +181,13 @@ class observacion:
         self.imagenes = []  #donde guardo los strings de direccion de imagenes para el html
         self.location = ""   #nombre de la zona afectada
         self.eep = ""       #checkbox de eep
-        self.lesionT2 = ""  #Tipo de lesion en T2
-        self.lesionADC = ""
-        self.lesionDWI = ""
+        self.lesionT2 = [0,0] # [visible en secuencia,clasificacion pirads(1-5)]
+        self.lesionADC = [0,0]
+        self.lesionDWI = [0,0]
         self.info = ""      #texto informativo escrito a mano
         self.volumen = 0    #volumen de lesion
-        self.medidas = [0,0,0]  #largo ejes de lesion
-        self.categoria = 0  #SEGUN PIRADS
+        self.medidas = [0,0,0]  #largo ejes de lesion VER SI SOLO NECESITO 1 MEDIDA
+        self.categoria = 0  #SEGUN PIRADS FINAL
 
 class prostata:
     def __init__(self):
@@ -366,8 +366,8 @@ def obs_setup(tipo: str):
         
      
 def steps_main(step: int):
-    global steps_window, zonas, lesionT2, lesionDWI, lesionADC, eep, info
-    
+    global steps_window, zonas, t2_check,adc_check,dwi_check,catT2,catADC,catDWI, eep, info, mapa_flag
+    mapa_flag = False
     if step == 1:
         steps_window = Frame(root,background="#2CC")
         steps_window.place(relx=0.5,rely=0.05, height=40,anchor=CENTER)
@@ -376,35 +376,67 @@ def steps_main(step: int):
         vol_calculator()
     elif step == 2:
         steps_window = Frame(root,background="#444")
-        steps_window.place(relx=0.5,rely=0.5, width=500,height=800,anchor=CENTER)
+        steps_window.place(relx=0.5,rely=0.5, width=500,height=1000,anchor=CENTER)
         Label(steps_window, text="Sobre la lesión...",bg="#2CC",font=("Roboto",12),fg="#000").pack(fill=X,ipady=5,ipadx=20)
+        aux = Frame(steps_window,background="#555")
+        aux.pack(fill=X,ipady=5,pady=(20,30))
+        Label(aux, text="Zona afectada",bg="#555",font=("Roboto",11),fg="#FFF").pack(side=LEFT,padx=20)
+        zonasprostata = ["1a","2a","3a","4a","5a","6a","7a","8a","9a","10a","11a","12a","13a","14a","15a",
+                        "1p","2p","3p","4p","5p","6p","7p","8p","9p","10p","11p","12p"]
+        zonas = ttk.Combobox(aux, state="readonly", values=zonasprostata,width=45)
+        zonas.pack(side=LEFT,padx=5)
+        b1 = Button(aux, text="Mapa >>", font=("Roboto",10), bg="#2CC", bd=0, cursor="hand2",height=1,command=img_setup)
+        b1.pack(side=RIGHT,ipadx=5)
+        
+        aux = Frame(steps_window,background="#555")
+        aux.pack(fill=X,ipady=2)
+        Label(aux, text="Lesión en T2",bg="#555",font=("Roboto",11),fg="#FFF").pack(side=LEFT,padx=20)
+        t2_check = IntVar()
+        Checkbutton(aux,text="Visible",variable=t2_check,onvalue=1,offvalue=0,bg="#555",foreground="#FFF",selectcolor="#444",bd=0).pack(side=LEFT)
+        
+        pirads_opt = [1,2,3,4,5]
+        aux2 = Frame(steps_window,background="#555")
+        aux2.pack(fill=X,ipady=2)
+        Label(aux2, text="Categoría PI-RADS:",bg="#555",font=("Roboto",11),fg="#FFF").pack(side=LEFT,padx=20)
+        catT2 = IntVar()
+        for n in range(5):
+            Radiobutton(aux2, text=str(pirads_opt[n]), variable=catT2, value=pirads_opt[n], bg="#555",anchor=W,foreground="#FFF",selectcolor="#444",activebackground="#2CC").pack(side=LEFT)
+        
+        aux3 = Frame(steps_window,background="#555")
+        aux3.pack(fill=X,ipady=2,pady=(20,0))
+        Label(aux3, text="Lesión en ADC",bg="#555",font=("Roboto",11),fg="#FFF").pack(side=LEFT,padx=20)
+        adc_check = IntVar()
+        Checkbutton(aux3,text="Visible",variable=adc_check,onvalue=1,offvalue=0,bg="#555",foreground="#FFF",selectcolor="#444",bd=0).pack(side=LEFT)
+        aux5 = Frame(steps_window,background="#555")
+        aux5.pack(fill=X,ipady=2,pady=(0,20))
+        Label(aux5, text="Categoría PI-RADS:",bg="#555",font=("Roboto",11),fg="#FFF").pack(side=LEFT,padx=20)
+        catADC = IntVar()
+        for n in range(5):
+            Radiobutton(aux5, text=str(pirads_opt[n]), variable=catADC, value=pirads_opt[n], bg="#555",anchor=W,foreground="#FFF",selectcolor="#444",activebackground="#2CC").pack(side=LEFT)
+            
+        aux6 = Frame(steps_window,background="#555")
+        aux6.pack(fill=X,ipady=2)
+        Label(aux6, text="Lesión en DWI",bg="#555",font=("Roboto",11),fg="#FFF").pack(side=LEFT,padx=20)
+        dwi_check = IntVar()
+        Checkbutton(aux6,text="Visible",variable=dwi_check,onvalue=1,offvalue=0,bg="#555",foreground="#FFF",selectcolor="#444",bd=0).pack(side=LEFT)
+        aux7 = Frame(steps_window,background="#555")
+        aux7.pack(fill=X,ipady=2)
+        Label(aux7, text="Categoría PI-RADS:",bg="#555",font=("Roboto",11),fg="#FFF").pack(side=LEFT,padx=20)
+        catDWI = IntVar()
+        for n in range(5):
+            Radiobutton(aux7, text=str(pirads_opt[n]), variable=catDWI, value=pirads_opt[n], bg="#555",anchor=W,foreground="#FFF",selectcolor="#444",activebackground="#2CC").pack(side=LEFT)
 
-        Label(steps_window, text="Zona afectada",bg="#444",font=("Roboto",10),fg="#FFF",anchor=W).pack(fill=X,pady=(20,10),padx=30)
-        zonas = ttk.Combobox(steps_window, state="readonly", values=["Zona A","Zona B","Zona C"],width=70)
-        zonas.pack()
-
-        Label(steps_window, text="Lesión en T2",bg="#444",font=("Roboto",10),fg="#FFF",anchor=W).pack(fill=X,pady=10,padx=30)
-        lesionT2 = ttk.Combobox(steps_window, state="readonly", values=["Zona A","Zona B","Zona C"],width=70)
-        lesionT2.pack()
-
-        Label(steps_window, text="Lesión en ADC",bg="#444",font=("Roboto",10),fg="#FFF",anchor=W).pack(fill=X,pady=10,padx=30)
-        lesionADC = ttk.Combobox(steps_window, state="readonly", values=["Zona A","Zona B","Zona C"],width=70)
-        lesionADC.pack()
-
-        Label(steps_window, text="Lesión en DWI",bg="#444",font=("Roboto",10),fg="#FFF",anchor=W).pack(fill=X,pady=10,padx=30)
-        lesionDWI = ttk.Combobox(steps_window, state="readonly", values=["Zona A","Zona B","Zona C"],width=70)
-        lesionDWI.pack()
-
-        Label(steps_window, text="Extensión Extraprostática",bg="#444",font=("Roboto",10),fg="#FFF",anchor=W).pack(fill=X,pady=10,padx=30)
+        aux8 = Frame(steps_window,background="#555")
+        aux8.pack(fill=X,ipady=2,pady=(30,10))  
+        Label(aux8, text="Extensión Extraprostática",bg="#555",font=("Roboto",11),fg="#FFF").pack(fill=X,padx=20,ipady=5)
         eep = StringVar()
-        auxframe = Frame(steps_window)
-        auxframe.pack(padx=(30,0),anchor=W)
-        Radiobutton(auxframe, text="Bajo", variable=eep, value="Bajo", bg="#444",anchor=W,foreground="#FFF",selectcolor="#444",activebackground="#2CC").pack(side=LEFT)
-        Radiobutton(auxframe, text="Medio", variable=eep, value="Medio", bg="#444",anchor=W,foreground="#FFF",selectcolor="#444",activebackground="#2CC").pack(side=LEFT)
-        Radiobutton(auxframe, text="Alto", variable=eep, value="Alto", bg="#444",anchor=W,foreground="#FFF",selectcolor="#444",activebackground="#2CC").pack(side=LEFT)
-        Radiobutton(auxframe, text="Muy Alto", variable=eep, value="Muy Alto", bg="#444",anchor=W,foreground="#FFF",selectcolor="#444",activebackground="#2CC").pack(side=LEFT)
-
-        Label(steps_window, text="Información Adicional",bg="#444",font=("Roboto",10),fg="#FFF",anchor=W).pack(fill=X,pady=(20,10),padx=30)
+        auxframe = Frame(aux8)
+        auxframe.pack(padx=(20,0))
+        eep_opt = ["Bajo","Medio","Alto","Muy Alto"]
+        for n in range(4):
+            Radiobutton(auxframe, text=eep_opt[n], variable=eep, value=eep_opt[n], bg="#555",anchor=W,foreground="#FFF",selectcolor="#444",activebackground="#2CC").pack(side=LEFT)
+    
+        Label(steps_window, text="Información Adicional",bg="#444",font=("Roboto",11),fg="#FFF",anchor=W).pack(fill=X,pady=(20,10),padx=30)
         info = Text(steps_window,width=62,font=("Roboto",10),height=10,bg="#555",fg="#FFF",bd=0,insertbackground="#2CC")
         info.pack()
         auxframe2 = Frame(steps_window)
@@ -420,9 +452,9 @@ def steps_main(step: int):
         
     elif step == 3:
         observaciones[-1].location = zonas.get()
-        observaciones[-1].lesionT2 = lesionT2.get()
-        observaciones[-1].lesionADC = lesionADC.get()
-        observaciones[-1].lesionDWI = lesionDWI.get()
+        observaciones[-1].lesionT2 = t2_check.get(),catT2.get()
+        observaciones[-1].lesionADC = adc_check.get(),catADC.get()
+        observaciones[-1].lesionDWI = dwi_check.get(),catDWI.get()
         observaciones[-1].eep = eep.get()
         observaciones[-1].info = info.get("1.0","end-1c")
         observaciones[-1].categoria = pirads_lesion()
@@ -560,6 +592,19 @@ def del_obs(to_destroy):
     observaciones.pop(to_destroy)
     refresh_report()
 
+def img_setup():
+    global mapa_flag
+    if mapa_flag:   
+        mapa_setup.destroy()
+        mapa_flag = False
+    else:
+        mapa_setup = Frame(root,background="#444")
+        mapa_setup.place(relx=0.78,rely=0.5, width=570,height=700,anchor=CENTER)
+        img = ImageTk.PhotoImage(Image.open("sector_map.jpg"))
+        l1 = Label(mapa_setup, image = img)
+        l1.image = img
+        l1.pack(pady=20,padx=5)
+        mapa_flag = True
 def canvas_creator(layout: int):
     global cv_master, img2cv
     img2cv = [0,0,0,0]
