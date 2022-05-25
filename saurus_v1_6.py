@@ -593,7 +593,7 @@ def del_obs(to_destroy):
     refresh_report()
 
 def img_setup():
-    global mapa_flag
+    global mapa_flag,mapa_setup
     if mapa_flag:   
         mapa_setup.destroy()
         mapa_flag = False
