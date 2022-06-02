@@ -193,7 +193,8 @@ class prostata:
     def __init__(self):
         self.volumen = 0
         self.medidas = [0,0,0]
-        self.categoria = 0       
+        self.categoria = 0   
+        self.psa = [0,0,0,0]    
         
 ## FUNCIONES
 
@@ -360,13 +361,13 @@ def obs_setup(tipo: str):
     elif tipo == "end":
         prosta.volumen = vol
         prosta.medidas = medidas
+        prosta.psa = psa
         medidas = []
         steps_window.destroy()
         steps_main(4)
         
-     
 def steps_main(step: int):
-    global steps_window, zonas, t2_check,adc_check,dwi_check,catT2,catADC,catDWI, eep, info, mapa_flag
+    global steps_window, zonas, t2_check,adc_check,dwi_check,catT2,catADC,catDWI, eep, info, mapa_flag, psa
     mapa_flag = False
     if step == 1:
         steps_window = Frame(root,background="#2CC")
@@ -385,7 +386,7 @@ def steps_main(step: int):
                         "1p","2p","3p","4p","5p","6p","7p","8p","9p","10p","11p","12p"]
         zonas = ttk.Combobox(aux, state="readonly", values=zonasprostata,width=45)
         zonas.pack(side=LEFT,padx=5)
-        b1 = Button(aux, text="Mapa >>", font=("Roboto",10), bg="#2CC", bd=0, cursor="hand2",height=1,command=img_setup)
+        b1 = Button(aux, text="Mapa >>", font=("Roboto",10), bg="#2CC", bd=0, cursor="hand2",height=1,command=mapa_show)
         b1.pack(side=RIGHT,ipadx=5)
         
         aux = Frame(steps_window,background="#555")
@@ -459,6 +460,7 @@ def steps_main(step: int):
         observaciones[-1].info = info.get("1.0","end-1c")
         observaciones[-1].categoria = pirads_lesion()
         steps_window.destroy()
+        mapa_window.destroy()
         refresh_report()
         
     elif step == 4:
@@ -490,7 +492,7 @@ def steps_main(step: int):
         Label(auxframe1, text="/",bg="#555",font=("Roboto",10),fg="#FFF",width=1).pack(side=LEFT)
         psa_date3= Entry(auxframe1,width=2,font=("Roboto",12),fg="#FFF",bd=0,bg="#666",insertbackground="#2CC")
         psa_date3.pack(side=LEFT,padx=(0,2))
-        #psa = [psa_value.get(),psa_date1.get(),psa_date2.get(),psa_date3.get()]
+        psa = [psa_value.get(),psa_date1.get(),psa_date2.get(),psa_date3.get()]
         auxframe5 = Frame(historial,background="#555")
         auxframe5.pack(fill=X,pady=5)
         Label(auxframe5, text="Motivo\nEstudio:",bg="#555",font=("Roboto",10),fg="#FFF",width=10).pack(side=LEFT,padx=5)
@@ -592,16 +594,16 @@ def del_obs(to_destroy):
     observaciones.pop(to_destroy)
     refresh_report()
 
-def img_setup():
-    global mapa_flag,mapa_setup
+def mapa_show():
+    global mapa_flag,mapa_window
     if mapa_flag:   
-        mapa_setup.destroy()
+        mapa_window.destroy()
         mapa_flag = False
     else:
-        mapa_setup = Frame(root,background="#444")
-        mapa_setup.place(relx=0.78,rely=0.5, width=570,height=700,anchor=CENTER)
+        mapa_window = Frame(root,background="#444")
+        mapa_window.place(relx=0.78,rely=0.5, width=570,height=700,anchor=CENTER)
         img = ImageTk.PhotoImage(Image.open("sector_map.jpg"))
-        l1 = Label(mapa_setup, image = img)
+        l1 = Label(mapa_window, image = img)
         l1.image = img
         l1.pack(pady=20,padx=5)
         mapa_flag = True
