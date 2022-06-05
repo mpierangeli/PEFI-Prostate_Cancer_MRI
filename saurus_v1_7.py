@@ -361,13 +361,12 @@ def obs_setup(tipo: str):
     elif tipo == "end":
         prosta.volumen = vol
         prosta.medidas = medidas
-        prosta.psa = psa
         medidas = []
         steps_window.destroy()
         steps_main(4)
         
 def steps_main(step: int):
-    global steps_window, zonas, t2_check,adc_check,dwi_check,catT2,catADC,catDWI, eep, info, mapa_flag, psa
+    global steps_window,steps_levels, zonas, t2_check,adc_check,dwi_check,catT2,catADC,catDWI, eep, info, mapa_flag, psa_value, psa_date1, psa_date2, psa_date3
     mapa_flag = False
     if step == 1:
         steps_window = Frame(root,background="#2CC")
@@ -376,8 +375,10 @@ def steps_main(step: int):
         Label(steps_window, text="Seleccione 3 ejes de la "+to_vol,bg="#2CC",font=("Roboto",12),fg="#000").pack(ipady=5,ipadx=20)
         vol_calculator()
     elif step == 2:
-        steps_window = Frame(root,background="#444")
-        steps_window.place(relx=0.5,rely=0.5, width=500,height=1000,anchor=CENTER)
+        steps_levels = Toplevel(root,background="#444")
+        steps_levels.geometry("500x1000")
+        steps_window = Frame(steps_levels,background="#444")
+        steps_window.pack(side=LEFT,fill=Y)
         Label(steps_window, text="Sobre la lesión...",bg="#2CC",font=("Roboto",12),fg="#000").pack(fill=X,ipady=5,ipadx=20)
         aux = Frame(steps_window,background="#555")
         aux.pack(fill=X,ipady=5,pady=(20,30))
@@ -459,15 +460,15 @@ def steps_main(step: int):
         observaciones[-1].eep = eep.get()
         observaciones[-1].info = info.get("1.0","end-1c")
         observaciones[-1].categoria = pirads_lesion()
-        steps_window.destroy()
-        try:    mapa_window.destroy()
-        except: pass
+        steps_levels.destroy()
         refresh_report()
         
     elif step == 4:
-        steps_window = Frame(root,background="#444")
-        steps_window.place(relx=0.5,rely=0.5, width=500,height=1000,anchor=CENTER)
-        Label(steps_window, text="Sobre el paciente...",bg="#2CC",font=("Roboto",12),fg="#000").pack(fill=X,ipady=5,ipadx=20,)
+        steps_levels = Toplevel(root,background="#444")
+        steps_levels.geometry("500x1000")
+        steps_window = Frame(steps_levels,background="#444")
+        steps_window.pack(fill=Y)
+        Label(steps_window, text="Sobre el paciente...",bg="#2CC",font=("Roboto",12),fg="#000").pack(fill=X,ipady=5,ipadx=20)
 
         info_general = Frame(steps_window,background="#555")
         info_general.pack(fill=X,ipadx=2, ipady=2,pady=(0,5))
@@ -493,7 +494,7 @@ def steps_main(step: int):
         Label(auxframe1, text="/",bg="#555",font=("Roboto",10),fg="#FFF",width=1).pack(side=LEFT)
         psa_date3= Entry(auxframe1,width=2,font=("Roboto",12),fg="#FFF",bd=0,bg="#666",insertbackground="#2CC")
         psa_date3.pack(side=LEFT,padx=(0,2))
-        psa = [psa_value.get(),psa_date1.get(),psa_date2.get(),psa_date3.get()]
+        
         auxframe5 = Frame(historial,background="#555")
         auxframe5.pack(fill=X,pady=5)
         Label(auxframe5, text="Motivo\nEstudio:",bg="#555",font=("Roboto",10),fg="#FFF",width=10).pack(side=LEFT,padx=5)
@@ -580,7 +581,7 @@ def steps_main(step: int):
         
         Label(steps_window, text="Conclusiones",bg="#444",font=("Roboto",12),fg="#FFF").pack(ipady=1,ipadx=20,anchor=W) 
         t5 = Text(steps_window,width=65,height=7,font=("Roboto",10),fg="#FFF",bd=0,bg="#666",insertbackground="#2CC")
-        t5.pack()
+        t5.pack(pady=(0,20))
         
         b4 = Button(steps_window, text="Finalizar y Generar PDF", font=("Roboto",12), bg="#2CC", bd=0, cursor="hand2",height=3,command=lambda step=5:steps_main(step))
         b4.pack(fill=X,side=BOTTOM)
@@ -588,7 +589,8 @@ def steps_main(step: int):
         b4.bind("<Leave>",lambda b=b4:colorOnFocus(b,False))
     
     elif step == 5:
-        steps_window.destroy()
+        steps_levels.destroy()
+        prosta.psa = [psa_value.get(),psa_date1.get(),psa_date2.get(),psa_date3.get()]
         #quiza ventana de prevista y confirmacion?
         #generate_pdf()
 def del_obs(to_destroy):
@@ -600,13 +602,15 @@ def mapa_show():
     if mapa_flag:   
         mapa_window.destroy()
         mapa_flag = False
+        steps_levels.geometry("500x1000")
     else:
-        mapa_window = Frame(root,background="#444")
-        mapa_window.place(relx=0.78,rely=0.5, width=570,height=700,anchor=CENTER)
+        steps_levels.geometry("1070x1000")
+        mapa_window = Frame(steps_levels,background="#444")
+        mapa_window.pack(side=RIGHT)
         img = ImageTk.PhotoImage(Image.open("sector_map.jpg"))
         l1 = Label(mapa_window, image = img)
         l1.image = img
-        l1.pack(pady=20,padx=5)
+        l1.pack()
         mapa_flag = True
 def canvas_creator(layout: int):
     global cv_master, img2cv
@@ -1053,7 +1057,7 @@ MF_W = IntVar(value=1920)
 MF_H = IntVar(value=980)
 CV_W = IntVar(value=0)
 CV_H = IntVar(value=0)
-info_text = StringVar(value="SAURUS V1.6")
+info_text = StringVar(value="SAURUS V1.7")
 info_cv = BooleanVar(value=0)
 axis_cv = BooleanVar(value=0)
 report_flag = BooleanVar(value=0)
