@@ -182,8 +182,8 @@ class observacion:
         self.location = ""   #nombre de la zona afectada
         self.eep = ""       #checkbox de eep
         self.lesionT2 = [0,0] # [visible en secuencia,clasificacion pirads(1-5)]
-        self.lesionADC = [0,0]
         self.lesionDWI = [0,0]
+        self.lesionDCE = 0 # [visible en secuencia]
         self.info = ""      #texto informativo escrito a mano
         self.volumen = 0    #volumen de lesion
         self.medidas = [0,0,0]  #largo ejes de lesion VER SI SOLO NECESITO 1 MEDIDA
@@ -366,7 +366,7 @@ def obs_setup(tipo: str):
         steps_main(4)
         
 def steps_main(step: int):
-    global steps_window,steps_levels, zonas, t2_check,adc_check,dwi_check,catT2,catADC,catDWI, eep, info, mapa_flag, psa_value, psa_date1, psa_date2, psa_date3
+    global steps_window,steps_levels, zonas, t2_check,dce_check,dwi_check,catT2,catDWI, eep, info, mapa_flag, psa_value, psa_date1, psa_date2, psa_date3
     mapa_flag = False
     if step == 1:
         steps_window = Frame(root,background="#2CC")
@@ -395,7 +395,6 @@ def steps_main(step: int):
         Label(aux, text="Lesión en T2",bg="#555",font=("Roboto",11),fg="#FFF").pack(side=LEFT,padx=20)
         t2_check = IntVar()
         Checkbutton(aux,text="Visible",variable=t2_check,onvalue=1,offvalue=0,bg="#555",foreground="#FFF",selectcolor="#444",bd=0).pack(side=LEFT)
-        
         pirads_opt = [1,2,3,4,5]
         aux2 = Frame(steps_window,background="#555")
         aux2.pack(fill=X,ipady=2)
@@ -404,18 +403,6 @@ def steps_main(step: int):
         for n in range(5):
             Radiobutton(aux2, text=str(pirads_opt[n]), variable=catT2, value=pirads_opt[n], bg="#555",anchor=W,foreground="#FFF",selectcolor="#444",activebackground="#2CC").pack(side=LEFT)
         
-        aux3 = Frame(steps_window,background="#555")
-        aux3.pack(fill=X,ipady=2,pady=(20,0))
-        Label(aux3, text="Lesión en ADC",bg="#555",font=("Roboto",11),fg="#FFF").pack(side=LEFT,padx=20)
-        adc_check = IntVar()
-        Checkbutton(aux3,text="Visible",variable=adc_check,onvalue=1,offvalue=0,bg="#555",foreground="#FFF",selectcolor="#444",bd=0).pack(side=LEFT)
-        aux5 = Frame(steps_window,background="#555")
-        aux5.pack(fill=X,ipady=2,pady=(0,20))
-        Label(aux5, text="Categoría PI-RADS:",bg="#555",font=("Roboto",11),fg="#FFF").pack(side=LEFT,padx=20)
-        catADC = IntVar()
-        for n in range(5):
-            Radiobutton(aux5, text=str(pirads_opt[n]), variable=catADC, value=pirads_opt[n], bg="#555",anchor=W,foreground="#FFF",selectcolor="#444",activebackground="#2CC").pack(side=LEFT)
-            
         aux6 = Frame(steps_window,background="#555")
         aux6.pack(fill=X,ipady=2)
         Label(aux6, text="Lesión en DWI",bg="#555",font=("Roboto",11),fg="#FFF").pack(side=LEFT,padx=20)
@@ -427,6 +414,12 @@ def steps_main(step: int):
         catDWI = IntVar()
         for n in range(5):
             Radiobutton(aux7, text=str(pirads_opt[n]), variable=catDWI, value=pirads_opt[n], bg="#555",anchor=W,foreground="#FFF",selectcolor="#444",activebackground="#2CC").pack(side=LEFT)
+        
+        aux3 = Frame(steps_window,background="#555")
+        aux3.pack(fill=X,ipady=2,pady=(20,0))
+        Label(aux3, text="DCE",bg="#555",font=("Roboto",11),fg="#FFF").pack(side=LEFT,padx=20)
+        dce_check = IntVar()
+        Checkbutton(aux3,text="Visible",variable=dce_check,onvalue=1,offvalue=0,bg="#555",foreground="#FFF",selectcolor="#444",bd=0).pack(side=LEFT)
 
         aux8 = Frame(steps_window,background="#555")
         aux8.pack(fill=X,ipady=2,pady=(30,10))  
@@ -455,11 +448,11 @@ def steps_main(step: int):
     elif step == 3:
         observaciones[-1].location = zonas.get()
         observaciones[-1].lesionT2 = t2_check.get(),catT2.get()
-        observaciones[-1].lesionADC = adc_check.get(),catADC.get()
         observaciones[-1].lesionDWI = dwi_check.get(),catDWI.get()
+        observaciones[-1].lesionDCE = dce_check.get()
         observaciones[-1].eep = eep.get()
         observaciones[-1].info = info.get("1.0","end-1c")
-        observaciones[-1].categoria = pirads_lesion()
+        observaciones[-1].categoria = pirads_lesion(observaciones[-1])
         steps_levels.destroy()
         refresh_report()
         
@@ -577,6 +570,7 @@ def steps_main(step: int):
             Label(mini_report, text=" | PI-RADS: "+str(obs.categoria),bg="#555",font=("Roboto",10),fg="#FFF").pack(side=LEFT)
         l2 = Frame(lesiones_info,background="#555")
         l2.pack(side=RIGHT)
+        prosta.categoria = pirads_prostata()
         Label(l2, text="PI-RADS\nGeneral\n"+str(prosta.categoria),bg="#666",font=("Roboto",12),fg="#FFF").pack(fill=Y,ipadx=20,ipady=5) 
         
         Label(steps_window, text="Conclusiones",bg="#444",font=("Roboto",12),fg="#FFF").pack(ipady=1,ipadx=20,anchor=W) 
@@ -1035,13 +1029,37 @@ def vol_calculator():
     medidas = []
     roi_gen("r")
 
-def pirads_lesion():
-    #depende las opciones de la lesion determina el pirads particular
-    return 0
+def pirads_lesion(obs):
+    #depende las opciones de la lesion determina el pirads particular de la lesion
+    #sigue el diagrama del paper (no el de la pagina)
+    pirad = 0
+    if obs.location in ["2a","4a","6a","8a","10a","12a","13a","14a","15a","1p","2p","3p","4p","5p","6p","7p","8p","9p","10p","11p","12p"]: 
+        #si es zona periferica lo importante es DWI
+        if obs.lesionDWI[0] == 1:
+            if obs.lesionDWI[1] == 3 and obs.lesionDCE == 1:
+                pirad == 4
+            else:
+                pirad == obs.lesionDWI[1]
+    elif obs.location in ["1a","3a","5a","7a","9a","11a"]:
+        if obs.lesionT2[0] == 1:
+            if obs.lesionT2[1] == 2 and obs.lesionDWI[1] >=4:
+                pirad = 3
+            elif obs.lesionT2[1] == 3 and obs.lesionDWI[1] == 5:
+                pirad = 4
+            else:
+                pirad = obs.lesionT2[1]
+                
+    return pirad # SI VUELVE 0 es un ERROR
 
 def pirads_prostata():
     #depende de los resultados de las observaciones determina el pirads general
-    return 0
+    #usa el máximo relevado VER
+    pirad = 0
+    for obs in observaciones:
+        if obs.categoria >= pirad:
+            pirad = obs.categoria
+            
+    return pirad # SI VUELVE 0 es un ERROR
 
 #-------------- MAIN LOOP ---------------------------------------------------------
       
