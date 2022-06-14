@@ -1,7 +1,5 @@
-from matplotlib import docstring
 from pylatex import Document, Command, Figure, Itemize, PageStyle,Head,simple_page_number,LineBreak,Foot,NewLine,MiniPage,SubFigure,VerticalSpace,HorizontalSpace,SmallText,LargeText,FlushLeft,Package,StandAloneGraphic,MediumText
 from pylatex.utils import  NoEscape
-import os
 #------------------LATEX TO PDF------------------------------
 # Diseño la estructura en "latex" y creo un .pdf
 def generator ():

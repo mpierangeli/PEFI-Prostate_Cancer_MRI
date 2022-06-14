@@ -8,6 +8,9 @@ import imutils
 import os
 import cv2
 
+from pylatex import Document, Command, Figure, Itemize, PageStyle,Head,simple_page_number,LineBreak,Foot,NewLine,MiniPage,SubFigure,VerticalSpace,HorizontalSpace,SmallText,LargeText,FlushLeft,Package,StandAloneGraphic,MediumText
+from pylatex.utils import  NoEscape
+
 ## OBJETOS
 
 class roi_square:
@@ -194,7 +197,18 @@ class prostata:
         self.volumen = 0
         self.medidas = [0,0,0]
         self.categoria = 0   
-        self.psa = [0,0,0,0]    
+        self.psa = [0,0,0,0]
+        self.calima = ""
+        self.zonap = ""
+        self.zonat = ""
+        self.conclu = ""
+        self.motivo = ""
+        self.hemo = ""
+        self.neuro = ""
+        self.vesi = ""
+        self.linfa = ""
+        self.huesos = ""
+        self.organos = ""
         
 ## FUNCIONES
 
@@ -366,7 +380,7 @@ def obs_setup(tipo: str):
         steps_main(4)
         
 def steps_main(step: int):
-    global steps_window,steps_levels, zonas, t2_check,dce_check,dwi_check,catT2,catDWI, eep, info, mapa_flag, psa_value, psa_date1, psa_date2, psa_date3
+    global steps_window,steps_levels, zonas, t2_check,dce_check,dwi_check,catT2,catDWI, eep, info, mapa_flag, psa_value, psa_date1, psa_date2, psa_date3, t1,t2,t3,t4,t5,hemo,neuro,vesi,huesos,organos,linfa
     mapa_flag = False
     if step == 1:
         steps_window = Frame(root,background="#2CC")
@@ -583,10 +597,23 @@ def steps_main(step: int):
         b4.bind("<Leave>",lambda b=b4:colorOnFocus(b,False))
     
     elif step == 5:
-        steps_levels.destroy()
-        prosta.psa = [psa_value.get(),psa_date1.get(),psa_date2.get(),psa_date3.get()]
+        
+        try: prosta.psa = [psa_value.get(),psa_date1.get(),psa_date2.get(),psa_date3.get()]
+        except: pass
+        prosta.motivo = t1.get("1.0","end-1c")
+        prosta.calima = t2.get("1.0","end-1c")
+        prosta.zonap = t3.get("1.0","end-1c")
+        prosta.zonat = t4.get("1.0","end-1c")
+        prosta.conclu = t5.get("1.0","end-1c")
+        prosta.hemo = hemo.get()
+        prosta.neuro = neuro.get()
+        prosta.vesi = vesi.get()
+        prosta.linfa = linfa.get()
+        prosta.huesos = huesos.get()
+        prosta.organos = organos.get()
         #quiza ventana de prevista y confirmacion?
-        #generate_pdf()
+        steps_levels.destroy()
+        generator()
 def del_obs(to_destroy):
     observaciones.pop(to_destroy)
     refresh_report()
@@ -1059,6 +1086,129 @@ def pirads_prostata():
             pirad = obs.categoria
             
     return pirad # SI VUELVE 0 es un ERROR
+
+#------------------LATEX TO PDF------------------------------
+# Diseño la estructura en "latex" y creo un .pdf
+def generator ():
+    geometry_options = {
+            "head": "40pt",
+            "margin": "1.5cm",
+            "top": "1cm"
+        }
+    doc = Document(geometry_options=geometry_options)
+    doc.packages.append(Package('booktabs'))
+    doc.preamble.append(Package('babel', options='spanish'))
+
+    footer = PageStyle("footer")
+    with footer.create(Foot("C")):
+        footer.append("-----Reporte generado automaticamente por software SAURUS v1.8-----")
+    doc.preamble.append(footer)
+    doc.change_document_style("footer")
+
+    doc.append(NoEscape(r"\noindent"))
+    with doc.create(MiniPage(width=NoEscape(r"0.2\linewidth"))) as logo:
+        logo.append("LOGO")
+    with doc.create(MiniPage(width=NoEscape(r"0.6\linewidth"),align="c")) as titulo:
+        titulo.append("REPORTE PI-RADS")
+    with doc.create(MiniPage(width=NoEscape(r"0.2\linewidth"),align="r")) as datos:
+        datos.append("Pág. 1 de 1")
+        datos.append("\n")
+        datos.append(NoEscape(r'\today'))
+    doc.append(VerticalSpace("1cm"))
+
+    doc.append("\n")
+    doc.append(SmallText("Report ID:"))
+    doc.append(NoEscape("\quad\quad\quad\quad"))
+    doc.append(SmallText("VER Q PONER ACA"))
+    doc.append("\n")
+    doc.append(SmallText("Paciente:"))
+    doc.append(NoEscape("\quad\quad\quad\quad\quad"))
+    doc.append(SmallText("JORGE CARRASCO"))
+    doc.append("\n")
+    doc.append(SmallText("Fecha estudio:"))
+    doc.append(NoEscape("\hspace{1cm}"))
+    doc.append(SmallText("11/5/2022"))
+    doc.append("\n")
+    doc.append(SmallText("Revisado por:"))
+    doc.append(NoEscape("\hspace{1cm}"))
+    doc.append(SmallText("JUAN PEREZ"))
+    doc.append("\n")
+    doc.append(NoEscape(r"\rule{\textwidth}{1pt}"))
+
+    doc.append("\n\n")
+    doc.append(SmallText("HISTORIA CLÍNICA"))
+    doc.append("\n\n")
+    doc.append(SmallText("Motivo Estudio: "+prosta.motivo))
+    doc.append("\n")
+    doc.append(SmallText("PSA: "+prosta.psa[0]+"ng/ml / PSAD: "+str(round(int(prosta.psa[0])/prosta.volumen,2))+"ng/ml/cc /  FECHA: "+prosta.psa[1]+"/"+prosta.psa[2]+"/"+prosta.psa[3]))
+    doc.append("\n")
+    
+    doc.append("\n\n")
+    doc.append(SmallText("RESULTADOS"))
+    doc.append("\n\n")
+    doc.append(SmallText("Vol. Prostático: "+str(prosta.volumen)+"ml / Dim: "+str(prosta.medidas[0])+"x"+str(prosta.medidas[1])+"x"+str(prosta.medidas[2]))+"mm3")
+    doc.append("\n")
+    doc.append(SmallText("Hemorragia: "+prosta.hemo))
+    doc.append("\n")
+    doc.append(SmallText("Lesión Neurovascular: "+prosta.neuro))
+    doc.append("\n")
+    doc.append(SmallText("Lesión Vesicula Seminal:"+prosta.vesi))
+    doc.append("\n")
+    doc.append(SmallText("Lesión Nodos Linfáticos: "+prosta.linfa))
+    doc.append("\n")
+    doc.append(SmallText("Lesión Huesos: "+prosta.huesos))
+    doc.append("\n")
+    doc.append(SmallText("Lesión Órganos: "+prosta.organos))
+    doc.append("\n\n")
+    
+    doc.append(SmallText("Calidad de Imágenes: "+prosta.calima))
+    doc.append("\n")
+    doc.append(SmallText("Zona Periférica: "+prosta.zonap))
+    doc.append("\n")
+    doc.append(SmallText("Zona Transicional: "+prosta.zonat))
+    doc.append("\n\n")
+    
+    doc.append(SmallText("LESIONES"))
+    doc.append("\n")
+    
+    for obs in observaciones:
+        doc.append("\n")
+        doc.append(SmallText("Observacion ID :"+str(obs.id)))
+        doc.append("\n")
+        doc.append(SmallText("Zona Afectada: "+obs.location))
+        doc.append("\n")
+        doc.append(SmallText("Dimensiones/Volúmen: "+str(obs.medidas[0])+"x"+str(obs.medidas[1])+"x"+str(obs.medidas[2])+"mm3 / "+str(obs.volumen)+"ml"))
+        doc.append("\n")
+        doc.append(SmallText("Clasificación PIRADS: "+str(obs.categoria)))
+        doc.append("\n")
+        doc.append(SmallText("Extensión Extraprostática: "+obs.eep))
+        doc.append("\n")
+        doc.append(SmallText("Información adicional: "+obs.info))
+        doc.append("\n\n")
+        doc.append(SmallText("IMAGENES DE LA OBSERVACION" ))
+        doc.append("\n")
+        
+    
+    doc.append("\n\n")
+    doc.append(SmallText("CONCLUSION"))
+    doc.append("\n\n")
+    doc.append(SmallText("Conclusiones: "+prosta.conclu))
+    doc.append("\n")
+    doc.append(SmallText("PIRADS GENERAL: "+str(prosta.categoria)))
+    doc.append("\n")
+    doc.append(SmallText("IMAGEN PIRADS LOCALIZADA"))
+    doc.append("\n\n")
+    
+    doc.append(SmallText("Sobre los resultados"))
+    doc.append("\n")
+    doc.append(SmallText("PIRADS 1 - Very low. Clinically significant cancer is highly unlikely to be present.\nPIRADS 2 - Low clinically significant cancer is unlikely to be present.\nPIRADS 3 - Intermediate the presence of clinically significant cancer is equivocal.\nPIRADS 4 - High clinically significant cancer is likely to be present.\nPIRADS 5 - Very high clinically significant cancer is highly likely to be present "))
+
+    doc.generate_pdf("TEST-DOC__",clean=True)
+#-------------------------------------------------------
+
+
+
+
 
 #-------------- MAIN LOOP ---------------------------------------------------------
       
