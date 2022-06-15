@@ -6,7 +6,8 @@ def generator ():
     geometry_options = {
             "head": "40pt",
             "margin": "1.5cm",
-            "top": "1cm"
+            "top": "1cm",
+            #"bottom": "2cm"
         }
     doc = Document(geometry_options=geometry_options,lmodern=False)
     doc.packages.append(Package('booktabs'))
@@ -14,7 +15,8 @@ def generator ():
     doc.packages.append(Package('montserrat',"defaultfam"))
     footer = PageStyle("footer")
     with footer.create(Foot("C")):
-        footer.append("-----Reporte generado automaticamente por software-----")
+        #footer.append(NoEscape(r"\centering"))
+        footer.append("Corporación Médica de Gral. San Martín SA - Matheu 4071, (1650) San Martín - Tel. 47547500")
     doc.preamble.append(footer)
     doc.change_document_style("footer")
 
@@ -31,7 +33,7 @@ def generator ():
     doc.append(VerticalSpace("0.5cm"))
 
     doc.append("\n")
-    doc.append(SmallText("Report ID:"))
+    doc.append(SmallText("Report ID:asdasd"))
     doc.append(NoEscape("\quad\quad\quad\quad"))
     doc.append(SmallText("12345678"))
     doc.append("\n")

@@ -8,7 +8,7 @@ import imutils
 import os
 import cv2
 
-from pylatex import Document, Command, Figure, Itemize, PageStyle,Head,simple_page_number,LineBreak,Foot,NewLine,MiniPage,SubFigure,VerticalSpace,HorizontalSpace,SmallText,LargeText,FlushLeft,Package,StandAloneGraphic,MediumText
+from pylatex import Document, Command, Figure, Itemize, PageStyle,Head,simple_page_number,LineBreak,Foot,NewLine,MiniPage,SubFigure,VerticalSpace,HorizontalSpace,SmallText,LargeText,FlushLeft,Package,StandAloneGraphic,MediumText,NewPage
 from pylatex.utils import  NoEscape,bold,italic
 
 ## OBJETOS
@@ -1097,7 +1097,8 @@ def generator ():
     geometry_options = {
             "head": "40pt",
             "margin": "1.5cm",
-            "top": "1cm"
+            "top": "1cm",
+            "bottom": "2cm"
         }
     doc = Document(geometry_options=geometry_options)
     doc.packages.append(Package('booktabs'))
@@ -1106,7 +1107,7 @@ def generator ():
     doc.packages.append(Package('montserrat',"defaultfam"))
     footer = PageStyle("footer")
     with footer.create(Foot("C")):
-        footer.append("-----Reporte generado automaticamente por software SAURUS v1.8-----")
+        footer.append("Corporación Médica de Gral. San Martín SA - Matheu 4071, (1650) San Martín - Tel. 47547500")
     doc.preamble.append(footer)
     doc.change_document_style("footer")
 
@@ -1116,7 +1117,7 @@ def generator ():
     with doc.create(MiniPage(width=NoEscape(r"0.6\linewidth"),align="c")) as titulo:
         titulo.append(MediumText("REPORTE PI-RADS CEUNIM"))
     with doc.create(MiniPage(width=NoEscape(r"0.2\linewidth"),align="r")) as datos:
-        datos.append("Pág. 1 de 1")
+        datos.append("Pág. 1 de 2")
         datos.append("\n")
         datos.append(NoEscape(r'\today'))
     doc.append(VerticalSpace("1cm"))
@@ -1147,11 +1148,12 @@ def generator ():
     doc.append(SmallText(italic(prosta.motivo)))
     doc.append("\n")
     doc.append(SmallText("PSA: "))
-    doc.append(SmallText(bold(prosta.psa[0]+"ng/ml")))
-    doc.append(SmallText("  |  realizado el: "+prosta.psa[1]+"/"+prosta.psa[2]+"/"+prosta.psa[3]))
+    doc.append(SmallText(bold(prosta.psa[0]+" ng/ml")))
+    doc.append(NoEscape("\quad"))
+    doc.append(SmallText("realizado el: "+prosta.psa[1]+"/"+prosta.psa[2]+"/"+prosta.psa[3]))
     doc.append("\n")
     doc.append(SmallText("PSAD: "))
-    doc.append(SmallText(bold(str(round(int(prosta.psa[0])/prosta.volumen,2))+"ng/ml/cc")))
+    doc.append(SmallText(bold(str(round(int(prosta.psa[0])/prosta.volumen,2))+" ng/ml/cc")))
     doc.append("\n")
     doc.append(NoEscape(r"\rule{15cm}{1pt}"))
     
@@ -1159,14 +1161,15 @@ def generator ():
     doc.append(SmallText(bold("RESULTADOS")))
     doc.append("\n\n")
     doc.append(SmallText("Vol. Prostático: "))
-    doc.append(SmallText(bold(str(prosta.volumen)+"ml")))
-    doc.append(SmallText("  |  Dim: "))
+    doc.append(SmallText(bold(str(prosta.volumen)+" ml")))
+    doc.append(NoEscape("\quad"))
+    doc.append(SmallText("|  Dim: "))
     doc.append(SmallText(bold(str(prosta.medidas[0]))))
     doc.append(SmallText("x"))
     doc.append(SmallText(bold(str(prosta.medidas[1]))))
     doc.append(SmallText("x"))
     doc.append(SmallText(bold(str(prosta.medidas[2]))))
-    doc.append(SmallText("mm3"))
+    doc.append(SmallText(" mm"))
     doc.append("\n")
     doc.append(SmallText("Hemorragia: "))
     doc.append(SmallText(bold(prosta.hemo)))
@@ -1174,7 +1177,7 @@ def generator ():
     doc.append(SmallText("Lesión Neurovascular: "))
     doc.append(SmallText(bold(prosta.neuro)))
     doc.append("\n")
-    doc.append(SmallText("Lesión Vesicula Seminal: "))
+    doc.append(SmallText("Lesión Vesícula Seminal: "))
     doc.append(SmallText(bold(prosta.vesi)))
     doc.append("\n")
     doc.append(SmallText("Lesión Nodos Linfáticos: "))
@@ -1186,7 +1189,7 @@ def generator ():
     doc.append(SmallText("Lesión Órganos: "))
     doc.append(SmallText(bold(prosta.organos)))
     doc.append("\n\n")
-    doc.append(SmallText(bold("Sobre el estudio...")))
+    doc.append(SmallText(bold("Sobre el estudio:")))
     doc.append("\n\n")
     doc.append(SmallText("Calidad de Imágenes: "))
     doc.append(SmallText(italic(prosta.calima)))
@@ -1198,7 +1201,7 @@ def generator ():
     doc.append(SmallText(italic(prosta.zonat)))
     doc.append("\n\n")
     
-    doc.append(SmallText(bold("Sobre las lesiones...")))
+    doc.append(SmallText(bold("Sobre las lesiones:")))
     doc.append("\n")
     
     for obs in observaciones:
@@ -1210,14 +1213,15 @@ def generator ():
         doc.append(SmallText(bold(obs.location)))
         doc.append("\n")
         doc.append(SmallText("Vol. Lesión: "))
-        doc.append(SmallText(bold(str(obs.volumen)+"ml")))
-        doc.append(SmallText("  |  Dim: "))
+        doc.append(SmallText(bold(str(obs.volumen)+" ml")))
+        doc.append(NoEscape("\quad"))
+        doc.append(SmallText("|  Dim: "))
         doc.append(SmallText(bold(str(obs.medidas[0]))))
         doc.append(SmallText("x"))
         doc.append(SmallText(bold(str(obs.medidas[1]))))
         doc.append(SmallText("x"))
         doc.append(SmallText(bold(str(obs.medidas[2]))))
-        doc.append(SmallText("mm3"))
+        doc.append(SmallText(" mm"))
         doc.append("\n")
         doc.append(SmallText("Extensión Extraprostática: "))
         doc.append(SmallText(bold(obs.eep)))
@@ -1235,6 +1239,20 @@ def generator ():
     doc.append("\n")
     doc.append(NoEscape(r"\rule{15cm}{1pt}"))
     doc.append("\n\n")
+    
+    doc.append(NewPage())
+    doc.append(NoEscape(r"\noindent"))
+    with doc.create(MiniPage(width=NoEscape(r"0.2\linewidth"))) as logo:
+        logo.append(StandAloneGraphic(image_options="width=150px",filename="logo_unsam_big.png"))
+    with doc.create(MiniPage(width=NoEscape(r"0.6\linewidth"),align="c")) as titulo:
+        titulo.append(MediumText("REPORTE PI-RADS CEUNIM"))
+    with doc.create(MiniPage(width=NoEscape(r"0.2\linewidth"),align="r")) as datos:
+        datos.append("Pág. 2 de 2")
+        datos.append("\n")
+        datos.append(NoEscape(r'\today'))
+    doc.append(VerticalSpace("1cm"))
+    
+    doc.append("\n")
     doc.append(SmallText(bold("CONCLUSIÓN")))
     doc.append("\n\n")
     doc.append(SmallText(italic(prosta.conclu)))
@@ -1249,16 +1267,16 @@ def generator ():
     doc.append("\n\n")
     
     doc.append(NoEscape(r"\rule{\textwidth}{0.2pt}"))
+    doc.append("\n\n")
+    doc.append(SmallText("Sobre los resultados:"))
+    doc.append("\n\n")
+    doc.append(SmallText("La clasificación PI-RADS es un sistema internacionalmente consensuado, reconocido y recomendado por el American College of Radiology para informar la RMmp de forma uniforme por todos los radiólogos y se debe usar de forma obligatoria en la valoración de esta prueba."))
+    doc.append("\n\n")
+    doc.append(SmallText("PIRADS 1 - Muy Bajo. Es muy poco probable que la lesión sea un cáncer clínicamente significativo.\nPIRADS 2 - Bajo. Es poco probable que la lesión sea un cáncer clínicamente significativo; lesión probablemente benigna.\nPIRADS 3 - Intermedia. No hay datos que orienten claramente hacia la benignidad o malignidad de la lesión.\nPIRADS 4 - Alta. Es probable que la lesión sea un cáncer significativo; lesión probablemente maligna.\nPIRADS 5 - Muy Alta. Es muy probable que la lesión sea un cáncer significativo; lesión muy probablemente maligna."))
     doc.append("\n")
-    doc.append(SmallText("Sobre los resultados"))
-    doc.append("\n")
-    doc.append(SmallText("PIRADS 1 - Very low. Clinically significant cancer is highly unlikely to be present.\nPIRADS 2 - Low clinically significant cancer is unlikely to be present.\nPIRADS 3 - Intermediate the presence of clinically significant cancer is equivocal.\nPIRADS 4 - High clinically significant cancer is likely to be present.\nPIRADS 5 - Very high clinically significant cancer is highly likely to be present "))
 
     doc.generate_pdf("TEST-DOC__",clean=True)
 #-------------------------------------------------------
-
-
-
 
 
 #-------------- MAIN LOOP ---------------------------------------------------------
