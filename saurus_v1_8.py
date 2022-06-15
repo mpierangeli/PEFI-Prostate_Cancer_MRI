@@ -9,7 +9,7 @@ import os
 import cv2
 
 from pylatex import Document, Command, Figure, Itemize, PageStyle,Head,simple_page_number,LineBreak,Foot,NewLine,MiniPage,SubFigure,VerticalSpace,HorizontalSpace,SmallText,LargeText,FlushLeft,Package,StandAloneGraphic,MediumText
-from pylatex.utils import  NoEscape
+from pylatex.utils import  NoEscape,bold,italic
 
 ## OBJETOS
 
@@ -182,12 +182,12 @@ class observacion:
     def __init__(self,id):
         self.id = id        #numero de observacion para identificacion
         self.imagenes = []  #donde guardo los strings de direccion de imagenes para el html
-        self.location = ""   #nombre de la zona afectada
-        self.eep = ""       #checkbox de eep
+        self.location = "?"   #nombre de la zona afectada
+        self.eep = "?"       #checkbox de eep
         self.lesionT2 = [0,0] # [visible en secuencia,clasificacion pirads(1-5)]
         self.lesionDWI = [0,0]
         self.lesionDCE = 0 # [visible en secuencia]
-        self.info = ""      #texto informativo escrito a mano
+        self.info = "?"      #texto informativo escrito a mano
         self.volumen = 0    #volumen de lesion
         self.medidas = [0,0,0]  #largo ejes de lesion VER SI SOLO NECESITO 1 MEDIDA
         self.categoria = 0  #SEGUN PIRADS FINAL
@@ -198,17 +198,17 @@ class prostata:
         self.medidas = [0,0,0]
         self.categoria = 0   
         self.psa = [0,0,0,0]
-        self.calima = ""
-        self.zonap = ""
-        self.zonat = ""
-        self.conclu = ""
-        self.motivo = ""
-        self.hemo = ""
-        self.neuro = ""
-        self.vesi = ""
-        self.linfa = ""
-        self.huesos = ""
-        self.organos = ""
+        self.calima = "?"
+        self.zonap = "?"
+        self.zonat = "?"
+        self.conclu = "?"
+        self.motivo = "?"
+        self.hemo = "?"
+        self.neuro = "?"
+        self.vesi = "?"
+        self.linfa = "?"
+        self.huesos = "?"
+        self.organos = "?"
         
 ## FUNCIONES
 
@@ -1063,15 +1063,19 @@ def pirads_lesion(obs):
         #si es zona periferica lo importante es DWI
         if obs.lesionDWI[0] == 1:
             if obs.lesionDWI[1] == 3 and obs.lesionDCE == 1:
-                pirad == 4
-            else:
-                pirad == obs.lesionDWI[1]
-    elif obs.location in ["1a","3a","5a","7a","9a","11a"]:
-        if obs.lesionT2[0] == 1:
-            if obs.lesionT2[1] == 2 and obs.lesionDWI[1] >=4:
-                pirad = 3
-            elif obs.lesionT2[1] == 3 and obs.lesionDWI[1] == 5:
                 pirad = 4
+            else:
+                pirad = obs.lesionDWI[1]
+    elif obs.location in ["1a","3a","5a","7a","9a","11a"]:
+        #si es zona transicional lo importante es T2
+        if obs.lesionT2[0] == 1:
+            if obs.lesionDWI[0] == 1:
+                if obs.lesionT2[1] == 2 and obs.lesionDWI[1] >=4:
+                    pirad = 3
+                elif obs.lesionT2[1] == 3 and obs.lesionDWI[1] == 5:
+                    pirad = 4
+                else:
+                    pirad = obs.lesionT2[1]
             else:
                 pirad = obs.lesionT2[1]
                 
@@ -1098,7 +1102,7 @@ def generator ():
     doc = Document(geometry_options=geometry_options)
     doc.packages.append(Package('booktabs'))
     doc.preamble.append(Package('babel', options='spanish'))
-
+    doc.packages.append(Package('HindMadurai'))
     footer = PageStyle("footer")
     with footer.create(Foot("C")):
         footer.append("-----Reporte generado automaticamente por software SAURUS v1.8-----")
@@ -1107,9 +1111,9 @@ def generator ():
 
     doc.append(NoEscape(r"\noindent"))
     with doc.create(MiniPage(width=NoEscape(r"0.2\linewidth"))) as logo:
-        logo.append("LOGO")
+        logo.append(StandAloneGraphic(image_options="width=150px",filename="logo_unsam_big.png"))
     with doc.create(MiniPage(width=NoEscape(r"0.6\linewidth"),align="c")) as titulo:
-        titulo.append("REPORTE PI-RADS")
+        titulo.append("REPORTE PI-RADS CEUNIM")
     with doc.create(MiniPage(width=NoEscape(r"0.2\linewidth"),align="r")) as datos:
         datos.append("Pág. 1 de 1")
         datos.append("\n")
@@ -1123,82 +1127,129 @@ def generator ():
     doc.append("\n")
     doc.append(SmallText("Paciente:"))
     doc.append(NoEscape("\quad\quad\quad\quad\quad"))
-    doc.append(SmallText("JORGE CARRASCO"))
+    doc.append(SmallText(str(secuencias[0].dcm_serie[0].PatientName)))
     doc.append("\n")
     doc.append(SmallText("Fecha estudio:"))
     doc.append(NoEscape("\hspace{1cm}"))
-    doc.append(SmallText("11/5/2022"))
+    doc.append(SmallText(secuencias[0].dcm_serie[0].InstanceCreationDate[6:]+"/"+secuencias[0].dcm_serie[0].InstanceCreationDate[4:6]+"/"+secuencias[0].dcm_serie[0].InstanceCreationDate[0:4]))
     doc.append("\n")
     doc.append(SmallText("Revisado por:"))
     doc.append(NoEscape("\hspace{1cm}"))
-    doc.append(SmallText("JUAN PEREZ"))
+    doc.append(SmallText("VER Q PONER ACA"))
     doc.append("\n")
-    doc.append(NoEscape(r"\rule{\textwidth}{1pt}"))
+    doc.append(NoEscape(r"\rule{\textwidth}{2pt}"))
 
     doc.append("\n\n")
-    doc.append(SmallText("HISTORIA CLÍNICA"))
+    doc.append(SmallText(bold("HISTORIA CLÍNICA")))
     doc.append("\n\n")
-    doc.append(SmallText("Motivo Estudio: "+prosta.motivo))
+    doc.append(SmallText("Motivo Estudio: "))
+    doc.append(SmallText(italic(prosta.motivo)))
     doc.append("\n")
-    doc.append(SmallText("PSA: "+prosta.psa[0]+"ng/ml / PSAD: "+str(round(int(prosta.psa[0])/prosta.volumen,2))+"ng/ml/cc /  FECHA: "+prosta.psa[1]+"/"+prosta.psa[2]+"/"+prosta.psa[3]))
+    doc.append(SmallText("PSA: "))
+    doc.append(SmallText(bold(prosta.psa[0])))
+    doc.append(SmallText("ng/ml  |  Realizado el: "+prosta.psa[1]+"/"+prosta.psa[2]+"/"+prosta.psa[3]))
     doc.append("\n")
+    doc.append(SmallText("PSAD: "))
+    doc.append(SmallText(bold(str(round(int(prosta.psa[0])/prosta.volumen,2)))))
+    doc.append(SmallText("ng/ml/cc"))
+    doc.append("\n")
+    doc.append(NoEscape(r"\rule{15cm}{1pt}"))
     
     doc.append("\n\n")
-    doc.append(SmallText("RESULTADOS"))
+    doc.append(SmallText(bold("RESULTADOS")))
     doc.append("\n\n")
-    doc.append(SmallText("Vol. Prostático: "+str(prosta.volumen)+"ml / Dim: "+str(prosta.medidas[0])+"x"+str(prosta.medidas[1])+"x"+str(prosta.medidas[2]))+"mm3")
+    doc.append(SmallText("Vol. Prostático: "))
+    doc.append(SmallText(bold(str(prosta.volumen))))
+    doc.append(SmallText("ml  |  Dim: "))
+    doc.append(SmallText(bold(str(prosta.medidas[0]))))
+    doc.append(SmallText("x"))
+    doc.append(SmallText(bold(str(prosta.medidas[1]))))
+    doc.append(SmallText("x"))
+    doc.append(SmallText(bold(str(prosta.medidas[2]))))
+    doc.append(SmallText("mm3"))
     doc.append("\n")
-    doc.append(SmallText("Hemorragia: "+prosta.hemo))
+    doc.append(SmallText("Hemorragia: "))
+    doc.append(SmallText(bold(prosta.hemo)))
     doc.append("\n")
-    doc.append(SmallText("Lesión Neurovascular: "+prosta.neuro))
+    doc.append(SmallText("Lesión Neurovascular: "))
+    doc.append(SmallText(bold(prosta.neuro)))
     doc.append("\n")
-    doc.append(SmallText("Lesión Vesicula Seminal:"+prosta.vesi))
+    doc.append(SmallText("Lesión Vesicula Seminal: "))
+    doc.append(SmallText(bold(prosta.vesi)))
     doc.append("\n")
-    doc.append(SmallText("Lesión Nodos Linfáticos: "+prosta.linfa))
+    doc.append(SmallText("Lesión Nodos Linfáticos: "))
+    doc.append(SmallText(bold(prosta.linfa)))
     doc.append("\n")
-    doc.append(SmallText("Lesión Huesos: "+prosta.huesos))
+    doc.append(SmallText("Lesión Huesos: "))
+    doc.append(SmallText(bold(prosta.huesos)))
     doc.append("\n")
-    doc.append(SmallText("Lesión Órganos: "+prosta.organos))
+    doc.append(SmallText("Lesión Órganos: "))
+    doc.append(SmallText(bold(prosta.organos)))
+    doc.append("\n\n")
+    doc.append(SmallText(bold("Sobre el estudio...")))
+    doc.append("\n\n")
+    doc.append(SmallText("Calidad de Imágenes: "))
+    doc.append(SmallText(italic(prosta.calima)))
+    doc.append("\n")
+    doc.append(SmallText("Zona Periférica: "))
+    doc.append(SmallText(italic(prosta.zonap)))
+    doc.append("\n")
+    doc.append(SmallText("Zona Transicional: "))
+    doc.append(SmallText(italic(prosta.zonat)))
     doc.append("\n\n")
     
-    doc.append(SmallText("Calidad de Imágenes: "+prosta.calima))
-    doc.append("\n")
-    doc.append(SmallText("Zona Periférica: "+prosta.zonap))
-    doc.append("\n")
-    doc.append(SmallText("Zona Transicional: "+prosta.zonat))
-    doc.append("\n\n")
-    
-    doc.append(SmallText("LESIONES"))
+    doc.append(SmallText(bold("Sobre las lesiones...")))
     doc.append("\n")
     
     for obs in observaciones:
         doc.append("\n")
-        doc.append(SmallText("Observacion ID :"+str(obs.id)))
+        doc.append(SmallText("ID : "))
+        doc.append(SmallText(bold(str(obs.id))))
         doc.append("\n")
-        doc.append(SmallText("Zona Afectada: "+obs.location))
+        doc.append(SmallText("Zona Afectada: "))
+        doc.append(SmallText(bold(obs.location)))
         doc.append("\n")
-        doc.append(SmallText("Dimensiones/Volúmen: "+str(obs.medidas[0])+"x"+str(obs.medidas[1])+"x"+str(obs.medidas[2])+"mm3 / "+str(obs.volumen)+"ml"))
+        doc.append(SmallText("Vol. Lesión: "))
+        doc.append(SmallText(bold(str(obs.volumen))))
+        doc.append(SmallText("ml  |  Dim: "))
+        doc.append(SmallText(bold(str(obs.medidas[0]))))
+        doc.append(SmallText("x"))
+        doc.append(SmallText(bold(str(obs.medidas[1]))))
+        doc.append(SmallText("x"))
+        doc.append(SmallText(bold(str(obs.medidas[2]))))
+        doc.append(SmallText("mm3"))
         doc.append("\n")
-        doc.append(SmallText("Clasificación PIRADS: "+str(obs.categoria)))
+        doc.append(SmallText("Extensión Extraprostática: "))
+        doc.append(SmallText(bold(obs.eep)))
         doc.append("\n")
-        doc.append(SmallText("Extensión Extraprostática: "+obs.eep))
+        doc.append(SmallText("Clasificación PIRADS: "))
+        doc.append(SmallText(bold(str(obs.categoria))))
         doc.append("\n")
-        doc.append(SmallText("Información adicional: "+obs.info))
-        doc.append("\n\n")
-        doc.append(SmallText("IMAGENES DE LA OBSERVACION" ))
+        doc.append(SmallText("Observaciones: "))
+        doc.append(SmallText(italic(obs.info)))
         doc.append("\n")
-        
+        doc.append(SmallText("*IMAGENES DE LA OBSERVACION*" ))
+        doc.append("\n")
+        doc.append(NoEscape(r"\rule{8cm}{0.1pt}"))
     
-    doc.append("\n\n")
-    doc.append(SmallText("CONCLUSION"))
-    doc.append("\n\n")
-    doc.append(SmallText("Conclusiones: "+prosta.conclu))
     doc.append("\n")
-    doc.append(SmallText("PIRADS GENERAL: "+str(prosta.categoria)))
+    doc.append(NoEscape(r"\rule{15cm}{1pt}"))
+    doc.append("\n\n")
+    doc.append(SmallText(bold("CONCLUSIÓN")))
+    doc.append("\n\n")
+    doc.append(SmallText(italic(prosta.conclu)))
+    doc.append("\n\n")
+    doc.append(NoEscape(r"\rule{4cm}{0.3pt}"))
     doc.append("\n")
-    doc.append(SmallText("IMAGEN PIRADS LOCALIZADA"))
+    doc.append(MediumText(bold("PIRADS Final: "+str(prosta.categoria))))
+    doc.append("\n")
+    doc.append(NoEscape(r"\rule{4cm}{0.3pt}"))
+    doc.append("\n")
+    doc.append(SmallText("*IMAGEN PIRADS LOCALIZADA*"))
     doc.append("\n\n")
     
+    doc.append(NoEscape(r"\rule{\textwidth}{0.2pt}"))
+    doc.append("\n")
     doc.append(SmallText("Sobre los resultados"))
     doc.append("\n")
     doc.append(SmallText("PIRADS 1 - Very low. Clinically significant cancer is highly unlikely to be present.\nPIRADS 2 - Low clinically significant cancer is unlikely to be present.\nPIRADS 3 - Intermediate the presence of clinically significant cancer is equivocal.\nPIRADS 4 - High clinically significant cancer is likely to be present.\nPIRADS 5 - Very high clinically significant cancer is highly likely to be present "))
