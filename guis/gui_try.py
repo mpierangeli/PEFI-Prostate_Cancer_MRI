@@ -5,7 +5,7 @@ from skimage.morphology import disk
 import pydicom
 import matplotlib.pyplot as plt
 
-import report_gen
+#import random.report_gen as report_gen
 
 while 1:
     msgbox("Bienvenido a la prueba de GUI - PEFI2022")

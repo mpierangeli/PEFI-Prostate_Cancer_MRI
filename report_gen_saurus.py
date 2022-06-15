@@ -1,5 +1,5 @@
 from pylatex import Document, Command, Figure, Itemize, PageStyle,Head,simple_page_number,LineBreak,Foot,NewLine,MiniPage,SubFigure,VerticalSpace,HorizontalSpace,SmallText,LargeText,FlushLeft,Package,StandAloneGraphic,MediumText,Subsection
-from pylatex.utils import  NoEscape
+from pylatex.utils import  NoEscape,bold,italic
 #------------------LATEX TO PDF------------------------------
 # Diseño la estructura en "latex" y creo un .pdf
 def generator ():
@@ -11,7 +11,7 @@ def generator ():
     doc = Document(geometry_options=geometry_options,lmodern=False)
     doc.packages.append(Package('booktabs'))
     doc.preamble.append(Package('babel', options='spanish'))
-    doc.packages.append(Package('HindMadurai',"sfdefault"))
+    doc.packages.append(Package('montserrat',"defaultfam"))
     footer = PageStyle("footer")
     with footer.create(Foot("C")):
         footer.append("-----Reporte generado automaticamente por software-----")
