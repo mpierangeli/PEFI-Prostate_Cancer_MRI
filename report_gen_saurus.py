@@ -7,10 +7,9 @@ def generator ():
             "head": "40pt",
             "margin": "1.5cm",
             "top": "1cm",
-            #"bottom": "2cm"
+            "bottom": "2cm"
         }
     doc = Document(geometry_options=geometry_options,lmodern=False)
-    doc.packages.append(Package('booktabs'))
     doc.preamble.append(Package('babel', options='spanish'))
     doc.packages.append(Package('montserrat',"defaultfam"))
     footer = PageStyle("footer")
@@ -33,8 +32,9 @@ def generator ():
     doc.append(VerticalSpace("0.5cm"))
 
     doc.append("\n")
-    doc.append(SmallText("Report ID:asdasd"))
+    doc.append(SmallText("Report ID:"))
     doc.append(NoEscape("\quad\quad\quad\quad"))
+    #doc.append(NoEscape("\tab"))
     doc.append(SmallText("12345678"))
     doc.append("\n")
     doc.append(SmallText("Paciente:"))

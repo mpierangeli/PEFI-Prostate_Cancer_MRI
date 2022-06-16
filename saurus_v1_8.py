@@ -326,9 +326,15 @@ def refresh_report():
     for n, obs in enumerate(observaciones):
         mini_report = Frame(report_window,background="#444")
         mini_report.pack(fill=X,pady=(0,30),ipadx=2, ipady=2)
-        Button(mini_report, text="Del.", font=("Roboto",12), bg="#F00", bd=0, command=lambda to_destroy=n:del_obs(to_destroy)).pack(side=LEFT,ipadx=1,ipady=1)
-        Button(mini_report, text="Edit", font=("Roboto",12), bg="#FF0", bd=0, command=vol_calculator).pack(side=LEFT,ipadx=1,ipady=1)
-        Label(mini_report, text="Clasificación\nPI-RADS "+str(obs.categoria),bg="#444",font=("Roboto",12),fg="#FFF").pack(side=RIGHT,padx=(0,30))
+        Button(mini_report, text="Del.", font=("Roboto",12,"bold"), bg="#A55", cursor="hand2", bd=0, command=lambda to_destroy=n:del_obs(to_destroy)).pack(side=LEFT,ipadx=1,fill=Y,padx=5)
+        Button(mini_report, text="Edit", font=("Roboto",12,"bold"), bg="#AA5", cursor="hand2", bd=0, command=vol_calculator).pack(side=LEFT,ipadx=1,fill=Y)
+        temp_bg = "#555"
+        if obs.categoria == 1: temp_bg = "#0F0"
+        elif obs.categoria == 2: temp_bg = "#AF0"
+        elif obs.categoria == 3: temp_bg = "#FF0"
+        elif obs.categoria == 4: temp_bg = "#F90"
+        elif obs.categoria == 5: temp_bg = "#F00"
+        Label(mini_report, text="PI-RADS "+str(obs.categoria),bg=temp_bg,font=("Roboto",12,"bold"),fg="#000").pack(side=RIGHT,padx=(0,30),fill=Y,ipadx=1)
         Label(mini_report, text="ID:"+str(obs.id),bg="#444",font=("Roboto",9),fg="#FFF").pack(anchor=W,padx=(15,0))
         Label(mini_report, text="Ubicación: "+obs.location,bg="#444",font=("Roboto",10),fg="#FFF").pack(anchor=W,padx=(15,0))
         Label(mini_report, text="Tamaño: "+str(obs.medidas[0])+"x"+str(obs.medidas[1])+"x"+str(obs.medidas[2])+"mm --> Vol: "+str(obs.volumen)+"ml",bg="#444",font=("Roboto",10),fg="#FFF").pack(anchor=W,padx=(15,0))
@@ -1101,7 +1107,6 @@ def generator ():
             "bottom": "2cm"
         }
     doc = Document(geometry_options=geometry_options)
-    doc.packages.append(Package('booktabs'))
     doc.preamble.append(Package('babel', options='spanish'))
     #doc.packages.append(Package('HindMadurai'))
     doc.packages.append(Package('montserrat',"defaultfam"))
@@ -1115,7 +1120,7 @@ def generator ():
     with doc.create(MiniPage(width=NoEscape(r"0.2\linewidth"))) as logo:
         logo.append(StandAloneGraphic(image_options="width=150px",filename="logo_unsam_big.png"))
     with doc.create(MiniPage(width=NoEscape(r"0.6\linewidth"),align="c")) as titulo:
-        titulo.append(MediumText("REPORTE PI-RADS CEUNIM"))
+        titulo.append(MediumText("REPORTE PI-RADS"))
     with doc.create(MiniPage(width=NoEscape(r"0.2\linewidth"),align="r")) as datos:
         datos.append("Pág. 1 de 2")
         datos.append("\n")
@@ -1124,7 +1129,7 @@ def generator ():
 
     doc.append("\n")
     doc.append(SmallText("Report ID:"))
-    doc.append(NoEscape("\quad\quad\quad\quad"))
+    doc.append(NoEscape("\quad\quad\quad\quad\quad"))
     doc.append(SmallText("VER Q PONER ACA"))
     doc.append("\n")
     doc.append(SmallText("Paciente:"))
@@ -1245,7 +1250,7 @@ def generator ():
     with doc.create(MiniPage(width=NoEscape(r"0.2\linewidth"))) as logo:
         logo.append(StandAloneGraphic(image_options="width=150px",filename="logo_unsam_big.png"))
     with doc.create(MiniPage(width=NoEscape(r"0.6\linewidth"),align="c")) as titulo:
-        titulo.append(MediumText("REPORTE PI-RADS CEUNIM"))
+        titulo.append(MediumText("REPORTE PI-RADS"))
     with doc.create(MiniPage(width=NoEscape(r"0.2\linewidth"),align="r")) as datos:
         datos.append("Pág. 2 de 2")
         datos.append("\n")
