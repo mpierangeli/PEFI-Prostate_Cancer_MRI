@@ -1,11 +1,12 @@
 from tkinter import *
-from PIL import Image, ImageTk#, ImageGrab
-from tkinter import filedialog,ttk
+from PIL import Image, ImageTk, ImageGrab
+from tkinter import filedialog,ttk,messagebox
 import pydicom
 import numpy as np
 import math
 import imutils
 import os
+import shutil
 import cv2
 
 from pylatex import Document, Command, Figure, Itemize, PageStyle,Head,simple_page_number,LineBreak,Foot,NewLine,MiniPage,SubFigure,VerticalSpace,HorizontalSpace,SmallText,LargeText,FlushLeft,Package,StandAloneGraphic,MediumText,NewPage
@@ -211,6 +212,10 @@ class prostata:
         self.organos = "?"
         
 ## FUNCIONES
+def on_closing():
+    if messagebox.askokcancel("Quit", "Do you want to quit?"):
+        shutil.rmtree("temp_img")
+        root.destroy()
 
 def windows_creator():
 
@@ -386,7 +391,7 @@ def obs_setup(tipo: str):
         steps_main(4)
         
 def steps_main(step: int):
-    global steps_window,steps_levels, zonas, t2_check,dce_check,dwi_check,catT2,catDWI, eep, info, mapa_flag, psa_value, psa_date1, psa_date2, psa_date3, t1,t2,t3,t4,t5,hemo,neuro,vesi,huesos,organos,linfa
+    global steps_window,steps_levels, zonas, t2_check,dce_check,dwi_check,catT2,catDWI, eep, info, mapa_flag, psa_value, psa_date1, psa_date2, psa_date3, t1,t2,t3,t4,t5,hemo,neuro,vesi,huesos,organos,linfa,auxframe2
     mapa_flag = False
     if step == 1:
         steps_window = Frame(root,background="#2CC")
@@ -454,10 +459,10 @@ def steps_main(step: int):
         Label(steps_window, text="Información Adicional",bg="#444",font=("Roboto",11),fg="#FFF",anchor=W).pack(fill=X,pady=(20,10),padx=30)
         info = Text(steps_window,width=62,font=("Roboto",10),height=10,bg="#555",fg="#FFF",bd=0,insertbackground="#2CC")
         info.pack()
-        auxframe2 = Frame(steps_window)
+        auxframe2 = Frame(steps_window,bg="#444")
         auxframe2.pack(padx=30,pady=30,anchor=W)
-        b3 = Button(auxframe2, text="Agregar Imágenes", font=("Roboto",10), bg="#2CC", bd=0, cursor="hand2")
-        b3.pack(ipadx=2,ipady=2)
+        b3 = Button(auxframe2, text="Agregar Imágenes", font=("Roboto",10), bg="#2CC", bd=0, cursor="hand2",command=save_cv)
+        b3.pack(ipadx=2,ipady=2,pady=(0,20))
         b4 = Button(steps_window, text="Guardar Observación", font=("Roboto",12), bg="#2CC", bd=0, cursor="hand2",height=3,command=lambda step=3:steps_main(step))
         b4.pack(fill=X,side=BOTTOM)
         b3.bind("<Enter>",lambda b=b3:colorOnFocus(b,True))
@@ -998,7 +1003,11 @@ def view_sec_gen(tipo: str):
             
             root.config(cursor="plus")
             root.bind('<Button-1>', lambda event, seq=secuencias[-1].name: sec_setup(event, seq))  
-                
+       
+def save_cv():
+    root.config(cursor="target")
+    root.bind('<Button-1>', screenshot)
+    steps_levels.iconify()
              
 ## HERRAMIENTAS
 
@@ -1108,6 +1117,15 @@ def pirads_prostata():
             
     return pirad # SI VUELVE 0 es un ERROR
 
+def screenshot(event):
+    
+    observaciones[-1].imagenes.append(ImageGrab.grab((cv.winfo_rootx(), cv.winfo_rooty(), cv.winfo_rootx() + cv.winfo_width(), cv.winfo_rooty() + cv.winfo_height())))
+    save_img = os.path.join("temp_img","obs_"+str(observaciones[-1].id)+"_"+str(len(observaciones[-1].imagenes))+".png")
+    observaciones[-1].imagenes[-1].save(save_img) # VER DONDE GUARDA ESTO Y SI ES NECESARIO GUARDAR
+    root.unbind('<Button-1>')
+    root.config(cursor="arrow")
+    steps_levels.deiconify()
+    Label(auxframe2, text="added obs_"+str(observaciones[-1].id)+"_"+str(len(observaciones[-1].imagenes))+".png",bg="#444",font=("Roboto",11),fg="#FFF",anchor=W).pack(fill=X,ipady=1,ipadx=1)
 #------------------LATEX TO PDF------------------------------
 # Diseño la estructura en "latex" y creo un .pdf
 def generator ():
@@ -1150,6 +1168,9 @@ def generator ():
     doc.append(SmallText("Fecha estudio:"))
     doc.append(NoEscape("\hspace{1cm}"))
     doc.append(SmallText(secuencias[0].dcm_serie[0].InstanceCreationDate[6:]+"/"+secuencias[0].dcm_serie[0].InstanceCreationDate[4:6]+"/"+secuencias[0].dcm_serie[0].InstanceCreationDate[0:4]))
+    doc.append(SmallText("Indicado por:"))
+    doc.append(NoEscape("\hspace{1cm}"))
+    doc.append(SmallText("VER Q PONER ACA"))
     doc.append("\n")
     doc.append(SmallText("Revisado por:"))
     doc.append(NoEscape("\hspace{1cm}"))
@@ -1304,19 +1325,32 @@ root.config(bg="#F00") #para debug
 root.iconbitmap("unsam.ico")
 root.state('zoomed')
 
+#MEMORY READ
+
 # GLOBAL VARIABLES
 MF_W = IntVar(value=1920)
 MF_H = IntVar(value=980)
 CV_W = IntVar(value=0)
 CV_H = IntVar(value=0)
-info_text = StringVar(value="SAURUS V1.7")
+info_text = StringVar(value="SAURUS V1.9")
 info_cv = BooleanVar(value=0)
 axis_cv = BooleanVar(value=0)
 report_flag = BooleanVar(value=0)
+
+#TEMP DIRECTORY CREATION
+
+try:
+    os.makedirs("temp_img", exist_ok = True)
+except OSError as error:
+    print("Problema para crear el directorio de temp_img")
+
 #MAIN WINDOW DISPLAY
 windows_creator()
 menu_creator()
 
+
+
+root.protocol("WM_DELETE_WINDOW", on_closing)
 root.mainloop()
 
 #------------------------------------------------------------------------------
