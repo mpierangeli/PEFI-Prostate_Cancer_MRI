@@ -9,7 +9,7 @@ import os
 import shutil
 import cv2
 
-from pylatex import Document, Command, Figure, Itemize, PageStyle,Head,simple_page_number,LineBreak,Foot,NewLine,MiniPage,SubFigure,VerticalSpace,HorizontalSpace,SmallText,LargeText,FlushLeft,Package,StandAloneGraphic,MediumText,NewPage
+from pylatex import Document, PageStyle,Foot,MiniPage,VerticalSpace,SmallText,Package,StandAloneGraphic,MediumText,NewPage#,Command, Figure, Itemize, Head,simple_page_number,LineBreak, NewLine,SubFigure, HorizontalSpace,LargeText,FlushLeft
 from pylatex.utils import  NoEscape,bold,italic
 
 ## OBJETOS
@@ -213,7 +213,7 @@ class prostata:
         
 ## FUNCIONES
 def on_closing():
-    if messagebox.askokcancel("Quit", "Do you want to quit?"):
+    if messagebox.askokcancel("Salir", "Todas las observaciones se perderán al salir."):
         shutil.rmtree("temp_img")
         root.destroy()
 
@@ -1157,23 +1157,19 @@ def generator ():
     doc.append(VerticalSpace("1cm"))
 
     doc.append("\n")
-    doc.append(SmallText("Report ID:"))
-    doc.append(NoEscape("\quad\quad\quad\quad\quad"))
+    doc.append(SmallText("Report ID: "))
     doc.append(SmallText("VER Q PONER ACA"))
     doc.append("\n")
-    doc.append(SmallText("Paciente:"))
-    doc.append(NoEscape("\quad\quad\quad\quad\quad"))
+    doc.append(SmallText("Paciente: "))
     doc.append(SmallText(str(secuencias[0].dcm_serie[0].PatientName)))
     doc.append("\n")
-    doc.append(SmallText("Fecha estudio:"))
-    doc.append(NoEscape("\hspace{1cm}"))
+    doc.append(SmallText("Fecha estudio: "))
     doc.append(SmallText(secuencias[0].dcm_serie[0].InstanceCreationDate[6:]+"/"+secuencias[0].dcm_serie[0].InstanceCreationDate[4:6]+"/"+secuencias[0].dcm_serie[0].InstanceCreationDate[0:4]))
-    doc.append(SmallText("Indicado por:"))
-    doc.append(NoEscape("\hspace{1cm}"))
+    doc.append("\n")
+    doc.append(SmallText("Indicado por: "))
     doc.append(SmallText("VER Q PONER ACA"))
     doc.append("\n")
-    doc.append(SmallText("Revisado por:"))
-    doc.append(NoEscape("\hspace{1cm}"))
+    doc.append(SmallText("Revisado por: "))
     doc.append(SmallText("VER Q PONER ACA"))
     doc.append("\n")
     doc.append(NoEscape(r"\rule{\textwidth}{2pt}"))
@@ -1271,10 +1267,15 @@ def generator ():
         doc.append("\n\n")
         doc.append(SmallText("*Imágenes de referencia:" ))
         all_images = list(os.listdir('temp_img'))
+        cont = 0
         for img in all_images:
             if img[4] == str(obs.id):
                 img_to_open = "temp_img/"+img
-                doc.append(StandAloneGraphic(image_options="width=150px",filename=img_to_open))
+                if cont % 2 == 0:
+                    doc.append("\n")
+                doc.append(StandAloneGraphic(image_options="width=250px",filename=img_to_open))
+                doc.append(NoEscape("\hspace{0.3cm}"))   
+                cont +=1
 
         doc.append("\n")
         doc.append(NoEscape(r"\rule{8cm}{0.1pt}"))
