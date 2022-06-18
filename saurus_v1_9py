@@ -1268,8 +1268,14 @@ def generator ():
         doc.append("\n")
         doc.append(SmallText("Observaciones: "))
         doc.append(SmallText(italic(obs.info)))
-        doc.append("\n")
-        doc.append(SmallText("*IMAGENES DE LA OBSERVACION*" ))
+        doc.append("\n\n")
+        doc.append(SmallText("*Imágenes de referencia:" ))
+        all_images = list(os.listdir('temp_img'))
+        for img in all_images:
+            if img[4] == str(obs.id):
+                img_to_open = "temp_img/"+img
+                doc.append(StandAloneGraphic(image_options="width=150px",filename=img_to_open))
+
         doc.append("\n")
         doc.append(NoEscape(r"\rule{8cm}{0.1pt}"))
     
