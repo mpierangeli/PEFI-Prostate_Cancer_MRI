@@ -215,7 +215,12 @@ class prostata:
 def on_closing():
     if messagebox.askokcancel("Salir", "Todas las observaciones se perderán al salir."):
         shutil.rmtree("temp_img")
+        
+        with open('startup_cfg','w') as f:
+            f.write("axis_cv:"+str(axis_cv.get())+"\ninfo_cv:"+str(info_cv.get())+"\nlayout_cv:"+str(layout_cv.get()))
+            
         root.destroy()
+
 
 def windows_creator():
 
@@ -655,9 +660,10 @@ def mapa_show():
         l1.image = img
         l1.pack()
         mapa_flag = True
-def canvas_creator(layout: int):
+def canvas_creator(layout:int):
     global cv_master, img2cv
     img2cv = [0,0,0,0]
+    layout_cv.set(layout)
     try:
         for temp_cv in cv_master:
             temp_cv.destroy()
@@ -666,7 +672,6 @@ def canvas_creator(layout: int):
     for sec in secuencias:
         sec.incv = 0 # VER ESTO
     cv_master = []
-
     if layout == 1:   # VER DE SACAR ESTO SI FUERZA A USAR python 3.10
         CV_W.set(MF_W.get()-40)
         CV_H.set(MF_H.get()-40)
@@ -776,7 +781,7 @@ def patient_loader():
                 secuencias.append(secuencia(temp_dcm.SequenceName+"-> TE: "+str(temp_dcm.EchoTime)+", TR: "+str(temp_dcm.RepetitionTime)+", "+str(temp_dcm.ScanOptions)+", UID: "+temp_uid[-4:-1]))
                 sec_uids.append(temp_uid)
             secuencias[-1].add_dcm(temp_dcm)
-    canvas_creator(1)
+    canvas_creator(layout_cv.get())
     sec_selector()              
 
 def sec_selector():
@@ -1332,7 +1337,6 @@ root.config(bg="#F00") #para debug
 root.iconbitmap("unsam.ico")
 root.state('zoomed')
 
-#MEMORY READ
 
 # GLOBAL VARIABLES
 MF_W = IntVar(value=1920)
@@ -1340,9 +1344,23 @@ MF_H = IntVar(value=980)
 CV_W = IntVar(value=0)
 CV_H = IntVar(value=0)
 info_text = StringVar(value="SAURUS V1.9")
-info_cv = BooleanVar(value=0)
-axis_cv = BooleanVar(value=0)
-report_flag = BooleanVar(value=0)
+info_cv = BooleanVar(value=False)
+axis_cv = BooleanVar(value=False)
+report_flag = BooleanVar(value=False)
+layout_cv = IntVar(value=1)
+
+#MEMORY READ
+
+if os.path.isfile('startup_cfg.txt'):
+    with open('startup_cfg.txt','r') as f:
+        lines = f.readlines()
+        lines = [line.rstrip().split(":") for line in lines]
+        
+        for var in lines:
+            if var[1] == "False": var[1] = False
+            if var[0] == "axis_cv": axis_cv.set(var[1])
+            elif var[0] == "info_cv": info_cv.set(var[1])
+            elif var[0] == "layout_cv": layout_cv.set(int(var[1]))
 
 #TEMP DIRECTORY CREATION
 
