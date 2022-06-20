@@ -3,12 +3,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-an_image = Image.open("t2.jpg")
+an_image = Image.open("sector_map_v21_mask_v2.png")
 
-image_sequence = an_image.getdata()
-image_array = np.array(image_sequence)
+image = np.asarray(an_image)
 
-#print(np.histogram(image_array.T[0],255))
 
-plt.hist(image_array.T[2],bins=255,log=True)
+mask = (image[:,:,0] == 0)*(image[:,:,1] == 0)*(image[:,:,2] == 20)
+
+new_img = image.copy()
+new_img[mask] = [255,255,0]
+    
+plt.imshow(new_img)
 plt.show()

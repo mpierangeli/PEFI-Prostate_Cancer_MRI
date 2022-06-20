@@ -1,0 +1,36 @@
+R   G   B
+20  0   0   TZpI
+50  0   0   TZpD
+60  0   0   CZI
+80  0   0   CZD
+100 0   0   TZaI
+120 0   0   TZaD
+140 0   0   AFS
+160 0   0   PZaI
+180 0   0   PZpI
+200 0   0   PZaD
+220 0   0   PZpD
+
+0   20  0   TZpI
+0   50  0   TZpD
+0   60  0   PZmI
+0   80  0   PZmD
+0   100 0   TZaI
+0   120 0   TZaD
+0   140 0   AFS
+0   160 0   PZaI
+0   180 0   PZpI
+0   200 0   PZaD
+0   220 0   PZpD
+
+0   0   20  TZpI
+0   0   50  TZpD
+0   0   60  PZmI
+0   0   80  PZmD
+0   0   100 TZaI
+0   0   120 TZaD
+0   0   140 AFS
+0   0   160 PZaI
+0   0   180 PZpI
+0   0   200 PZaD
+0   0   220 PZpD
