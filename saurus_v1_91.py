@@ -713,7 +713,7 @@ def zone_selector(event):
     for RGB_code in RGB_codes:
         if (mapa_colores[y,x,0] == RGB_code[0])*(mapa_colores[y,x,1] == RGB_code[1])*(mapa_colores[y,x,2] == RGB_code[2]):
             print(RGB_code[3])
-        #mapa_show() # para cerrar el mapa una vez seleccionada la zona
+            mapa_show() # para cerrar el mapa una vez seleccionada la zona
     
     
 def canvas_creator(layout:int):
