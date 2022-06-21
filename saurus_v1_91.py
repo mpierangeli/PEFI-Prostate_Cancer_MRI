@@ -396,7 +396,7 @@ def obs_setup(tipo: str):
         steps_main(4)
         
 def steps_main(step: int):
-    global steps_window,steps_levels, zonas, t2_check,dce_check,dwi_check,catT2,catDWI, eep, info, mapa_flag, psa_value, psa_date1, psa_date2, psa_date3, t1,t2,t3,t4,t5,hemo,neuro,vesi,huesos,organos,linfa,auxframe2
+    global steps_window,steps_levels, zona_label, t2_check,dce_check,dwi_check,catT2,catDWI, eep, info, mapa_flag, psa_value, psa_date1, psa_date2, psa_date3, t1,t2,t3,t4,t5,hemo,neuro,vesi,huesos,organos,linfa,auxframe2, zona
     mapa_flag = False
     if step == 1:
         steps_window = Frame(root,background="#2CC")
@@ -406,17 +406,15 @@ def steps_main(step: int):
         vol_calculator()
     elif step == 2:
         steps_levels = Toplevel(root,background="#444")
-        steps_levels.geometry("500x1000")
+        steps_levels.geometry("435x1000")
         steps_window = Frame(steps_levels,background="#444")
         steps_window.pack(side=LEFT,fill=Y)
         Label(steps_window, text="Sobre la lesión...",bg="#2CC",font=("Roboto",12),fg="#000").pack(fill=X,ipady=5,ipadx=20)
+        
         aux = Frame(steps_window,background="#555")
         aux.pack(fill=X,ipady=5,pady=(20,30))
-        Label(aux, text="Zona afectada",bg="#555",font=("Roboto",11),fg="#FFF").pack(side=LEFT,padx=20)
-        zonasprostata = ["1a","2a","3a","4a","5a","6a","7a","8a","9a","10a","11a","12a","13a","14a","15a",
-                        "1p","2p","3p","4p","5p","6p","7p","8p","9p","10p","11p","12p"]
-        zonas = ttk.Combobox(aux, state="readonly", values=zonasprostata,width=45)
-        zonas.pack(side=LEFT,padx=5)
+        zona = StringVar(value="Zona Afectada: ")
+        zona_label = Label(aux, textvariable=zona,bg="#555",font=("Roboto",11),fg="#FFF").pack(side=LEFT,padx=20)
         b1 = Button(aux, text="Mapa >>", font=("Roboto",10), bg="#2CC", bd=0, cursor="hand2",height=1,command=mapa_show)
         b1.pack(side=RIGHT,ipadx=5)
         
@@ -456,7 +454,7 @@ def steps_main(step: int):
         Label(aux8, text="Extensión Extraprostática",bg="#555",font=("Roboto",11),fg="#FFF").pack(fill=X,padx=20,ipady=5)
         eep = StringVar()
         auxframe = Frame(aux8)
-        auxframe.pack(padx=(20,0))
+        auxframe.pack(padx=20)
         eep_opt = ["Bajo","Medio","Alto","Muy Alto"]
         for n in range(4):
             Radiobutton(auxframe, text=eep_opt[n], variable=eep, value=eep_opt[n], bg="#555",anchor=W,foreground="#FFF",selectcolor="#444",activebackground="#2CC").pack(side=LEFT)
@@ -476,7 +474,7 @@ def steps_main(step: int):
         b4.bind("<Leave>",lambda b=b4:colorOnFocus(b,False))
         
     elif step == 3:
-        observaciones[-1].location = zonas.get()
+        observaciones[-1].location = zona.get()
         observaciones[-1].lesionT2 = t2_check.get(),catT2.get()
         observaciones[-1].lesionDWI = dwi_check.get(),catDWI.get()
         observaciones[-1].lesionDCE = dce_check.get()
@@ -650,16 +648,12 @@ def mapa_show():
     if mapa_flag:   
         mapa_window.destroy()
         mapa_flag = False
-        steps_levels.geometry("500x1000")
+        steps_levels.geometry("435x1000")
         steps_levels.config(cursor="arrow")
     else:
         steps_levels.config(cursor="plus")
         mapa_img = ImageTk.PhotoImage(Image.open("sector_map_v21.png"))
-        
-        
-
-        
-        steps_levels.geometry(str(mapa_img.width()+520)+"x1000")
+        steps_levels.geometry(str(mapa_img.width()+435)+"x1000")
         mapa_window = Frame(steps_levels,background="#444")
         mapa_window.pack(side=RIGHT)
         cv_mapa = Canvas(mapa_window, width=mapa_img.width(),height=mapa_img.height(),bg="#000",highlightthickness=0)
@@ -672,47 +666,46 @@ def mapa_show():
 def zone_selector(event):
     x = event.x
     y = event.y
-    mapa_colores = Image.open("sector_map_v21_mask_v2.png")
-    mapa_colores  = np.asarray(mapa_colores)
-    RGB_codes = [[20,0,0,"Zona Transicional Posterior Izquierda (Base)"],
-                 [50,0,0,"Zona Transicional Posterior Derecha (Base)"],
-                 [60,0,0,"Zona Central Izquierda (Base)"],
-                 [80,0,0,"Zona Central Derecha (Base)"],
-                 [100,0,0,"Zona Transicional Anterior Izquierda (Base)"],
-                 [120,0,0,"Zona Transicional Anterior Derecha (Base)"],
-                 [140,0,0,"Zona Anterior (Base)"],
-                 [160,0,0,"Zona Periférica Anterior Izquierda (Base)"],
-                 [180,0,0,"Zona Periférica Posterior Izquierda (Base)"],
-                 [200,0,0,"Zona Periférica Anterior Derecha (Base)"],
-                 [220,0,0,"Zona Periférica Posterior Derecha (Base)"],
+    mapa_colores  = np.asarray(Image.open("sector_map_v21_mask_v2.png"))
+    RGB_codes = [[20,0,0,"Transicional Posterior Izquierda (Base)"],
+                 [50,0,0,"Transicional Posterior Derecha (Base)"],
+                 [60,0,0,"Central Izquierda (Base)"],
+                 [80,0,0,"Central Derecha (Base)"],
+                 [100,0,0,"Transicional Anterior Izquierda (Base)"],
+                 [120,0,0,"Transicional Anterior Derecha (Base)"],
+                 [140,0,0,"Estroma Fibromuscular Anterior (Base)"],
+                 [160,0,0,"Periférica Anterior Izquierda (Base)"],
+                 [180,0,0,"Periférica Posterior Izquierda (Base)"],
+                 [200,0,0,"Periférica Anterior Derecha (Base)"],
+                 [220,0,0,"Periférica Posterior Derecha (Base)"],
                  
-                 [0,20,0,"Zona Transicional Posterior Izquierda (Medio)"],
-                 [0,50,0,"Zona Transicional Posterior Derecha (Medio)"],
-                 [0,60,0,"Zona Periférica Medial Izquierda (Medio)"],
-                 [0,80,0,"Zona Periférica Medial Derecha (Medio)"],
-                 [0,100,0,"Zona Transicional Anterior Izquierda (Medio)"],
-                 [0,120,0,"Zona Transicional Anterior Derecha (Medio)"],
-                 [0,140,0,"Zona Anterior (Medio)"],
-                 [0,160,0,"Zona Periférica Anterior Izquierda (Medio)"],
-                 [0,180,0,"Zona Periférica Posterior Izquierda (Medio)"],
-                 [0,200,0,"Zona Periférica Anterior Derecha (Medio)"],
-                 [0,220,0,"Zona Periférica Posterior Derecha (Medio)"],
+                 [0,20,0,"Transicional Posterior Izquierda (Medio)"],
+                 [0,50,0,"Transicional Posterior Derecha (Medio)"],
+                 [0,60,0,"Periférica Medial Izquierda (Medio)"],
+                 [0,80,0,"Periférica Medial Derecha (Medio)"],
+                 [0,100,0,"Transicional Anterior Izquierda (Medio)"],
+                 [0,120,0,"Transicional Anterior Derecha (Medio)"],
+                 [0,140,0,"Estroma Fibromuscular Anterior (Medio)"],
+                 [0,160,0,"Periférica Anterior Izquierda (Medio)"],
+                 [0,180,0,"Periférica Posterior Izquierda (Medio)"],
+                 [0,200,0,"Periférica Anterior Derecha (Medio)"],
+                 [0,220,0,"Periférica Posterior Derecha (Medio)"],
                  
-                 [0,0,20,"Zona Transicional Posterior Izquierda (Apex)"],
-                 [0,0,50,"Zona Transicional Posterior Derecha (Apex)"],
-                 [0,0,60,"Zona Periférica Medial Izquierda (Apex)"],
-                 [0,0,80,"Zona Periférica Medial Derecha (Apex)"],
-                 [0,0,100,"Zona Transicional Anterior Izquierda (Apex)"],
-                 [0,0,120,"Zona Transicional Anterior Derecha (Apex)"],
-                 [0,0,140,"Zona Anterior (Apex)"],
-                 [0,0,160,"Zona Periférica Anterior Izquierda (Apex)"],
-                 [0,0,180,"Zona Periférica Posterior Izquierda (Apex)"],
-                 [0,0,200,"Zona Periférica Anterior Derecha (Apex)"],
-                 [0,0,220,"Zona Periférica Posterior Derecha (Apex)"]]
+                 [0,0,20,"Transicional Posterior Izquierda (Apex)"],
+                 [0,0,50,"Transicional Posterior Derecha (Apex)"],
+                 [0,0,60,"Periférica Medial Izquierda (Apex)"],
+                 [0,0,80,"Periférica Medial Derecha (Apex)"],
+                 [0,0,100,"Transicional Anterior Izquierda (Apex)"],
+                 [0,0,120,"Transicional Anterior Derecha (Apex)"],
+                 [0,0,140,"Estroma Fibromuscular Anterior (Apex)"],
+                 [0,0,160,"Periférica Anterior Izquierda (Apex)"],
+                 [0,0,180,"Periférica Posterior Izquierda (Apex)"],
+                 [0,0,200,"Periférica Anterior Derecha (Apex)"],
+                 [0,0,220,"Periférica Posterior Derecha (Apex)"]]
     
     for RGB_code in RGB_codes:
         if (mapa_colores[y,x,0] == RGB_code[0])*(mapa_colores[y,x,1] == RGB_code[1])*(mapa_colores[y,x,2] == RGB_code[2]):
-            print(RGB_code[3])
+            zona.set("Zona "+RGB_code[3])
             mapa_show() # para cerrar el mapa una vez seleccionada la zona
     
     
@@ -1146,15 +1139,15 @@ def pirads_lesion(obs):
     #depende las opciones de la lesion determina el pirads particular de la lesion
     #sigue el diagrama del paper (no el de la pagina)
     pirad = 0
-    if obs.location in ["2a","4a","6a","8a","10a","12a","13a","14a","15a","1p","2p","3p","4p","5p","6p","7p","8p","9p","10p","11p","12p"]: 
-        #si es zona periferica lo importante es DWI
+    if ("Periférica" or "Central") in obs.location: 
+        #si es zona periferica o central lo importante es DWI
         if obs.lesionDWI[0] == 1:
             if obs.lesionDWI[1] == 3 and obs.lesionDCE == 1:
                 pirad = 4
             else:
                 pirad = obs.lesionDWI[1]
-    elif obs.location in ["1a","3a","5a","7a","9a","11a"]:
-        #si es zona transicional lo importante es T2
+    elif ("Transicional" or "Estroma") in obs.location:
+        #si es zona transicional o efma lo importante es T2
         if obs.lesionT2[0] == 1:
             if obs.lesionDWI[0] == 1:
                 if obs.lesionT2[1] == 2 and obs.lesionDWI[1] >=4:
