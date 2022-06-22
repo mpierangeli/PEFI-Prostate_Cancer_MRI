@@ -413,7 +413,7 @@ def steps_main(step: int):
         
         aux = Frame(steps_window,background="#555")
         aux.pack(fill=X,ipady=5,pady=(20,30))
-        zona = StringVar(value="Zona Afectada: ")
+        zona = StringVar(value="Seleccione Zona Afectada")
         zona_label = Label(aux, textvariable=zona,bg="#555",font=("Roboto",11),fg="#FFF").pack(side=LEFT,padx=20)
         b1 = Button(aux, text="Mapa >>", font=("Roboto",10), bg="#2CC", bd=0, cursor="hand2",height=1,command=mapa_show)
         b1.pack(side=RIGHT,ipadx=5)
@@ -627,7 +627,9 @@ def steps_main(step: int):
         prosta.organos = organos.get()
         #quiza ventana de prevista y confirmacion?
         steps_levels.destroy()
+        mapa_pirads_gen()
         generator()
+        #generator(filedialog.askdirectory(title="Guardar Reporte"))
 
     elif step == 6: # EDIT observación
         '''
@@ -639,6 +641,19 @@ def steps_main(step: int):
         '''
         pass
 
+def mapa_pirads_gen():
+    mapa = np.asarray(Image.open("sector_map_v21_bnw.png"))
+    mapa_colores = np.asarray(Image.open("sector_map_v21_mask.png"))
+    pirads_colores = [[0,255,0],[170,255,0],[255,255,0],[255,133,0],[255,0,0]] #color para piradas 1,2,3,4,5 segun reporte
+    for obs in observaciones:
+        for RGB_code in RGB_codes:
+            if obs.location == RGB_code[3]:
+                mask = (mapa_colores[:,:,0] == RGB_code[0])*(mapa_colores[:,:,1] == RGB_code[1])*(mapa_colores[:,:,2] == RGB_code[2])
+                mapa[mask] = pirads_colores[obs.categoria-1]
+    save_img = os.path.join("temp_img","mapa_final.png")
+    mapa = Image.fromarray(mapa)
+    mapa.save(save_img)
+    
 def del_obs(to_destroy):
     observaciones.pop(to_destroy)
     refresh_report()
@@ -664,9 +679,10 @@ def mapa_show():
         mapa_flag = True
         
 def zone_selector(event):
+    global RGB_codes
     x = event.x
     y = event.y
-    mapa_colores  = np.asarray(Image.open("sector_map_v21_mask_v2.png"))
+    mapa_colores  = np.asarray(Image.open("sector_map_v21_mask.png"))
     RGB_codes = [[20,0,0,"Transicional Posterior Izquierda (Base)"],
                  [50,0,0,"Transicional Posterior Derecha (Base)"],
                  [60,0,0,"Central Izquierda (Base)"],
@@ -705,7 +721,7 @@ def zone_selector(event):
     
     for RGB_code in RGB_codes:
         if (mapa_colores[y,x,0] == RGB_code[0])*(mapa_colores[y,x,1] == RGB_code[1])*(mapa_colores[y,x,2] == RGB_code[2]):
-            zona.set("Zona "+RGB_code[3])
+            zona.set(RGB_code[3])
             mapa_show() # para cerrar el mapa una vez seleccionada la zona
     
     
@@ -1291,6 +1307,7 @@ def generator ():
     doc.append(SmallText(bold("Sobre las lesiones:")))
     doc.append("\n")
     
+    all_images = list(os.listdir('temp_img'))
     for obs in observaciones:
         doc.append("\n")
         doc.append(SmallText("ID : "))
@@ -1320,7 +1337,6 @@ def generator ():
         doc.append(SmallText(italic(obs.info)))
         doc.append("\n\n")
         doc.append(SmallText("*Imágenes de referencia:" ))
-        all_images = list(os.listdir('temp_img'))
         cont = 0
         for img in all_images:
             if img[4] == str(obs.id):
@@ -1363,7 +1379,10 @@ def generator ():
     doc.append("\n")
     doc.append(SmallText("*IMAGEN PIRADS LOCALIZADA*"))
     doc.append("\n\n")
-    
+    all_images = list(os.listdir('temp_img'))
+    img_to_open = "temp_img/"+all_images[0]
+    doc.append(StandAloneGraphic(image_options="width=250px",filename=img_to_open))
+    doc.append("\n")
     doc.append(NoEscape(r"\rule{\textwidth}{0.2pt}"))
     doc.append("\n\n")
     doc.append(SmallText("Sobre los resultados:"))
@@ -1372,7 +1391,7 @@ def generator ():
     doc.append("\n\n")
     doc.append(SmallText("PIRADS 1 - Muy Bajo. Es muy poco probable que la lesión sea un cáncer clínicamente significativo.\nPIRADS 2 - Bajo. Es poco probable que la lesión sea un cáncer clínicamente significativo; lesión probablemente benigna.\nPIRADS 3 - Intermedia. No hay datos que orienten claramente hacia la benignidad o malignidad de la lesión.\nPIRADS 4 - Alta. Es probable que la lesión sea un cáncer significativo; lesión probablemente maligna.\nPIRADS 5 - Muy Alta. Es muy probable que la lesión sea un cáncer significativo; lesión muy probablemente maligna."))
     doc.append("\n")
-
+    #fp = os.path.join(save_directory,"TEST-DOC")
     doc.generate_pdf("TEST-DOC__",clean=True)
 #-------------------------------------------------------
 
