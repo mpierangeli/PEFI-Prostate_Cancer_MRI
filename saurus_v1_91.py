@@ -216,7 +216,7 @@ def on_closing():
     if messagebox.askokcancel("Salir", "Todas las observaciones se perderán al salir."):
         shutil.rmtree("temp_img")
         
-        with open('startup_cfg','w') as f:
+        with open('startup_cfg.txt','w') as f:
             f.write("axis_cv:"+str(axis_cv.get())+"\ninfo_cv:"+str(info_cv.get())+"\nlayout_cv:"+str(layout_cv.get()))
             
         root.destroy()
@@ -724,7 +724,6 @@ def zone_selector(event):
             zona.set(RGB_code[3])
             mapa_show() # para cerrar el mapa una vez seleccionada la zona
     
-    
 def canvas_creator(layout:int):
     global cv_master, img2cv
     img2cv = [0,0,0,0]
@@ -770,8 +769,7 @@ def canvas_creator(layout:int):
     root.bind("<Right>",lambda event, arg="c+": bnc(event,arg))
     root.bind("<Left>",lambda event, arg="c-": bnc(event,arg))
     root.bind("<Up>",lambda event, arg="b+": bnc(event,arg))
-    root.bind("<Down>",lambda event, arg="b-": bnc(event,arg))
-    
+    root.bind("<Down>",lambda event, arg="b-": bnc(event,arg))  
 
 def clear_cv ():
     global obj_master
@@ -926,7 +924,6 @@ def img2cv_master(sec: secuencia,temp_img):
         if sec.incv == cvs:
             img2cv[n] = ImageTk.PhotoImage(Image.fromarray(temp_img))
             cvs.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=img2cv[n])
-
 
 def axis_gen():
     
@@ -1151,7 +1148,7 @@ def vol_calculator():
     medidas = []
     roi_gen("r")
 
-def pirads_lesion(obs):
+def pirads_lesion(obs: observacion):
     #depende las opciones de la lesion determina el pirads particular de la lesion
     #sigue el diagrama del paper (no el de la pagina)
     pirad = 0
@@ -1273,87 +1270,85 @@ def generator ():
     doc.append(SmallText("x"))
     doc.append(SmallText(bold(str(prosta.medidas[2]))))
     doc.append(SmallText(" mm"))
-    doc.append("\n")
-    doc.append(SmallText("Hemorragia: "))
-    doc.append(SmallText(bold(prosta.hemo)))
-    doc.append("\n")
-    doc.append(SmallText("Lesión Neurovascular: "))
-    doc.append(SmallText(bold(prosta.neuro)))
-    doc.append("\n")
-    doc.append(SmallText("Lesión Vesícula Seminal: "))
-    doc.append(SmallText(bold(prosta.vesi)))
-    doc.append("\n")
-    doc.append(SmallText("Lesión Nodos Linfáticos: "))
-    doc.append(SmallText(bold(prosta.linfa)))
-    doc.append("\n")
-    doc.append(SmallText("Lesión Huesos: "))
-    doc.append(SmallText(bold(prosta.huesos)))
-    doc.append("\n")
-    doc.append(SmallText("Lesión Órganos: "))
-    doc.append(SmallText(bold(prosta.organos)))
     doc.append("\n\n")
-    doc.append(SmallText(bold("Sobre el estudio:")))
-    doc.append("\n\n")
-    doc.append(SmallText("Calidad de Imágenes: "))
-    doc.append(SmallText(italic(prosta.calima)))
-    doc.append("\n")
-    doc.append(SmallText("Zona Periférica: "))
-    doc.append(SmallText(italic(prosta.zonap)))
-    doc.append("\n")
-    doc.append(SmallText("Zona Transicional: "))
-    doc.append(SmallText(italic(prosta.zonat)))
-    doc.append("\n\n")
+    with doc.create(MiniPage(width=NoEscape(r"0.30\linewidth"))) as resultL:
+        resultL.append(SmallText("Hemorragia: "))
+        resultL.append(SmallText(bold(prosta.hemo)))
+        resultL.append("\n")
+        resultL.append(SmallText("Lesión Neurovascular: "))
+        resultL.append(SmallText(bold(prosta.neuro)))
+        resultL.append("\n")
+        resultL.append(SmallText("Lesión Vesícula Seminal: "))
+        resultL.append(SmallText(bold(prosta.vesi)))
+        resultL.append("\n")
+        resultL.append(SmallText("Lesión Nodos Linfáticos: "))
+        resultL.append(SmallText(bold(prosta.linfa)))
+        resultL.append("\n")
+        resultL.append(SmallText("Lesión Huesos: "))
+        resultL.append(SmallText(bold(prosta.huesos)))
+        resultL.append("\n")
+        resultL.append(SmallText("Lesión Órganos: "))
+        resultL.append(SmallText(bold(prosta.organos)))
+    doc.append(NoEscape(r"\hfill\vline\hfill"))
+    with doc.create(MiniPage(width=NoEscape(r"0.66\linewidth"))) as resultR:
+        resultR.append(SmallText("Calidad de estudio: "))
+        resultR.append(SmallText(italic(prosta.calima)))
+        resultR.append("\n\n")
+        resultR.append(SmallText("Zona Periférica: "))
+        resultR.append(SmallText(italic(prosta.zonap)))
+        resultR.append("\n\n")
+        resultR.append(SmallText("Zona Transicional: "))
+        resultR.append(SmallText(italic(prosta.zonat)))
     
-    doc.append(SmallText(bold("Sobre las lesiones:")))
-    doc.append("\n")
+    doc.append("\n\n\n")
+    doc.append(SmallText(bold("Lesiones más significantes:")))
+    doc.append("\n\n")
     
     all_images = list(os.listdir('temp_img'))
     for obs in observaciones:
+        with doc.create(MiniPage(width=NoEscape(r"0.50\linewidth"))) as obsL:
+            obsL.append(SmallText("ID : "))
+            obsL.append(SmallText(bold(str(obs.id))))
+            obsL.append("\n")
+            obsL.append(SmallText("Zona Afectada: "))
+            obsL.append(SmallText(bold(obs.location)))
+            obsL.append("\n")
+            obsL.append(SmallText("Vol. Lesión: "))
+            obsL.append(SmallText(bold(str(obs.volumen)+" ml")))
+            obsL.append(NoEscape("\quad"))
+            obsL.append(SmallText("|  Dim: "))
+            obsL.append(SmallText(bold(str(obs.medidas[0]))))
+            obsL.append(SmallText("x"))
+            obsL.append(SmallText(bold(str(obs.medidas[1]))))
+            obsL.append(SmallText("x"))
+            obsL.append(SmallText(bold(str(obs.medidas[2]))))
+            obsL.append(SmallText(" mm"))
+            obsL.append("\n")
+            obsL.append(SmallText("Extensión Extraprostática: "))
+            obsL.append(SmallText(bold(obs.eep)))
+            obsL.append("\n")
+            obsL.append(SmallText("Clasificación PIRADS: "))
+            obsL.append(SmallText(bold(str(obs.categoria))))
+            obsL.append("\n")
+            obsL.append(SmallText("Observaciones: "))
+            obsL.append(SmallText(italic(obs.info)))
+        doc.append(NoEscape(r"\hfill\vline\hfill"))
+        with doc.create(MiniPage(width=NoEscape(r"0.48\linewidth"))) as obsR:
+            for img in all_images:
+                if img[4] == str(obs.id):
+                    img_to_open = "temp_img/"+img
+                    obsR.append(StandAloneGraphic(image_options="width=250px",filename=img_to_open))
+                    break
+            """    cont = 0
+            for img in all_images:
+                if img[4] == str(obs.id):
+                    img_to_open = "temp_img/"+img
+                    if cont % 2 == 0:
+                        obsR.append("\n")
+                    obsR.append(StandAloneGraphic(image_options="width=150px",filename=img_to_open))
+                    #obsR.append(NoEscape("\hspace{0.2cm}"))   
+                    cont +=1"""
         doc.append("\n")
-        doc.append(SmallText("ID : "))
-        doc.append(SmallText(bold(str(obs.id))))
-        doc.append("\n")
-        doc.append(SmallText("Zona Afectada: "))
-        doc.append(SmallText(bold(obs.location)))
-        doc.append("\n")
-        doc.append(SmallText("Vol. Lesión: "))
-        doc.append(SmallText(bold(str(obs.volumen)+" ml")))
-        doc.append(NoEscape("\quad"))
-        doc.append(SmallText("|  Dim: "))
-        doc.append(SmallText(bold(str(obs.medidas[0]))))
-        doc.append(SmallText("x"))
-        doc.append(SmallText(bold(str(obs.medidas[1]))))
-        doc.append(SmallText("x"))
-        doc.append(SmallText(bold(str(obs.medidas[2]))))
-        doc.append(SmallText(" mm"))
-        doc.append("\n")
-        doc.append(SmallText("Extensión Extraprostática: "))
-        doc.append(SmallText(bold(obs.eep)))
-        doc.append("\n")
-        doc.append(SmallText("Clasificación PIRADS: "))
-        doc.append(SmallText(bold(str(obs.categoria))))
-        doc.append("\n")
-        doc.append(SmallText("Observaciones: "))
-        doc.append(SmallText(italic(obs.info)))
-        doc.append("\n\n")
-        doc.append(SmallText("*Imágenes de referencia:" ))
-        cont = 0
-        for img in all_images:
-            if img[4] == str(obs.id):
-                img_to_open = "temp_img/"+img
-                if cont % 2 == 0:
-                    doc.append("\n")
-                doc.append(StandAloneGraphic(image_options="width=250px",filename=img_to_open))
-                doc.append(NoEscape("\hspace{0.3cm}"))   
-                cont +=1
-
-        doc.append("\n")
-        doc.append(NoEscape(r"\rule{8cm}{0.1pt}"))
-    
-    doc.append("\n")
-    doc.append(NoEscape(r"\rule{15cm}{1pt}"))
-    doc.append("\n\n")
-    
     doc.append(NewPage())
     doc.append(NoEscape(r"\noindent"))
     with doc.create(MiniPage(width=NoEscape(r"0.2\linewidth"))) as logo:
@@ -1367,21 +1362,23 @@ def generator ():
     doc.append(VerticalSpace("1cm"))
     
     doc.append("\n")
-    doc.append(SmallText(bold("CONCLUSIÓN")))
-    doc.append("\n\n")
-    doc.append(SmallText(italic(prosta.conclu)))
-    doc.append("\n\n")
-    doc.append(NoEscape(r"\rule{4cm}{0.3pt}"))
-    doc.append("\n")
-    doc.append(MediumText(bold("PIRADS Final: "+str(prosta.categoria))))
-    doc.append("\n")
-    doc.append(NoEscape(r"\rule{4cm}{0.3pt}"))
-    doc.append("\n")
-    doc.append(SmallText("*IMAGEN PIRADS LOCALIZADA*"))
-    doc.append("\n\n")
-    all_images = list(os.listdir('temp_img'))
-    img_to_open = "temp_img/"+all_images[0]
-    doc.append(StandAloneGraphic(image_options="width=250px",filename=img_to_open))
+    
+    with doc.create(MiniPage(width=NoEscape(r"0.5\linewidth"))) as concluL:
+        concluL.append(SmallText(bold("CONCLUSIÓN")))
+        concluL.append("\n\n")
+        concluL.append(SmallText(italic(prosta.conclu)))
+        concluL.append("\n\n")
+        concluL.append(NoEscape(r"\rule{4cm}{0.3pt}"))
+        concluL.append("\n")
+        concluL.append(MediumText(bold("PIRADS Final: "+str(prosta.categoria))))
+        concluL.append("\n")
+        concluL.append(NoEscape(r"\rule{4cm}{0.3pt}"))
+        concluL.append("\n")
+    with doc.create(MiniPage(width=NoEscape(r"0.5\linewidth"))) as concluR:
+        all_images = list(os.listdir('temp_img'))
+        img_to_open = "temp_img/"+all_images[0]
+        concluR.append(StandAloneGraphic(image_options="width=250px",filename=img_to_open))
+    
     doc.append("\n")
     doc.append(NoEscape(r"\rule{\textwidth}{0.2pt}"))
     doc.append("\n\n")
