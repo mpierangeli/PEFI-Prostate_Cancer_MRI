@@ -730,7 +730,7 @@ def mapa_pirads_gen():
     mapa = Image.fromarray(mapa)
     mapa.save(save_img)
     
-def del_obs(to_destroy):
+def del_obs(to_destroy: int):
     observaciones.pop(to_destroy)
     refresh_report()
 
