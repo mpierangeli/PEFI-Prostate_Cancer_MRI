@@ -1520,3 +1520,17 @@ root.protocol("WM_DELETE_WINDOW", on_closing)
 root.mainloop()
 
 #------------------------------------------------------------------------------
+
+
+# COSAS Q FALTAN AGREGAR
+
+"""
+Report ID automatico
+Patient AGE -> habria q calcular con el patient date birth [0:4] (año y restarlo al actual o algo asi)
+Estudio realizado por  ? lo pone el médico o lo pongo abajo con el simbolioto para poner firma?
+Indicado por? lo pongo arriba en historia clinica o no?
+Guardar reporte en direccion destino (ver problema de q si cambio path no lee bien las temp_img creo)
+Guardar estado de reporte -> observaciones, imagenes, rois, secuencias (sin cambiar layout porq se complica)
+(a verse de hacer) size layout dinamico que rehaga todas las secuencias y fixee los sizes de las secuencias y rois (con mediciones)
+
+"""
