@@ -210,6 +210,7 @@ class prostata:
         self.linfa = "?"
         self.huesos = "?"
         self.organos = "?"
+        self.indicado = "?"
         
 ## FUNCIONES
 def on_closing():
@@ -396,7 +397,7 @@ def obs_setup(tipo: str):
         steps_main(4)
         
 def steps_main(step: int):
-    global steps_window,steps_levels, zona_label, t2_check,dce_check,dwi_check,catT2,catDWI, eep, info, mapa_flag, psa_value, psa_date1, psa_date2, psa_date3, t1,t2,t3,t4,t5,hemo,neuro,vesi,huesos,organos,linfa,auxframe2, zona
+    global steps_window,steps_levels, zona_label, t2_check,dce_check,dwi_check,catT2,catDWI, eep, info, mapa_flag, psa_value, psa_date1, psa_date2, psa_date3, t1,t2,t3,t4,t5,t6,hemo,neuro,vesi,huesos,organos,linfa,auxframe2, zona
     mapa_flag = False
     if step == 1:
         steps_window = Frame(root,background="#2CC")
@@ -522,6 +523,12 @@ def steps_main(step: int):
         t1 = Text(auxframe5,width=55,height=4,font=("Roboto",10),fg="#FFF",bd=0,bg="#666",insertbackground="#2CC")
         t1.pack(side=LEFT)
         
+        auxframe6 = Frame(historial,background="#555")
+        auxframe6.pack(fill=X,pady=5)
+        Label(auxframe6, text="Indicado por:",bg="#555",font=("Roboto",10),fg="#FFF",width=10).pack(side=LEFT,padx=5)
+        t6 = Text(auxframe6,width=55,height=1,font=("Roboto",10),fg="#FFF",bd=0,bg="#666",insertbackground="#2CC")
+        t6.pack(side=LEFT)
+        
         Label(steps_window, text="Informe de Resultados",bg="#444",font=("Roboto",11),fg="#FFF").pack(ipady=1,ipadx=20,anchor=W)
         
         estudio_info = Frame(steps_window,background="#555")
@@ -599,7 +606,13 @@ def steps_main(step: int):
         l2 = Frame(lesiones_info,background="#555")
         l2.pack(side=RIGHT)
         prosta.categoria = pirads_prostata()
-        Label(l2, text="PI-RADS\nGeneral\n"+str(prosta.categoria),bg="#666",font=("Roboto",12),fg="#FFF").pack(fill=Y,ipadx=20,ipady=5) 
+        temp_bg = "#555"
+        if prosta.categoria == 1: temp_bg = "#0F0"
+        elif prosta.categoria == 2: temp_bg = "#AF0"
+        elif prosta.categoria == 3: temp_bg = "#FF0"
+        elif prosta.categoria == 4: temp_bg = "#F90"
+        elif prosta.categoria == 5: temp_bg = "#F00"
+        Label(l2, text="PI-RADS\nGeneral\n"+str(prosta.categoria),bg=temp_bg,font=("Roboto",12,"bold"),fg="#000").pack(fill=Y,ipadx=20,ipady=5) 
         
         Label(steps_window, text="Conclusiones",bg="#444",font=("Roboto",12),fg="#FFF").pack(ipady=1,ipadx=20,anchor=W) 
         t5 = Text(steps_window,width=65,height=7,font=("Roboto",10),fg="#FFF",bd=0,bg="#666",insertbackground="#2CC")
@@ -615,6 +628,7 @@ def steps_main(step: int):
         try: prosta.psa = [psa_value.get(),psa_date1.get(),psa_date2.get(),psa_date3.get()]
         except: pass
         prosta.motivo = t1.get("1.0","end-1c")
+        prosta.indicado = t6.get("1.0","end-1c")
         prosta.calima = t2.get("1.0","end-1c")
         prosta.zonap = t3.get("1.0","end-1c")
         prosta.zonat = t4.get("1.0","end-1c")
@@ -718,7 +732,7 @@ def confirm_edit(obs:observacion):
     refresh_report()
     
 def mapa_pirads_gen():
-    mapa = np.asarray(Image.open("sector_map_v21_bnw.png"))
+    mapa = np.asarray(Image.open("sector_map_v21_bnw2.png"))
     mapa_colores = np.asarray(Image.open("sector_map_v21_mask.png"))
     pirads_colores = [[0,255,0],[170,255,0],[255,255,0],[255,133,0],[255,0,0]] #color para piradas 1,2,3,4,5 segun reporte
     for obs in observaciones:
@@ -1301,19 +1315,19 @@ def generator ():
 
     doc.append("\n")
     doc.append(SmallText("Report ID: "))
-    doc.append(SmallText("VER Q PONER ACA"))
+    doc.append(SmallText(bold("ID guardado en save.txt?)")))
     doc.append("\n")
     doc.append(SmallText("Paciente: "))
-    doc.append(SmallText(str(secuencias[0].dcm_serie[0].PatientName)))
+    doc.append(SmallText(bold(str(secuencias[0].dcm_serie[0].PatientName))))
     doc.append("\n")
     doc.append(SmallText("Fecha estudio: "))
-    doc.append(SmallText(secuencias[0].dcm_serie[0].InstanceCreationDate[6:]+"/"+secuencias[0].dcm_serie[0].InstanceCreationDate[4:6]+"/"+secuencias[0].dcm_serie[0].InstanceCreationDate[0:4]))
+    doc.append(SmallText(bold(secuencias[0].dcm_serie[0].InstanceCreationDate[6:]+"/"+secuencias[0].dcm_serie[0].InstanceCreationDate[4:6]+"/"+secuencias[0].dcm_serie[0].InstanceCreationDate[0:4])))
     doc.append("\n")
     doc.append(SmallText("Indicado por: "))
-    doc.append(SmallText("VER Q PONER ACA"))
+    doc.append(SmallText(bold(prosta.indicado)))
     doc.append("\n")
     doc.append(SmallText("Revisado por: "))
-    doc.append(SmallText("VER Q PONER ACA"))
+    doc.append(SmallText(bold("NOMBRE FIJO?")))
     doc.append("\n")
     doc.append(NoEscape(r"\rule{\textwidth}{2pt}"))
 
@@ -1444,12 +1458,7 @@ def generator ():
         concluL.append("\n\n")
         concluL.append(SmallText(italic(prosta.conclu)))
         concluL.append("\n\n")
-        concluL.append(NoEscape(r"\rule{4cm}{0.3pt}"))
-        concluL.append("\n")
         concluL.append(MediumText(bold("PIRADS Final: "+str(prosta.categoria))))
-        concluL.append("\n")
-        concluL.append(NoEscape(r"\rule{4cm}{0.3pt}"))
-        concluL.append("\n")
     with doc.create(MiniPage(width=NoEscape(r"0.5\linewidth"))) as concluR:
         all_images = list(os.listdir('temp_img'))
         img_to_open = "temp_img/"+all_images[0]
