@@ -326,11 +326,13 @@ def refresh_report():
     global report_window,b1,b2
     try: report_window.destroy()
     except: pass
+    try: steps_levels.destroy()
+    except: pass
     report_window = Frame(root,background="#333")
     report_window.place(relx=0,rely=0, height=MF_H.get(), width=MF_W.get()/2)
     Label(report_window, text="REPORTE PI-RADS",bg="#2CC",font=("Roboto",15),fg="#000").pack(fill=X,ipady=10)
     Label(report_window, text="PANEL DE OBSERVACIONES",bg="#2CC",font=("Roboto",13),fg="#000").pack(fill=X,pady=(0,20))
-    b1 = Button(report_window, text="NUEVA OBSERVACION", font=("Roboto",12), bg="#2CC", bd=0, cursor="hand2", command=lambda tipo="new":obs_setup(tipo))
+    b1 = Button(report_window, text="NUEVA OBSERVACIÓN", font=("Roboto",12), bg="#2CC", bd=0, cursor="hand2", command=lambda tipo="new":obs_setup(tipo))
     b1.pack(fill=X,pady=(0,20), ipady=10)
     b1.bind("<Enter>",lambda b=b1:colorOnFocus(b,True))
     b1.bind("<Leave>",lambda b=b1:colorOnFocus(b,False))
@@ -382,7 +384,7 @@ def obs_setup(tipo: str):
         observaciones[-1].volumen = vol
         observaciones[-1].medidas = medidas
         medidas = []
-        steps_window.destroy()
+        steps_levels.destroy()
         steps_main(2)
     elif tipo == "create":
         report_window.destroy()
@@ -393,17 +395,17 @@ def obs_setup(tipo: str):
         prosta.volumen = vol
         prosta.medidas = medidas
         medidas = []
-        steps_window.destroy()
+        steps_levels.destroy()
         steps_main(4)
         
 def steps_main(step: int):
     global steps_window,steps_levels, zona_label, t2_check,dce_check,dwi_check,catT2,catDWI, eep, info, mapa_flag, psa_value, psa_date1, psa_date2, psa_date3, t1,t2,t3,t4,t5,t6,hemo,neuro,vesi,huesos,organos,linfa,auxframe2, zona
     mapa_flag = False
     if step == 1:
-        steps_window = Frame(root,background="#2CC")
-        steps_window.place(relx=0.5,rely=0.05, height=40,anchor=CENTER)
+        steps_levels = Frame(root,background="#2CC")
+        steps_levels.place(relx=0.5,rely=0.05, height=40,anchor=CENTER)
         to_vol = "próstata" if prostata_flag else "lesión"
-        Label(steps_window, text="Seleccione 3 ejes de la "+to_vol,bg="#2CC",font=("Roboto",12),fg="#000").pack(ipady=5,ipadx=20)
+        Label(steps_levels, text="Seleccione 3 ejes de la "+to_vol,bg="#2CC",font=("Roboto",12),fg="#000").pack(ipady=5,ipadx=20)
         vol_calculator()
     elif step == 2:
         steps_levels = Toplevel(root,background="#444")
