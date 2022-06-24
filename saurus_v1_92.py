@@ -1204,25 +1204,33 @@ def roi_end(event):
             return
     obj_master[-1].end_coord(event.x,event.y)
     obj_master[-1].draw(False)
-    roi_gen(obj_master[-1].name[0])
+    root.config(cursor="arrow")
+    root.unbind('<Button-1>')
+    root.unbind('<B1-Motion>')
+    root.unbind('<ButtonRelease-1>')
     
     global vol_cont, vol_flag, vol
-    if vol_flag:
-        vol_cont += 1
-        medidas.append(round(obj_master[-1].rdis,1))
-        if vol_cont == 3:
-            vol_cont = 0
-            vol_flag = False
-            vol = round(obj_master[-1].rdis*obj_master[-2].rdis*obj_master[-3].rdis*0.52/1000,2) #volumen de elipsoide en ml
-            for n in range(3):
-                obj_master[-1].insec.incv.delete(obj_master[-1].name)
-                obj_master.pop()
-            root.config(cursor="arrow")
-            root.unbind('<Button-1>')
-            root.unbind('<B1-Motion>')
-            root.unbind('<ButtonRelease-1>')
-            if prostata_flag: obs_setup("end")
-            else:   obs_setup("bypassed")              
+    try: 
+        if vol_flag:
+            roi_gen(obj_master[-1].name[0])
+            vol_cont += 1
+            medidas.append(round(obj_master[-1].rdis,1))
+            if vol_cont == 3:
+                vol_cont = 0
+                vol_flag = False
+                vol = round(obj_master[-1].rdis*obj_master[-2].rdis*obj_master[-3].rdis*0.52/1000,2) #volumen de elipsoide en ml
+                for n in range(3):
+                    obj_master[-1].insec.incv.delete(obj_master[-1].name)
+                    obj_master.pop()
+                root.config(cursor="arrow")
+                root.unbind('<Button-1>')
+                root.unbind('<B1-Motion>')
+                root.unbind('<ButtonRelease-1>')
+                if prostata_flag: obs_setup("end")
+                else:   obs_setup("bypassed")     
+    except: pass  # si estoy usando mediciones fuera de la medicion de volumen
+    
+             
 def roi_escape(event,flag: bool):
     root.config(cursor="arrow")
     root.unbind('<Button-1>')
@@ -1539,7 +1547,6 @@ root.mainloop()
 Report ID automatico
 Patient AGE -> habria q calcular con el patient date birth [0:4] (año y restarlo al actual o algo asi)
 Estudio realizado por  ? lo pone el médico o lo pongo abajo con el simbolioto para poner firma?
-Indicado por? lo pongo arriba en historia clinica o no?
 Guardar reporte en direccion destino (ver problema de q si cambio path no lee bien las temp_img creo)
 Guardar estado de reporte -> observaciones, imagenes, rois, secuencias (sin cambiar layout porq se complica)
 (a verse de hacer) size layout dinamico que rehaga todas las secuencias y fixee los sizes de las secuencias y rois (con mediciones)
