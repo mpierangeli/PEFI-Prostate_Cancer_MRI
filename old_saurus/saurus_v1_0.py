@@ -522,7 +522,7 @@ class secuencia:
 root = Tk()
 root.title("S A U R U S")
 root.config(bg="#F00") #para debug
-root.iconbitmap("unsam.ico")
+root.iconbitmap(os.path.join(os.path.dirname(os.path.realpath(__file__)),"saurus_img","unsam.ico"))
 
 # GLOBAL VARIABLES
 MF_W = IntVar(value=1920)

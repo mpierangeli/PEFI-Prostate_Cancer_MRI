@@ -1,10 +1,4 @@
-from PIL import Image
-import numpy as np
-import matplotlib.pyplot as plt
+import os
 
 
-an_image = Image.open("asd.png")
-
-image = np.asarray(an_image)
-
-print(image)
+print(os.path.dirname(os.path.realpath(__file__)).replace("\\","/"))

@@ -644,8 +644,9 @@ def steps_main(step: int):
         #quiza ventana de prevista y confirmacion?
         steps_levels.destroy()
         mapa_pirads_gen()
-        generator()
-        #generator(filedialog.askdirectory(title="Guardar Reporte"))
+        fp = filedialog.askdirectory(title="Guardar Reporte")
+        fp.replace("\\","/")
+        generator(fp)
 def edit_obs(n: int):
     global steps_window,steps_levels, zona_label, t2_check,dce_check,dwi_check,catT2,catDWI, eep, info, mapa_flag, auxframe2, zona
 
@@ -734,15 +735,15 @@ def confirm_edit(obs:observacion):
     refresh_report()
     
 def mapa_pirads_gen():
-    mapa = np.asarray(Image.open("sector_map_v21_bnw2.png"))
-    mapa_colores = np.asarray(Image.open("sector_map_v21_mask.png"))
+    mapa = np.asarray(Image.open(os.path.join(os.path.dirname(os.path.realpath(__file__)),"saurus_img","sector_map_v21_bnw2.png")))
+    mapa_colores = np.asarray(Image.open(os.path.join(os.path.dirname(os.path.realpath(__file__)),"saurus_img","sector_map_v21_mask.png")))
     pirads_colores = [[0,255,0],[170,255,0],[255,255,0],[255,133,0],[255,0,0]] #color para piradas 1,2,3,4,5 segun reporte
     for obs in observaciones:
         for RGB_code in RGB_codes:
             if obs.location == RGB_code[3]:
                 mask = (mapa_colores[:,:,0] == RGB_code[0])*(mapa_colores[:,:,1] == RGB_code[1])*(mapa_colores[:,:,2] == RGB_code[2])
                 mapa[mask] = pirads_colores[obs.categoria-1]
-    save_img = os.path.join("temp_img","mapa_final.png")
+    save_img = os.path.join(os.path.dirname(os.path.realpath(__file__)),"temp_img","mapa_final.png")
     mapa = Image.fromarray(mapa)
     mapa.save(save_img)
     
@@ -759,7 +760,7 @@ def mapa_show():
         steps_levels.config(cursor="arrow")
     else:
         steps_levels.config(cursor="plus")
-        mapa_img = ImageTk.PhotoImage(Image.open("sector_map_v21.png"))
+        mapa_img = ImageTk.PhotoImage(Image.open(os.path.join(os.path.dirname(os.path.realpath(__file__)),"saurus_img","sector_map_v21.png")))
         steps_levels.geometry(str(mapa_img.width()+435)+"x1000")
         mapa_window = Frame(steps_levels,background="#444")
         mapa_window.pack(side=RIGHT)
@@ -774,7 +775,7 @@ def zone_selector(event):
     global RGB_codes
     x = event.x
     y = event.y
-    mapa_colores  = np.asarray(Image.open("sector_map_v21_mask.png"))
+    mapa_colores  = np.asarray(Image.open(os.path.join(os.path.dirname(os.path.realpath(__file__)),"saurus_img","sector_map_v21_mask.png")))
     RGB_codes = [[20,0,0,"Transicional Posterior Izquierda (Base)"],
                  [50,0,0,"Transicional Posterior Derecha (Base)"],
                  [60,0,0,"Central Izquierda (Base)"],
@@ -1252,20 +1253,20 @@ def pirads_lesion(obs: observacion):
     #depende las opciones de la lesion determina el pirads particular de la lesion
     #sigue el diagrama del paper (no el de la pagina)
     pirad = 0
-    if ("Periférica" or "Central") in obs.location: 
+    if (("Periférica" in obs.location) or ("Central" in obs.location)): 
         #si es zona periferica o central lo importante es DWI
         if obs.lesionDWI[0] == 1:
-            if obs.lesionDWI[1] == 3 and obs.lesionDCE == 1:
+            if ((obs.lesionDWI[1] == 3) and (obs.lesionDCE == 1)):
                 pirad = 4
             else:
                 pirad = obs.lesionDWI[1]
-    elif ("Transicional" or "Estroma") in obs.location:
+    elif (("Transicional" in obs.location) or ("Estroma" in obs.location)):
         #si es zona transicional o efma lo importante es T2
         if obs.lesionT2[0] == 1:
             if obs.lesionDWI[0] == 1:
-                if obs.lesionT2[1] == 2 and obs.lesionDWI[1] >=4:
+                if ((obs.lesionT2[1] == 2) and (obs.lesionDWI[1] >=4)):
                     pirad = 3
-                elif obs.lesionT2[1] == 3 and obs.lesionDWI[1] == 5:
+                elif ((obs.lesionT2[1] == 3) and (obs.lesionDWI[1] == 5)):
                     pirad = 4
                 else:
                     pirad = obs.lesionT2[1]
@@ -1287,7 +1288,7 @@ def pirads_prostata():
 def screenshot(event):
     
     observaciones[-1].imagenes.append(ImageGrab.grab((cv.winfo_rootx(), cv.winfo_rooty(), cv.winfo_rootx() + cv.winfo_width(), cv.winfo_rooty() + cv.winfo_height())))
-    save_img = os.path.join("temp_img","obs_"+str(observaciones[-1].id)+"_"+str(len(observaciones[-1].imagenes))+".png")
+    save_img = os.path.join(os.path.dirname(os.path.realpath(__file__)),"temp_img","obs_"+str(observaciones[-1].id)+"_"+str(len(observaciones[-1].imagenes))+".png")
     observaciones[-1].imagenes[-1].save(save_img) # VER DONDE GUARDA ESTO Y SI ES NECESARIO GUARDAR
     root.unbind('<Button-1>')
     root.config(cursor="arrow")
@@ -1295,7 +1296,7 @@ def screenshot(event):
     Label(auxframe2, text="added obs_"+str(observaciones[-1].id)+"_"+str(len(observaciones[-1].imagenes))+".png",bg="#444",font=("Roboto",11),fg="#FFF",anchor=W).pack(fill=X,ipady=1,ipadx=1)
 #------------------LATEX TO PDF------------------------------
 # Diseño la estructura en "latex" y creo un .pdf
-def generator ():
+def generator (save_directory: str):
     geometry_options = {
             "head": "40pt",
             "margin": "1.5cm",
@@ -1314,7 +1315,8 @@ def generator ():
 
     doc.append(NoEscape(r"\noindent"))
     with doc.create(MiniPage(width=NoEscape(r"0.2\linewidth"))) as logo:
-        logo.append(StandAloneGraphic(image_options="width=150px",filename="logo_unsam_big.png"))
+        logo_unsam = os.path.dirname(os.path.realpath(__file__)).replace("\\","/")+"/saurus_img/logo_unsam_big.png"
+        logo.append(StandAloneGraphic(image_options="width=150px",filename=logo_unsam))
     with doc.create(MiniPage(width=NoEscape(r"0.6\linewidth"),align="c")) as titulo:
         titulo.append(MediumText("REPORTE PI-RADS"))
     with doc.create(MiniPage(width=NoEscape(r"0.2\linewidth"),align="r")) as datos:
@@ -1436,7 +1438,8 @@ def generator ():
         with doc.create(MiniPage(width=NoEscape(r"0.48\linewidth"))) as obsR:
             for img in all_images:
                 if img[4] == str(obs.id):
-                    img_to_open = "temp_img/"+img
+                    img_to_open = os.path.dirname(os.path.realpath(__file__)).replace("\\","/")+"/temp_img/"+img 
+                    #hago esto porq con el path.join sale como \ y no funca con el standalone
                     obsR.append(StandAloneGraphic(image_options="width=250px",filename=img_to_open))
                     break
             """    cont = 0
@@ -1452,7 +1455,8 @@ def generator ():
     doc.append(NewPage())
     doc.append(NoEscape(r"\noindent"))
     with doc.create(MiniPage(width=NoEscape(r"0.2\linewidth"))) as logo:
-        logo.append(StandAloneGraphic(image_options="width=150px",filename="logo_unsam_big.png"))
+        logo_unsam = os.path.dirname(os.path.realpath(__file__)).replace("\\","/")+"/saurus_img/logo_unsam_big.png"
+        logo.append(StandAloneGraphic(image_options="width=150px",filename=logo_unsam))
     with doc.create(MiniPage(width=NoEscape(r"0.6\linewidth"),align="c")) as titulo:
         titulo.append(MediumText("REPORTE PI-RADS"))
     with doc.create(MiniPage(width=NoEscape(r"0.2\linewidth"),align="r")) as datos:
@@ -1470,8 +1474,7 @@ def generator ():
         concluL.append("\n\n")
         concluL.append(MediumText(bold("PIRADS Final: "+str(prosta.categoria))))
     with doc.create(MiniPage(width=NoEscape(r"0.5\linewidth"))) as concluR:
-        all_images = list(os.listdir('temp_img'))
-        img_to_open = "temp_img/"+all_images[0]
+        img_to_open = os.path.dirname(os.path.realpath(__file__)).replace("\\","/")+"/temp_img/mapa_final.png"
         concluR.append(StandAloneGraphic(image_options="width=250px",filename=img_to_open))
     
     doc.append("\n")
@@ -1483,8 +1486,8 @@ def generator ():
     doc.append("\n\n")
     doc.append(SmallText("PIRADS 1 - Muy Bajo. Es muy poco probable que la lesión sea un cáncer clínicamente significativo.\nPIRADS 2 - Bajo. Es poco probable que la lesión sea un cáncer clínicamente significativo; lesión probablemente benigna.\nPIRADS 3 - Intermedia. No hay datos que orienten claramente hacia la benignidad o malignidad de la lesión.\nPIRADS 4 - Alta. Es probable que la lesión sea un cáncer significativo; lesión probablemente maligna.\nPIRADS 5 - Muy Alta. Es muy probable que la lesión sea un cáncer significativo; lesión muy probablemente maligna."))
     doc.append("\n")
-    #fp = os.path.join(save_directory,"TEST-DOC")
-    doc.generate_pdf("TEST-DOC__",clean=True)
+    fp = save_directory+"/TEST-DOC"
+    doc.generate_pdf(fp,clean=True)
 #-------------------------------------------------------
 
 
@@ -1494,7 +1497,7 @@ def generator ():
 root = Tk()
 root.title("S A U R U S")
 root.config(bg="#F00") #para debug 
-root.iconbitmap("unsam.ico")
+root.iconbitmap(os.path.join(os.path.dirname(os.path.realpath(__file__)),"saurus_img","unsam2.ico"))
 root.state('zoomed')
 
 
