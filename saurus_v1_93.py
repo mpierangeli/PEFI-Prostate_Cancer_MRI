@@ -1,16 +1,15 @@
 from tkinter import *
 from PIL import Image, ImageTk, ImageGrab
-from tkinter import filedialog,ttk,messagebox
-import pydicom
-import numpy as np
+from tkinter import filedialog, messagebox
+from pydicom import dcmread
+from numpy import asarray, zeros
 import math
-import imutils
+from imutils import resize
 import os
-import shutil
-import cv2
-
-from pylatex import Document, PageStyle,Foot,MiniPage,VerticalSpace,SmallText,Package,StandAloneGraphic,MediumText,NewPage#,Command, Figure, Itemize, Head,simple_page_number,LineBreak, NewLine,SubFigure, HorizontalSpace,LargeText,FlushLeft
-from pylatex.utils import  NoEscape,bold,italic
+from shutil import rmtree
+from cv2 import convertScaleAbs
+from pylatex import Document, PageStyle, Foot, MiniPage, VerticalSpace, SmallText, Package, StandAloneGraphic, MediumText, NewPage#,Command, Figure, Itemize, Head,simple_page_number,LineBreak, NewLine,SubFigure, HorizontalSpace,LargeText,FlushLeft
+from pylatex.utils import NoEscape, bold, italic
 
 ## OBJETOS
 
@@ -113,7 +112,7 @@ class secuencia:
         self.isloaded = True
         if not self.aux_view:
             self.depth = len(self.dcm_serie)    # cantidad de slices de la secuencia
-            self.img_serie = np.zeros((self.depth,self.height,self.width))  # serie de imagenes
+            self.img_serie = zeros((self.depth,self.height,self.width))  # serie de imagenes
             planos = [0,0,0] # [axial,sagital,coronal]
             for n, dcm in enumerate(self.dcm_serie):
                 try:
@@ -136,7 +135,7 @@ class secuencia:
                 self.depth = self.parent.img_serie.shape[2]
                 self.width = self.parent.img_serie.shape[1]
                 self.height = self.factor*self.parent.img_serie.shape[0]
-                self.img_serie = np.zeros((self.depth,self.height,self.width))
+                self.img_serie = zeros((self.depth,self.height,self.width))
                 for i in range(self.depth): # por cada columna de las axiales -> profundidad de la sagital
                     for j in range(self.parent.img_serie.shape[0]): # por cada imagen axial -> altura de la sagital
                         for k in range(self.factor): # por ancho de tomo axial, repito misma muestra
@@ -146,7 +145,7 @@ class secuencia:
                 self.depth = self.parent.img_serie.shape[1]
                 self.width = self.parent.img_serie.shape[2]
                 self.height = self.factor*self.parent.img_serie.shape[0]
-                self.img_serie = np.zeros((self.depth,self.height,self.width))
+                self.img_serie = zeros((self.depth,self.height,self.width))
                 for i in range(self.parent.img_serie.shape[1]): # por cada fila de las axiales -> profundidad de la coronal
                     for j in range(self.parent.img_serie.shape[0]): # por cada imagen axial -> altura de la coronal
                         for k in range(self.factor): # por ancho de tomo axial, repito misma muestra
@@ -162,7 +161,7 @@ class secuencia:
                 pass
                 
         self.slice = int(self.depth/2)    # en que slice tengo posicionada la secuencia para mostrarla
-        self.img_serie_cte = np.zeros((self.depth,self.img_serie.shape[1],self.img_serie.shape[2]))  # serie de imagenes
+        self.img_serie_cte = zeros((self.depth,self.img_serie.shape[1],self.img_serie.shape[2]))  # serie de imagenes
         
         if self.aux_view:   self.alpha = 1    # parametro de contraste
         else:               self.alpha = 0.15 
@@ -171,13 +170,13 @@ class secuencia:
         for n in range(self.depth):
             self.img_serie_cte[n] = self.img_serie[n]
             if not self.aux_view:
-                self.img_serie[n] = cv2.convertScaleAbs(self.img_serie_cte[n], alpha=self.alpha, beta=self.beta)
+                self.img_serie[n] = convertScaleAbs(self.img_serie_cte[n], alpha=self.alpha, beta=self.beta)
         
     def adjust_img_serie(self,a,b):
         self.alpha += a
         self.beta += b
         for n in range(self.depth):
-            self.img_serie[n] = cv2.convertScaleAbs(self.img_serie_cte[n], alpha=self.alpha, beta=self.beta)
+            self.img_serie[n] = convertScaleAbs(self.img_serie_cte[n], alpha=self.alpha, beta=self.beta)
 
 class observacion:
     def __init__(self,id):
@@ -216,7 +215,7 @@ class prostata:
 ## FUNCIONES
 def on_closing():
     if messagebox.askokcancel("Salir", "Todas las observaciones se perderán al salir."):
-        shutil.rmtree("temp_img")
+        rmtree("temp_img")
         
         with open('startup_cfg.txt','w') as f:
             f.write("axis_cv:"+str(axis_cv.get())+"\ninfo_cv:"+str(info_cv.get())+"\nlayout_cv:"+str(layout_cv.get()))
@@ -746,8 +745,8 @@ def confirm_edit(obs:observacion):
     refresh_report()
     
 def mapa_pirads_gen():
-    mapa = np.asarray(Image.open(os.path.join(os.path.dirname(os.path.realpath(__file__)),"saurus_img","sector_map_v21_bnw2.png")))
-    mapa_colores = np.asarray(Image.open(os.path.join(os.path.dirname(os.path.realpath(__file__)),"saurus_img","sector_map_v21_mask.png")))
+    mapa = asarray(Image.open(os.path.join(os.path.dirname(os.path.realpath(__file__)),"saurus_img","sector_map_v21_bnw2.png")))
+    mapa_colores = asarray(Image.open(os.path.join(os.path.dirname(os.path.realpath(__file__)),"saurus_img","sector_map_v21_mask.png")))
     pirads_colores = [[0,255,0],[170,255,0],[255,255,0],[255,133,0],[255,0,0]] #color para piradas 1,2,3,4,5 segun reporte
     for obs in observaciones:
         for RGB_code in RGB_codes:
@@ -786,7 +785,7 @@ def zone_selector(event):
     global RGB_codes
     x = event.x
     y = event.y
-    mapa_colores  = np.asarray(Image.open(os.path.join(os.path.dirname(os.path.realpath(__file__)),"saurus_img","sector_map_v21_mask.png")))
+    mapa_colores  = asarray(Image.open(os.path.join(os.path.dirname(os.path.realpath(__file__)),"saurus_img","sector_map_v21_mask.png")))
     RGB_codes = [[20,0,0,"Transicional Posterior Izquierda (Base)"],
                  [50,0,0,"Transicional Posterior Derecha (Base)"],
                  [60,0,0,"Central Izquierda (Base)"],
@@ -942,7 +941,7 @@ def patient_loader():
     for file in sorted(os.listdir(filepath)):
         name, ext = os.path.splitext(file)
         if ext == ".IMA":
-            temp_dcm = pydicom.dcmread(filepath+"/"+file)
+            temp_dcm = dcmread(filepath+"/"+file)
             temp_uid = temp_dcm.SeriesInstanceUID
             if  temp_uid not in sec_uids:
                 secuencias.append(secuencia(temp_dcm.SequenceName+"-> TE: "+str(temp_dcm.EchoTime)+", TR: "+str(temp_dcm.RepetitionTime)+", "+str(temp_dcm.ScanOptions)+", UID: "+temp_uid[-4:-1]))
@@ -991,9 +990,9 @@ def refresh_canvas(sec: secuencia):
    
     if not sec.aux_view:
         if layout == 2:
-            temp_img = imutils.resize(sec.img_serie[sec.slice], width=CV_W.get())
+            temp_img = resize(sec.img_serie[sec.slice], width=CV_W.get())
         else:
-            temp_img = imutils.resize(sec.img_serie[sec.slice], height=CV_H.get())
+            temp_img = resize(sec.img_serie[sec.slice], height=CV_H.get())
         sec.realx = sec.dcm_serie[0].PixelSpacing[0]*sec.width/temp_img.shape[1]
         sec.realy = sec.dcm_serie[0].PixelSpacing[1]*sec.height/temp_img.shape[0]  
     else:
@@ -1001,7 +1000,7 @@ def refresh_canvas(sec: secuencia):
             temp_width = sec.parent.incv_height
         if sec.parent.plano == "axial" and sec.plano == "coronal": 
             temp_width = sec.parent.incv_width
-        temp_img = imutils.resize(sec.img_serie[sec.slice], width=temp_width)
+        temp_img = resize(sec.img_serie[sec.slice], width=temp_width)
         sec.realy = sec.parent.dcm_serie[0].PixelSpacing[0]*sec.parent.depth*sec.factor/temp_img.shape[0]
     sec.incv_height = temp_img.shape[0]
     sec.incv_width =  temp_img.shape[1]
