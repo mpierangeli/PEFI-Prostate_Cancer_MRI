@@ -164,7 +164,7 @@ class secuencia:
         self.img_serie_cte = zeros((self.depth,self.img_serie.shape[1],self.img_serie.shape[2]))  # serie de imagenes
         
         if self.aux_view:   self.alpha = 1    # parametro de contraste
-        else:               self.alpha = 0.15 
+        else:               self.alpha = 0.2 
         self.beta = 0       # parametro de brillo
             
         for n in range(self.depth):
@@ -1337,7 +1337,7 @@ def generator (save_directory: str):
 
     doc.append("\n")
     doc.append(SmallText("Report ID: "))
-    doc.append(SmallText(bold("ID guardado en save.txt?)")))
+    doc.append(SmallText(bold(str(secuencias[0].dcm_serie[0].PatientID))))
     doc.append("\n")
     doc.append(SmallText("Paciente: "))
     doc.append(SmallText(bold(str(secuencias[0].dcm_serie[0].PatientName))))
@@ -1365,13 +1365,13 @@ def generator (save_directory: str):
     doc.append(SmallText("realizado el: "+prosta.psa[2]+"/"+prosta.psa[3]+"/"+prosta.psa[4]))
     doc.append("\n")
     doc.append(SmallText("fPSA: "))
-    doc.append(SmallText(bold(str(prosta.psa[1]))+"ng/ml"))
+    doc.append(SmallText(bold(prosta.psa[1]+"ng/ml")))
     doc.append("\n")
     doc.append(SmallText("PSAD: "))
     doc.append(SmallText(bold(str(round(int(prosta.psa[0])/prosta.volumen,2))+" ng/ml/cc")))
     doc.append("\n")
     doc.append(SmallText("fPSA ratio: "))
-    doc.append(SmallText(bold(str(round(int(prosta.psa[1]*100/prosta.psa[0]),2))+"%")))
+    doc.append(SmallText(bold(str(round(int(prosta.psa[1])*100/int(prosta.psa[0]),2))+"%")))
     doc.append("\n")
     doc.append(NoEscape(r"\rule{15cm}{1pt}"))
     
