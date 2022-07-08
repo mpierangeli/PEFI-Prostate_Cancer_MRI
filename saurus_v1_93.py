@@ -301,20 +301,6 @@ def menu_creator():
     portablemenu.add_command(label = "Cargar Secuencia", command = sec_selector)
 
 def report_main():
-    """
-        si es la primera vez creo todas las variables
-        si no es la primera vez solo cargo los datos temporales -> objetos de reporte (reporte general es una serie de observaciones)
-            los minireports son checkboxes, texto, opciones, e imagenes varias, y metadata util?)
-            el reporte general pueda que agarre metadata general tambien (automatica o pedirla antes de generar para no andar guardando)
-        muestro la pantalla completa dentro de la misma window o ventana aparte?
-        si quiero agregar algo pongo +
-        si quiero sacar algo pongo -
-        si quiero modificar le doy a "modificar"-> crea uno nuevo y llena con lo q tenia el anterior sin darle a ok?)
-        si quiero terminar el reporte le doy a "generar"
-        el reporte generado lo guarda en la carpeta de las imagenes dicom como .pdf(ver)
-        las imagenes temporales capaz q las cree en una carpeta temporal dentro del folder de esas imagenes y depsues lo borre (ver permisos de windows)
-                
-    """
     if report_flag.get():
         report_window.destroy()
         report_flag.set(False)
@@ -1239,9 +1225,7 @@ def roi_end(event):
                 root.unbind('<ButtonRelease-1>')
                 if prostata_flag: obs_setup("end")
                 else:   obs_setup("bypassed")     
-    except: pass  # si estoy usando mediciones fuera de la medicion de volumen
-    
-             
+    except: pass  # si estoy usando mediciones fuera de la medicion de volumen            
 def roi_escape(event,flag: bool):
     root.config(cursor="arrow")
     root.unbind('<Button-1>')
@@ -1566,7 +1550,6 @@ root.mainloop()
 # COSAS Q FALTAN AGREGAR
 
 """
-Report ID automatico
 Patient AGE -> habria q calcular con el patient date birth [0:4] (año y restarlo al actual o algo asi)
 Estudio realizado por  ? lo pone el médico o lo pongo abajo con el simbolioto para poner firma?
 Guardar estado de reporte -> observaciones, imagenes, rois, secuencias (sin cambiar layout porq se complica)
