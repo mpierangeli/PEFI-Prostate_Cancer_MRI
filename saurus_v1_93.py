@@ -825,7 +825,7 @@ def canvas_creator(layout:int):
     for sec in secuencias:
         sec.incv = 0 # VER ESTO
     cv_master = []
-    if layout == 1:   # VER DE SACAR ESTO SI FUERZA A USAR python 3.10
+    if layout == 1:  
         CV_W.set(MF_W.get()-40)
         CV_H.set(MF_H.get()-40)
         cv_master.append(Canvas(main_frame, width=CV_W.get(),height=CV_H.get(),bg="#000",highlightthickness=0))
