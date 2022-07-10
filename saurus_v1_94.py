@@ -812,7 +812,7 @@ def zone_selector(event):
             mapa_show() # para cerrar el mapa una vez seleccionada la zona
     
 def canvas_creator(layout: int):
-    global cv_master, img2cv, startupCVs
+    global cv_master, img2cv, startupCVs,axis_cv
     
     if startupCVs:   # asigno CONTROLES DE USUARIO
         
@@ -828,8 +828,8 @@ def canvas_creator(layout: int):
     img2cv = [0,0,0,0]
     if not startupCVs:
         old_master = cv_master
-        for temp_cv in cv_master: temp_cv.destroy() # borro los cv de la ventana antes de volver a crear nuevos.
-
+        for temp_cv in cv_master:   temp_cv.destroy() # borro los cv de la ventana antes de volver a crear nuevos.
+    
     cv_master = []
     
     # creo los canvas segun la opcion q elegí
@@ -885,7 +885,12 @@ def canvas_creator(layout: int):
                     for sec in secuencias:
                         if sec.incv == temp_cv:
                             sec.incv = cv_master[found]
-                            refresh_canvas(sec)
+                            if axis_cv.get():
+                                axis_cv.set(False)  # CORRECION PROVISORIA POSIBLEMENTE UN BUG PERO NO SE
+                                refresh_canvas(sec)
+                                axis_cv.set(True)
+                            else:
+                                refresh_canvas(sec)
                             found += 1
             for sec in secuencias:
                 if ((sec.incv != cv_master[0]) and (sec.incv != cv_master[1])): sec.incv = 0              
@@ -1044,7 +1049,7 @@ def img2cv_master(sec: secuencia, temp_img):
             cvs.create_image(CV_W.get()/2, CV_H.get()/2, anchor=CENTER, image=img2cv[n])
 
 def axis_gen():
-    
+    #for sec in secuencias: print(sec.incv, cv_master)
     for sec in secuencias:
         if sec.incv != 0 and sec.aux_view and sec.parent.incv != 0:
             
