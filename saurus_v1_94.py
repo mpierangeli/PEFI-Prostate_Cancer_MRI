@@ -222,7 +222,7 @@ def on_closing():
 
 def windows_creator():
 
-    global main_frame, bot_frame, info_label
+    global main_frame, bot_frame, info_label, startupCVs
 
     main_frame = Frame(root, width=MF_W.get(), height=MF_H.get(), background="#222") # 20 de botframe 20 menu 20 windows tab 40 windows taskbar
     main_frame.grid(row=1, column=0)
@@ -237,6 +237,7 @@ def windows_creator():
     # MASTER DE OBSERVACIONES PARA REPORTE
     observaciones = []
     obs_id = 0 # para identificar las observaciones si se borran/modifican
+    startupCVs = True
 
 def menu_creator():
     
@@ -261,9 +262,9 @@ def menu_creator():
 
     global layoutmenu
     layoutmenu = Menu(root, tearoff = 0)
-    layoutmenu.add_command(label="1x1",command=lambda layout=1: canvas_creator(layout,False))
-    layoutmenu.add_command(label="1x2",command=lambda layout=2: canvas_creator(layout,False))
-    layoutmenu.add_command(label="2x2",command=lambda layout=4: canvas_creator(layout,False))
+    layoutmenu.add_command(label="1x1",command=lambda layout=1: canvas_creator(layout))
+    layoutmenu.add_command(label="1x2",command=lambda layout=2: canvas_creator(layout))
+    layoutmenu.add_command(label="2x2",command=lambda layout=4: canvas_creator(layout))
     displaymenu = Menu(menubar, tearoff = 0)
     displaymenu.add_cascade(label="Layout", menu = layoutmenu)
     displaymenu.add_separator()
@@ -810,10 +811,10 @@ def zone_selector(event):
             zona.set(RGB_code[3])
             mapa_show() # para cerrar el mapa una vez seleccionada la zona
     
-def canvas_creator(layout: int, firstTime: bool):
-    global cv_master, img2cv
+def canvas_creator(layout: int):
+    global cv_master, img2cv, startupCVs
     
-    if firstTime:   # asigno CONTROLES DE USUARIO
+    if startupCVs:   # asigno CONTROLES DE USUARIO
         
         root.bind("<Control-MouseWheel>", slice_selector)
         root.bind("<Control-z>",go_back_1)
@@ -822,15 +823,13 @@ def canvas_creator(layout: int, firstTime: bool):
         root.bind("<Up>",lambda event, arg="b+": bnc(event,arg))
         root.bind("<Down>",lambda event, arg="b-": bnc(event,arg))
         
-    if ((not firstTime) and (layout == layout_cv.get())): return    # si intento cambiar la cantidad, pero es la ya seleccionada no hago nada
+    if ((not startupCVs) and (layout == layout_cv.get())): return    # si intento cambiar la cantidad, pero es la ya seleccionada no hago nada
      
     img2cv = [0,0,0,0]
-    #------------------------------------
-    for sec in secuencias:
-        sec.incv = 0 # VER ESTO
-    #--------------------------------
-    if not firstTime: 
+    if not startupCVs:
+        old_master = cv_master
         for temp_cv in cv_master: temp_cv.destroy() # borro los cv de la ventana antes de volver a crear nuevos.
+
     cv_master = []
     
     # creo los canvas segun la opcion q elegí
@@ -861,22 +860,37 @@ def canvas_creator(layout: int, firstTime: bool):
         temp_cv.bind("<Leave>", unfocus_cv)
         temp_cv.bind("<Button-3>", popupmenu)
         
-    if ((not firstTime) and (layout != layout_cv.get())): # si no es la primera vez y tengo un cambio de layout reacomodo las secuencias:
-    # ahora chequeo a mano todos los casos de traspaso para asignar los cv a las secuencias correspondientes VER
-        if layout_cv.get() == 1:
-            if layout == 2:
-                # asigno la imagen de la secuencia en pantalla a la 1 de los 2 cv nuevos
-                pass
-            elif layout == 4: pass
-        elif layout_cv.get() == 2:
-            if layout == 1: pass
-            elif layout == 4: pass
-        elif layout_cv.get() == 4:
-            if layout == 1: pass
-            elif layout == 2: pass       
-    
+    if ((not startupCVs) and (layout != layout_cv.get())): # si no es la primera vez y tengo un cambio de layout reacomodo las secuencias:
+        if layout_cv.get() == 1:    # si tengo 1 y voy a 2 o 4 la pongo en la primera
+            for sec in secuencias:
+                if sec.incv != 0:
+                    sec.incv = cv_master[0]
+                    refresh_canvas(sec)
+                    break
+        elif layout == 1:   # si tengo 2 o 4 y voy a 1, dejo la primera
+            found = False
+            for temp_cv in old_master:
+                if ((temp_cv != 0) and (not found)):
+                    for sec in secuencias:
+                        if sec.incv == temp_cv:
+                            sec.incv = cv_master[0]
+                            refresh_canvas(sec)
+                            found = True
+            for sec in secuencias:
+                if sec.incv != cv_master[0]: sec.incv = 0
+        else:  # si tengo 2 y voy a 4 o si tenog 4 y voy a 2
+            found = 0
+            for temp_cv in old_master:
+                if ((temp_cv != 0) and (found != 2)):
+                    for sec in secuencias:
+                        if sec.incv == temp_cv:
+                            sec.incv = cv_master[found]
+                            refresh_canvas(sec)
+                            found += 1
+            for sec in secuencias:
+                if ((sec.incv != cv_master[0]) and (sec.incv != cv_master[1])): sec.incv = 0              
     layout_cv.set(layout)   # asigno el nuevo layout de forma permanente.
-        
+    startupCVs = False 
 
 
 def clear_cv ():
@@ -952,7 +966,7 @@ def patient_loader():
                 secuencias.append(secuencia(temp_dcm.SequenceName+"-> TE: "+str(temp_dcm.EchoTime)+", TR: "+str(temp_dcm.RepetitionTime)+", "+str(temp_dcm.ScanOptions)+", UID: "+temp_uid[-4:-1]))
                 sec_uids.append(temp_uid)
             secuencias[-1].add_dcm(temp_dcm)
-    canvas_creator(layout_cv.get(),True)
+    canvas_creator(layout_cv.get())
     sec_selector()              
 
 def sec_selector():
@@ -990,11 +1004,9 @@ def sec_setup(event, sec_name: str):
     root.unbind('<Button-1>')
 
 def refresh_canvas(sec: secuencia):
-    global img2cv
-    layout = len(cv_master)
-   
+    
     if not sec.aux_view:
-        if layout == 2:
+        if len(cv_master) == 2:
             temp_img = resize(sec.img_serie[sec.slice], width=CV_W.get())
         else:
             temp_img = resize(sec.img_serie[sec.slice], height=CV_H.get())
@@ -1010,8 +1022,6 @@ def refresh_canvas(sec: secuencia):
     sec.incv_height = temp_img.shape[0]
     sec.incv_width =  temp_img.shape[1]
         
-    
-    if layout == 1: img2cv = [0,0,0,0]
     img2cv_master(sec,temp_img)
     
     # REDIBUJO LOS OBJETOS GUARDADOS EN LOS CANVAS
@@ -1093,8 +1103,9 @@ def slice_selector(event):
         if sec.incv == cv:
             if event.delta > 0 and sec.slice < sec.depth-1: sec.slice += 1
             elif event.delta < 0 and sec.slice > 0: sec.slice -= 1
+            refresh_canvas(sec) 
             break
-    refresh_canvas(sec) 
+    
 
 def info_tab_gen():
     global info_tab
