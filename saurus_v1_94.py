@@ -74,12 +74,12 @@ class roi_ruler:
         self.dx = self.xf-self.xi
         self.dy = self.yf-self.yi
     def draw(self,temporal):
-        cv.delete(self.name)
+        self.insec.incv.delete(self.name)
         if temporal:
-            cv.create_line(self.xi,self.yi,self.xf,self.yf,fill="#1BB",dash=(3,),arrow=BOTH,tags=self.name)
+            self.insec.incv.create_line(self.xi,self.yi,self.xf,self.yf,fill="#1BB",dash=(3,),arrow=BOTH,tags=self.name)
         else:
             self.name = self.name + "_"
-            cv.create_line(self.xi,self.yi,self.xf,self.yf,fill="#2CC",arrow=BOTH,tags=self.name)
+            self.insec.incv.create_line(self.xi,self.yi,self.xf,self.yf,fill="#2CC",arrow=BOTH,tags=self.name)
         self.ang = abs(math.degrees(math.atan((-self.dy)/(-self.dx+1e-6))))
         self.rdis = math.sqrt((self.dx*self.insec.realx)**2+(self.dy*self.insec.realy)**2) # Porq distancia real depende del ancho de pixel en cada dirección.
         a = 10
@@ -89,7 +89,7 @@ class roi_ruler:
         elif self.dx*self.dy > 0: 
             self.ang = -self.ang
             a -= 20
-        cv.create_text((self.xf+self.xi)/2+a,(self.yf+self.yi)/2+b,text=str(round(self.rdis,2))+"mm",fill="#2CC",font=("Roboto", 9),tags=self.name,angle=self.ang)
+        self.insec.incv.create_text((self.xf+self.xi)/2+a,(self.yf+self.yi)/2+b,text=str(round(self.rdis,2))+"mm",fill="#2CC",font=("Roboto", 9),tags=self.name,angle=self.ang)
 class secuencia:
     def __init__(self,name):
         self.name = name    # nombre de secuencia -> name+TE+TR+Modes
@@ -187,8 +187,7 @@ class observacion:
         self.lesionDWI = [0,0]
         self.lesionDCE = 0 # [visible en secuencia]
         self.info = "?"      #texto informativo escrito a mano
-        self.volumen = 0    #volumen de lesion
-        self.medidas = [0,0,0]  #largo ejes de lesion VER SI SOLO NECESITO 1 MEDIDA
+        self.medidas = 0  #largo eje mayor de lesion 
         self.categoria = 0  #SEGUN PIRADS FINAL
 class prostata:
     def __init__(self):
@@ -334,7 +333,7 @@ def refresh_report():
         Label(mini_report, text="PI-RADS "+str(obs.categoria),bg=temp_bg,font=("Roboto",12,"bold"),fg="#000").pack(side=RIGHT,padx=(0,30),fill=Y,ipadx=1)
         Label(mini_report, text="ID:"+str(obs.id),bg="#444",font=("Roboto",9),fg="#FFF").pack(anchor=W,padx=(15,0))
         Label(mini_report, text="Ubicación: "+obs.location,bg="#444",font=("Roboto",10),fg="#FFF").pack(anchor=W,padx=(15,0))
-        Label(mini_report, text="Tamaño: "+str(obs.medidas[0])+"x"+str(obs.medidas[1])+"x"+str(obs.medidas[2])+"mm --> Vol: "+str(obs.volumen)+"ml",bg="#444",font=("Roboto",10),fg="#FFF").pack(anchor=W,padx=(15,0))
+        Label(mini_report, text="Tamaño: "+str(obs.medidas[0])+" mm",bg="#444",font=("Roboto",10),fg="#FFF").pack(anchor=W,padx=(15,0))
         Label(mini_report, text="Descripción:",bg="#444",font=("Roboto",10),fg="#FFF").pack(anchor=W,padx=(15,0))
         des = Text(mini_report,bg="#444",font=("Roboto",9),fg="#FFF",height=4,width=100,bd=0)
         des.pack(anchor=W,padx=(15,0))
@@ -354,8 +353,9 @@ def colorOnFocus(b: Button, n: bool):
     else:   b.widget.config(background="#2CC")
            
 def obs_setup(tipo: str):
-    global obs_id,prostata_flag,prosta,medidas
+    global obs_id,prostata_flag,lesion_flag,prosta,medidas
     prostata_flag = False
+    lesion_flag = True
     if tipo == "new":
         observaciones.append(observacion(obs_id))
         obs_id += 1
@@ -365,7 +365,6 @@ def obs_setup(tipo: str):
         report_window.destroy()
         steps_main(1)
     elif tipo == "bypassed":
-        observaciones[-1].volumen = vol
         observaciones[-1].medidas = medidas
         medidas = []
         steps_levels.destroy()
@@ -383,13 +382,17 @@ def obs_setup(tipo: str):
         steps_main(4)
         
 def steps_main(step: int):
-    global steps_window,steps_levels, zona_label, t2_check,dce_check,dwi_check,catT2,catDWI, eep, info, mapa_flag, psa_value, fpsa_value, psa_date1, psa_date2, psa_date3, t1,t2,t3,t4,t5,t6,hemo,neuro,vesi,huesos,organos,linfa,uretra, auxframe2, zona
+    global steps_window,steps_levels, zona_label, t2_check,dce_check,dwi_check,catT2,catDWI, eep, info, mapa_flag, psa_value, fpsa_value, psa_date1, psa_date2, psa_date3, t1,t2,t3,t4,t5,t6,hemo,neuro,vesi,huesos,organos,linfa,uretra, auxframe2, zona, lesion_flag
     mapa_flag = False
     if step == 1:
         steps_levels = Frame(root,background="#2CC")
         steps_levels.place(relx=0.5,rely=0.05, height=40,anchor=CENTER)
-        to_vol = "próstata" if prostata_flag else "lesión"
-        Label(steps_levels, text="Seleccione 3 ejes de la "+to_vol,bg="#2CC",font=("Roboto",12),fg="#000").pack(ipady=5,ipadx=20)
+        
+        if prostata_flag:   
+            to_text = "Seleccione los 3 ejes de la próstata"
+        else:   
+            to_text = "Seleccione el eje mayor de la lesión"
+        Label(steps_levels, text=to_text,bg="#2CC",font=("Roboto",12),fg="#000").pack(ipady=5,ipadx=20)
         vol_calculator()
     elif step == 2:
         steps_levels = Toplevel(root,background="#444")
@@ -1206,13 +1209,17 @@ def save_cv():
 def roi_gen(tipo: str):
     root.config(cursor="tcross")
     root.bind('<Button-1>', lambda event, arg=tipo: roi_start(event,arg))
-    root.bind('<B1-Motion>', roi_temp)
-    root.bind('<ButtonRelease-1>', roi_end)
     root.bind("<Escape>", lambda event, arg=False: roi_escape(event,arg))
 def roi_start(event,tipo: str):
     root.bind("<Escape>", lambda event, arg=True: roi_escape(event,arg))
+    cont = 0
     for sec in secuencias:
         if sec.incv == cv:  break
+        else: cont += 1
+    if cont == len(secuencias): return
+    else:
+        root.bind('<B1-Motion>', lambda event, incv=sec.incv: roi_temp(event,incv))
+        root.bind('<ButtonRelease-1>', lambda event, incv=sec.incv: roi_end(event,incv))
     if tipo == "s":
         obj_master.append(roi_square(tipo+str(len(obj_master)),sec))
     elif tipo == "c":
@@ -1220,10 +1227,16 @@ def roi_start(event,tipo: str):
     elif tipo == "r":
         obj_master.append(roi_ruler(tipo+str(len(obj_master)),sec))
     obj_master[-1].init_coord(event.x,event.y)
-def roi_temp(event):
+def roi_temp(event,incv):
+    if incv != cv: 
+        obj_master.pop()
+        return
     obj_master[-1].end_coord(event.x,event.y)
     obj_master[-1].draw(True)
-def roi_end(event):
+def roi_end(event,incv):
+    if incv != cv:
+        obj_master.pop()
+        return
     if obj_master[-1].name[0] == "s":
         if obj_master[-1].xi == event.x or obj_master[-1].yi == event.y:
             print("NO SUELTE EL MOUSE")
@@ -1241,15 +1254,14 @@ def roi_end(event):
     root.unbind('<B1-Motion>')
     root.unbind('<ButtonRelease-1>')
     
-    global vol_cont, vol_flag, vol
+    global vol_cont, lesion_flag, vol
     try: 
-        if vol_flag:
+        if prostata_flag:
             roi_gen(obj_master[-1].name[0])
             vol_cont += 1
             medidas.append(round(obj_master[-1].rdis,1))
             if vol_cont == 3:
                 vol_cont = 0
-                vol_flag = False
                 vol = round(obj_master[-1].rdis*obj_master[-2].rdis*obj_master[-3].rdis*0.52/1000,2) #volumen de elipsoide en ml
                 for n in range(3):
                     obj_master[-1].insec.incv.delete(obj_master[-1].name)
@@ -1258,9 +1270,20 @@ def roi_end(event):
                 root.unbind('<Button-1>')
                 root.unbind('<B1-Motion>')
                 root.unbind('<ButtonRelease-1>')
-                if prostata_flag: obs_setup("end")
-                else:   obs_setup("bypassed")     
-    except: pass  # si estoy usando mediciones fuera de la medicion de volumen            
+                obs_setup("end")
+        elif lesion_flag:
+            roi_gen(obj_master[-1].name[0])
+            medidas.append(round(obj_master[-1].rdis,1))
+            obj_master[-1].insec.incv.delete(obj_master[-1].name)
+            obj_master.pop()
+            lesion_flag = False
+            root.config(cursor="arrow")
+            root.unbind('<Button-1>')
+            root.unbind('<B1-Motion>')
+            root.unbind('<ButtonRelease-1>')
+            obs_setup("bypassed")
+    except: pass  # si estoy usando mediciones fuera de la medicion de volumen
+         
 def roi_escape(event,flag: bool):
     root.config(cursor="arrow")
     root.unbind('<Button-1>')
@@ -1271,9 +1294,8 @@ def roi_escape(event,flag: bool):
         obj_master.pop()
         
 def vol_calculator():
-    global vol_cont, vol_flag, vol, medidas
+    global vol_cont, vol, medidas
     vol_cont = 0    # cantidad de mediciones de axis elipsoide
-    vol_flag = True # las rois de mediciones son para volumen
     vol = 0         # el volumen medido
     medidas = []
     roi_gen("r")
@@ -1453,15 +1475,8 @@ def generator (save_directory: str):
             obsL.append(SmallText("Zona Afectada: "))
             obsL.append(SmallText(bold(obs.location)))
             obsL.append("\n")
-            obsL.append(SmallText("Vol. Lesión: "))
-            obsL.append(SmallText(bold(str(obs.volumen)+" ml")))
-            obsL.append(NoEscape("\quad"))
-            obsL.append(SmallText("|  Dim: "))
+            obsL.append(SmallText("Dim. Lesión: "))
             obsL.append(SmallText(bold(str(obs.medidas[0]))))
-            obsL.append(SmallText("x"))
-            obsL.append(SmallText(bold(str(obs.medidas[1]))))
-            obsL.append(SmallText("x"))
-            obsL.append(SmallText(bold(str(obs.medidas[2]))))
             obsL.append(SmallText(" mm"))
             obsL.append("\n")
             obsL.append(SmallText("Extensión Extraprostática: "))
