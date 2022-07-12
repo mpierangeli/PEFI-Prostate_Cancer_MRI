@@ -917,7 +917,9 @@ def focus_cv(event, arg: Canvas):
                 info_cv_gen(sec)
                 break
 def unfocus_cv(event):
-    cv.delete("focus_check","cv_info")
+    global cv
+    if cv != 0: cv.delete("focus_check","cv_info")
+    cv = 0
 
 def info_cv_gen(sec: secuencia):
     sec.incv.delete("focus_check","cv_info")
@@ -1218,8 +1220,8 @@ def roi_start(event,tipo: str):
         else: cont += 1
     if cont == len(secuencias): return
     else:
-        root.bind('<B1-Motion>', lambda event, incv=sec.incv: roi_temp(event,incv))
-        root.bind('<ButtonRelease-1>', lambda event, incv=sec.incv: roi_end(event,incv))
+        root.bind('<B1-Motion>', lambda event: roi_temp(event))
+        root.bind('<ButtonRelease-1>', lambda event: roi_end(event))
     if tipo == "s":
         obj_master.append(roi_square(tipo+str(len(obj_master)),sec))
     elif tipo == "c":
@@ -1227,14 +1229,16 @@ def roi_start(event,tipo: str):
     elif tipo == "r":
         obj_master.append(roi_ruler(tipo+str(len(obj_master)),sec))
     obj_master[-1].init_coord(event.x,event.y)
-def roi_temp(event,incv):
-    if incv != cv: 
-        obj_master.pop()
+def roi_temp(event):
+    if cv == 0: 
+        obj_master[-1].insec.incv.delete(obj_master[-1].name)
         return
     obj_master[-1].end_coord(event.x,event.y)
     obj_master[-1].draw(True)
-def roi_end(event,incv):
-    if incv != cv:
+    
+def roi_end(event):
+    if cv == 0: 
+        obj_master[-1].insec.incv.delete(obj_master[-1].name)
         obj_master.pop()
         return
     if obj_master[-1].name[0] == "s":
