@@ -1234,8 +1234,7 @@ def roi_temp(event):
         obj_master[-1].insec.incv.delete(obj_master[-1].name)
         return
     obj_master[-1].end_coord(event.x,event.y)
-    obj_master[-1].draw(True)
-    
+    obj_master[-1].draw(True) 
 def roi_end(event):
     if cv == 0: 
         obj_master[-1].insec.incv.delete(obj_master[-1].name)
@@ -1245,18 +1244,17 @@ def roi_end(event):
         if obj_master[-1].xi == event.x or obj_master[-1].yi == event.y:
             print("NO SUELTE EL MOUSE")
             obj_master.pop()
+            roi_unbind()
             return
     elif obj_master[-1].name[0] == "c" or obj_master[-1].name[0] == "r":
         if obj_master[-1].xi == event.x and obj_master[-1].yi == event.y:
             print("NO SUELTE EL MOUSE")
             obj_master.pop()
+            roi_unbind()
             return
     obj_master[-1].end_coord(event.x,event.y)
     obj_master[-1].draw(False)
-    root.config(cursor="arrow")
-    root.unbind('<Button-1>')
-    root.unbind('<B1-Motion>')
-    root.unbind('<ButtonRelease-1>')
+    roi_unbind()
     
     global vol_cont, lesion_flag, vol
     try: 
@@ -1270,10 +1268,7 @@ def roi_end(event):
                 for n in range(3):
                     obj_master[-1].insec.incv.delete(obj_master[-1].name)
                     obj_master.pop()
-                root.config(cursor="arrow")
-                root.unbind('<Button-1>')
-                root.unbind('<B1-Motion>')
-                root.unbind('<ButtonRelease-1>')
+                roi_unbind()
                 obs_setup("end")
         elif lesion_flag:
             roi_gen(obj_master[-1].name[0])
@@ -1281,22 +1276,20 @@ def roi_end(event):
             obj_master[-1].insec.incv.delete(obj_master[-1].name)
             obj_master.pop()
             lesion_flag = False
-            root.config(cursor="arrow")
-            root.unbind('<Button-1>')
-            root.unbind('<B1-Motion>')
-            root.unbind('<ButtonRelease-1>')
+            roi_unbind()
             obs_setup("bypassed")
-    except: pass  # si estoy usando mediciones fuera de la medicion de volumen
-         
+    except: pass  # si estoy usando mediciones fuera de la medicion de volumen        
 def roi_escape(event,flag: bool):
+    roi_unbind()
+    if flag:
+        obj_master[-1].insec.incv.delete(obj_master[-1].name)
+        obj_master.pop()
+def roi_unbind():
     root.config(cursor="arrow")
     root.unbind('<Button-1>')
     root.unbind('<B1-Motion>')
     root.unbind('<ButtonRelease-1>')
-    if flag:
-        obj_master[-1].insec.incv.delete(obj_master[-1].name)
-        obj_master.pop()
-        
+          
 def vol_calculator():
     global vol_cont, vol, medidas
     vol_cont = 0    # cantidad de mediciones de axis elipsoide
