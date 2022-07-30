@@ -1058,12 +1058,12 @@ def refresh_canvas(sec: secuencia):
         sec.realy = sec.parent.dcm_serie[0].PixelSpacing[0]*sec.parent.depth*sec.factor/temp_img.shape[0]
     sec.incv_height = temp_img.shape[0]
     sec.incv_width =  temp_img.shape[1]
-        
     img2cv_master(sec,temp_img)
     
     # REDIBUJO LOS OBJETOS GUARDADOS EN LOS CANVAS
     for obj in obj_master:
         if obj.insec == sec and obj.inslice == sec.slice:
+            obj.update_coord()
             obj.draw(False)
             
     if info_cv.get(): info_cv_gen(sec)
