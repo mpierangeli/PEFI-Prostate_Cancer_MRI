@@ -124,6 +124,7 @@ class secuencia:
         self.plano = ""     # axial/sagital/coronal/mixto(ver si no conviene separar, borrar secuencia o khe)
         self.isloaded = False   # flag para saber si ya estan cargadas las imagenes de la secuencia
         self.aux_view = False   # False = secuencia de vista original / True = secuencia de vista artificial
+        self.zoom = 1       # multiplicador del tamaño de canvas "incv"
     def add_dcm(self,dcm):
         self.dcm_serie.append(dcm)  # serie de dicoms
         if dcm.pixel_array.shape[0] > self.height: self.height = dcm.pixel_array.shape[0] 
@@ -840,6 +841,7 @@ def canvas_creator(layout: int):
     if startupCVs:   # asigno CONTROLES DE USUARIO
         
         root.bind("<Control-MouseWheel>", slice_selector)
+        root.bind("<Shift-MouseWheel>", zoom_selector)
         root.bind("<Control-z>",go_back_1)
         root.bind("<Right>",lambda event, arg="c+": bnc(event,arg))
         root.bind("<Left>",lambda event, arg="c-": bnc(event,arg))
@@ -994,7 +996,7 @@ def patient_loader():
     
     for file in sorted(os.listdir(filepath)):
         name, ext = os.path.splitext(file)
-        if ext == ".IMA":
+        if (ext == ".IMA") or (ext == ".dcm"):
             temp_dcm = dcmread(filepath+"/"+file)
             temp_uid = temp_dcm.SeriesInstanceUID
             if  temp_uid not in sec_uids:
@@ -1042,9 +1044,9 @@ def refresh_canvas(sec: secuencia):
     
     if not sec.aux_view:
         if len(cv_master) == 2:
-            temp_img = resize(sec.img_serie[sec.slice], width=CV_W.get())
+            temp_img = resize(sec.img_serie[sec.slice], width=int(CV_W.get()*sec.zoom)) #TRABAJANDO ACA VER
         else:
-            temp_img = resize(sec.img_serie[sec.slice], height=CV_H.get())
+            temp_img = resize(sec.img_serie[sec.slice], height=int(CV_H.get()*sec.zoom))
         sec.realx = sec.dcm_serie[0].PixelSpacing[0]*sec.width/temp_img.shape[1]
         sec.realy = sec.dcm_serie[0].PixelSpacing[1]*sec.height/temp_img.shape[0]  
     else:
@@ -1140,8 +1142,15 @@ def slice_selector(event):
             elif event.delta < 0 and sec.slice > 0: sec.slice -= 1
             refresh_canvas(sec) 
             break
-    
 
+def zoom_selector(event):
+    for sec in secuencias:
+        if sec.incv == cv:
+            if event.delta > 0 and sec.zoom < 3: sec.zoom += 0.1
+            elif event.delta < 0 and sec.zoom > 1: sec.zoom -= 0.1
+            refresh_canvas(sec) 
+            break
+    
 def info_tab_gen():
     global info_tab
     try: info_tab.destroy()
