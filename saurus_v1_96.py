@@ -2,7 +2,7 @@ from tkinter import *
 from PIL import Image, ImageTk, ImageGrab
 from tkinter import filedialog, messagebox
 from pydicom import dcmread
-from numpy import asarray, zeros
+from numpy import asarray, zeros, ogrid, sqrt
 import math
 from imutils import resize
 import os
@@ -10,6 +10,9 @@ from shutil import rmtree
 from cv2 import convertScaleAbs
 from pylatex import Document, PageStyle, Foot, MiniPage, VerticalSpace, SmallText, Package, StandAloneGraphic, MediumText, NewPage#,Command, Figure, Itemize, Head,simple_page_number,LineBreak, NewLine,SubFigure, HorizontalSpace,LargeText,FlushLeft
 from pylatex.utils import NoEscape, bold, italic
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
+from scipy.signal import savgol_filter
 
 ## OBJETOS
 
@@ -273,7 +276,6 @@ def menu_creator():
     editmenu.add_command(label="ROI Rectangular",command=lambda tipo="s": roi_gen(tipo))
     editmenu.add_command(label="ROI Circular",command=lambda tipo="c": roi_gen(tipo))
     editmenu.add_command(label="Medición",command=lambda tipo="r": roi_gen(tipo))
-    editmenu.add_command(label="DCE Video",command=video_gen)
 
     helpmenu = Menu(menubar, tearoff = 0)
     helpmenu.add_command(label="Keybinds")
@@ -314,6 +316,8 @@ def menu_creator():
     portableviewmenu.add_command(label = "Coronal", command = lambda tipo="c": view_sec_gen(tipo))
     portableviewmenu.add_command(label = "Axial", command = lambda tipo="a": view_sec_gen(tipo))
     portablemenu.add_cascade(label = "Agregar Vista", menu = portableviewmenu)
+    portablemenu.add_separator()
+    portablemenu.add_command(label="Curva DCE",command=dce_curve)
     portablemenu.add_separator()
     portablemenu.add_command(label = "Metadata", command = info_tab_gen)
     portablemenu.add_command(label = "Limpiar", command = clear_cv)
@@ -837,7 +841,10 @@ def zone_selector(event):
             mapa_show() # para cerrar el mapa una vez seleccionada la zona
     
 def canvas_creator(layout: int):
-    global cv_master, img2cv, startupCVs,axis_cv
+    global cv_master, img2cv, startupCVs, axis_cv, prostata_flag, lesion_flag, dce_flag
+    prostata_flag = False
+    lesion_flag = False
+    dce_flag = False
     
     if startupCVs:   # asigno CONTROLES DE USUARIO
         
@@ -982,7 +989,7 @@ def go_back_1(event):
         obj_master.pop()
 
 def patient_loader():
-    global secuencias, obj_master, observaciones, obs_id
+    global secuencias, dce_secs, obj_master, observaciones, obs_id
     
     filepath = filedialog.askdirectory()
     if not filepath: return 
@@ -1046,7 +1053,10 @@ def sec_setup(event, sec_name: str):
             if sec.incv != 0: sec.incv.delete(ALL)
             sec.incv = cv
             sec.incv.delete(ALL)
-            if not sec.isloaded: sec.load_img_serie()
+            if not sec.isloaded:
+                if sec in dce_secs:
+                    for s in dce_secs: s.load_img_serie()
+                sec.load_img_serie()
             refresh_canvas(sec)
     root.config(cursor="arrow")
     root.unbind('<Button-1>')
@@ -1301,29 +1311,39 @@ def roi_end(event):
     obj_master[-1].draw(False)
     roi_unbind()
     
-    global vol_cont, lesion_flag, vol
-    try: 
-        if prostata_flag:
-            roi_gen(obj_master[-1].name[0])
-            vol_cont += 1
-            medidas.append(round(obj_master[-1].rdis,1))
-            if vol_cont == 3:
-                vol_cont = 0
-                vol = round(obj_master[-1].rdis*obj_master[-2].rdis*obj_master[-3].rdis*0.52/1000,2) #volumen de elipsoide en ml
-                for n in range(3):
-                    obj_master[-1].insec.incv.delete(obj_master[-1].name)
-                    obj_master.pop()
-                roi_unbind()
-                obs_setup("end")
-        elif lesion_flag:
-            roi_gen(obj_master[-1].name[0])
-            medidas.append(round(obj_master[-1].rdis,1))
-            obj_master[-1].insec.incv.delete(obj_master[-1].name)
-            obj_master.pop()
-            lesion_flag = False
+    global vol_cont, lesion_flag, vol, dce_flag
+    if dce_flag:
+        obj_master[-1].update_coord()
+        dce_coord.append(obj_master[-1].xi)
+        dce_coord.append(obj_master[-1].yi)
+        dce_coord.append(obj_master[-1].r)
+        obj_master[-1].insec.incv.delete(obj_master[-1].name)
+        obj_master.pop()
+        dce_flag = False
+        dce_curve_calculator()
+    elif prostata_flag:
+        roi_gen(obj_master[-1].name[0])
+        vol_cont += 1
+        medidas.append(round(obj_master[-1].rdis,1))
+        if vol_cont == 3:
+            vol_cont = 0
+            vol = round(obj_master[-1].rdis*obj_master[-2].rdis*obj_master[-3].rdis*0.52/1000,2) #volumen de elipsoide en ml
+            for n in range(3):
+                obj_master[-1].insec.incv.delete(obj_master[-1].name)
+                obj_master.pop()
             roi_unbind()
-            obs_setup("bypassed")
-    except: pass  # si estoy usando mediciones fuera de la medicion de volumen        
+            obs_setup("end")
+    elif lesion_flag:
+        roi_gen(obj_master[-1].name[0])
+        medidas.append(round(obj_master[-1].rdis,1))
+        obj_master[-1].insec.incv.delete(obj_master[-1].name)
+        obj_master.pop()
+        lesion_flag = False
+        roi_unbind()
+        obs_setup("bypassed")
+    else: pass   # si estoy creando un objeto solo de indicación
+    
+         
 def roi_escape(event,flag: bool):
     roi_unbind()
     if flag:
@@ -1388,8 +1408,74 @@ def screenshot(event):
     steps_levels.deiconify()
     Label(auxframe2, text="added obs_"+str(observaciones[-1].id)+"_"+str(len(observaciones[-1].imagenes))+".png",bg="#444",font=("Roboto",11),fg="#FFF",anchor=W).pack(fill=X,ipady=1,ipadx=1)
 
-def video_gen():
-    pass
+def dce_curve():
+    global dceroi, dce_flag, dce_coord 
+    dce_flag = True
+    dce_coord = []
+    for sec in secuencias:
+        if sec.incv == cv:
+            if sec in dce_secs:
+                dceroi = Frame(root,background="#2CC")
+                dceroi.place(relx=0.5,rely=0.05, height=40,anchor=CENTER)
+                Label(dceroi, text="Seleccione ROI",bg="#2CC",font=("Roboto",12),fg="#000").pack(ipady=5,ipadx=20)
+                roi_gen("c")
+                #genero una mascara mismo size q la imagen con 1 dentro de la ROI
+                #por cada secuencia de dce_secs calculo la media de pixeles dentro de la ROI de cada corte? y con n puntos de brillo (n = len(dce_secs)) dibujo la curva en una nueva ventana
+                break
+            else:
+                return
+            
+def dce_curve_calculator():
+    global dce_coord
+    
+    dceroi.destroy()
+    for sec in secuencias:
+        if sec.incv == cv:
+            if sec in dce_secs:
+                ww, hh = sec.incv_width, sec.incv_height
+                temp_slice = sec.slice
+    Y, X = ogrid[:hh, :ww]
+    dist_from_center = sqrt((X - int(dce_coord[0]*ww))**2 + (Y-int(dce_coord[1]*hh))**2)
+    dce_mask = (dist_from_center <= int(dce_coord[2]))
+    curva = []
+    first = True
+    for sec in dce_secs:
+        if len(cv_master) == 2:
+            temp_img = resize(sec.img_serie[temp_slice], width=ww)
+        else:
+            temp_img = resize(sec.img_serie[temp_slice], height=hh)
+        try:    # el try por el error en decir q tiene contraste con mismo uid la secuencia VER
+            temp_img*=dce_mask
+            if first:
+                brillo_inicial = sum(sum(temp_img))
+                first = False
+            curva.append(((sum(sum(temp_img)))-brillo_inicial)/brillo_inicial*100)   # porcentaje de "enhancement"
+        except:
+            pass
+    curva = savgol_filter(curva, 11, 2) # window size 51, polynomial order 3
+    xtime = [100/len(curva)*t for t in range(len(curva))] 
+    
+    DCEGraph = Toplevel(root,background="#444")
+    DCEGraph.geometry("800x600")
+    fig = Figure(figsize=(8,6),dpi=100)
+    fig.patch.set_facecolor("#222")
+    plot1 = fig.add_subplot(111)
+    plot1.set_ylabel(r"Enhancement (%)",color="#FFF")
+    plot1.set_xlabel(r"Tiempo estudio (%)",color="#FFF")
+    plot1.set_title("Curva DCE",color="#FFF")
+    plot1.set_facecolor("#111")
+    plot1.tick_params(axis='x', colors="#FFF")
+    plot1.tick_params(axis='y', colors="#FFF")
+    plot1.set_xticks(range(0,101,10))
+    plot1.grid(axis='x',color="#444")
+    plot1.plot(xtime,curva)
+    
+    canvas = FigureCanvasTkAgg(fig,master=DCEGraph)  
+    canvas.draw()
+    canvas.get_tk_widget().pack()
+  
+    dce_coord = [] # limpio dce por si quiero repetir prueba
+             
 
 
 #------------------LATEX TO PDF------------------------------
