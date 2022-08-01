@@ -1,15 +1,13 @@
-import numpy as np
-import matplotlib.pyplot as plt
+import pydicom
+import pydicom_seg
+import SimpleITK as sitk
 
-h = 100
-w = 100
-center = [int(h/2),int(w/2)]
-radius = 20
+dcm = pydicom.dcmread('1-1.dcm')
 
-Y, X = np.ogrid[:h, :w]
-dist_from_center = np.sqrt((X - center[0])**2 + (Y-center[1])**2)
+reader = pydicom_seg.SegmentReader()
+result = reader.read(dcm)
 
-mask = dist_from_center <= radius
-
-plt.imshow(mask)
-plt.show()
+for segment_number in result.available_segments:
+    image_data = result.segment_data(segment_number)  # directly available
+    image = result.segment_image(segment_number)  # lazy construction
+    sitk.WriteImage(image, f'segmentation-{segment_number}.nrrd', True)
