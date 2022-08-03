@@ -976,6 +976,8 @@ def info_cv_gen(sec: secuencia):
         sec.incv.create_text(10,120,text="TE: "+str(sec.dcm_serie[0].EchoTime)+" ms",font=("Roboto",10),fill="#FFF",tag="cv_info",anchor=W)
         sec.incv.create_text(10,140,text="TR: "+str(sec.dcm_serie[0].RepetitionTime)+" ms",font=("Roboto",10),fill="#FFF",tag="cv_info",anchor=W)
         sec.incv.create_text(10,160,text="ST: "+str(sec.dcm_serie[0].SliceThickness)+" mm",font=("Roboto",10),fill="#FFF",tag="cv_info",anchor=W)
+        sec.incv.create_text(10,180,text="Brillo: "+str(round(sec.beta,3)),font=("Roboto",10),fill="#FFF",tag="cv_info",anchor=W)
+        sec.incv.create_text(10,200,text="Contraste: "+str(round(sec.alpha,3)),font=("Roboto",10),fill="#FFF",tag="cv_info",anchor=W)
                 
 def popupmenu(event):
     try:
@@ -1201,17 +1203,26 @@ def info_tab_destroy(event):
 def bnc(event,tipo: str):
     for sec in secuencias:
         if sec.incv == cv:
-            if tipo == "c+" and sec.alpha < 0.5:
-                sec.adjust_img_serie(0.005,0)
-                break
-            elif tipo == "c-" and sec.alpha >= 0.01:
-                sec.adjust_img_serie(-0.005,0)
-                break
-            elif tipo == "b+" and sec.beta < 100:
-                sec.adjust_img_serie(0,5)
-                break
-            elif tipo == "b-" and sec.beta >= 5:
-                sec.adjust_img_serie(0,-5)
+            if sec in dce_secs:
+                for dcesec in dce_secs:
+                    if tipo == "c+" and dcesec.alpha < 0.5:
+                        dcesec.adjust_img_serie(0.005,0)
+                    elif tipo == "c-" and dcesec.alpha >= 0.01:
+                        dcesec.adjust_img_serie(-0.005,0)
+                    elif tipo == "b+" and dcesec.beta < 100:
+                        dcesec.adjust_img_serie(0,5)
+                    elif tipo == "b-" and dcesec.beta >= 5:
+                        dcesec.adjust_img_serie(0,-5)
+                    break
+            else:
+                if tipo == "c+" and sec.alpha < 0.5:
+                    sec.adjust_img_serie(0.005,0)
+                elif tipo == "c-" and sec.alpha >= 0.01:
+                    sec.adjust_img_serie(-0.005,0)
+                elif tipo == "b+" and sec.beta < 100:
+                    sec.adjust_img_serie(0,5)
+                elif tipo == "b-" and sec.beta >= 5:
+                    sec.adjust_img_serie(0,-5)
                 break
     refresh_canvas(sec) 
 
