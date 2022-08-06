@@ -1705,7 +1705,7 @@ def generator (save_directory: str):
     doc.append("\n\n")
     doc.append(SmallText("PIRADS 1 - Muy Bajo. Es muy poco probable que la lesión sea un cáncer clínicamente significativo.\nPIRADS 2 - Bajo. Es poco probable que la lesión sea un cáncer clínicamente significativo; lesión probablemente benigna.\nPIRADS 3 - Intermedia. No hay datos que orienten claramente hacia la benignidad o malignidad de la lesión.\nPIRADS 4 - Alta. Es probable que la lesión sea un cáncer significativo; lesión probablemente maligna.\nPIRADS 5 - Muy Alta. Es muy probable que la lesión sea un cáncer significativo; lesión muy probablemente maligna."))
     doc.append("\n")
-    fp = save_directory+"/TEST-DOC"
+    fp = save_directory+"/"+str(secuencias[0].dcm_serie[0].PatientID)+"_Reporte_PI-RADS"
     doc.generate_pdf(fp,clean=True)
 #-------------------------------------------------------
 
