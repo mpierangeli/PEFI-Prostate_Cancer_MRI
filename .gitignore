@@ -3,3 +3,4 @@ saurus_exe
 startup_cfg.txt
 saurus_v1_96.build
 saurus_v1_96.dist
+nuitka_builder
