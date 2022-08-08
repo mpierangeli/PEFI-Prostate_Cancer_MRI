@@ -1558,7 +1558,7 @@ def generator (save_directory: str):
     doc.append(SmallText(bold(prosta.indicado)))
     doc.append("\n")
     doc.append(SmallText("Revisado por: "))
-    doc.append(SmallText(bold("NOMBRE FIJO?")))
+    doc.append(SmallText(bold("Dr. Diego Santoro")))
     doc.append("\n")
     doc.append(NoEscape(r"\rule{\textwidth}{2pt}"))
 
