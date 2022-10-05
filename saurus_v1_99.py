@@ -1555,9 +1555,9 @@ def dce_curve_calculator():
 # Diseño la estructura en "latex" y creo un .pdf
 def generator (save_directory: str):
     global ss_indicator
-    ss_indicator = Frame(root,background="#2CC")
-    ss_indicator.place(relx=0.5,rely=0.5, height=40,anchor=CENTER)  
-    Label(ss_indicator, text="GENERANDO REPORTE",bg="#2CC",font=("Roboto",12),fg="#000").pack(ipady=10,ipadx=30)
+    ss_indicator = Frame(root,background="#F80")
+    ss_indicator.place(relx=0.5,rely=0.5, height=60,anchor=CENTER)  
+    Label(ss_indicator, text="GENERANDO REPORTE",bg="#F80",font=("Roboto",14,"bold"),fg="#000").pack(ipady=20,ipadx=20)
     root.update_idletasks()
     
     geometry_options = {
