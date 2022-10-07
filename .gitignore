@@ -3,4 +3,6 @@ saurus_exe
 startup_cfg.txt
 saurus_v1_98.build
 saurus_v1_98.dist
+saurus_v1_99.build
+saurus_v1_99.dist
 nuitka_builder
