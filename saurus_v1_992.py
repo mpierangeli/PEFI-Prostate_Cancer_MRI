@@ -876,22 +876,71 @@ def zone_selector(event):
         if (mapa_colores[y,x,0] == RGB_code[0])*(mapa_colores[y,x,1] == RGB_code[1])*(mapa_colores[y,x,2] == RGB_code[2]):
             zona.set(RGB_code[3])
             mapa_show() # para cerrar el mapa una vez seleccionada la zona
+
+def bnc_start(event):
+    global bnc_x, bnc_y
+    bnc_x = event.x
+    bnc_y = event.y
+    root.bind("<Motion>",bnc_control)
+    root.bind("<ButtonRelease-2>",bnc_stop)
+def bnc_control(event):
+    global bnc_x, bnc_y
+    tipo = ""
+    if event.x > 1.02*bnc_x: 
+        tipo = "c+"
+        bnc_x = event.x
+    elif event.x < 0.98*bnc_x: 
+        tipo = "c-"
+        bnc_x = event.x
+    if event.y > 1.05*bnc_y: 
+        tipo = "b-"
+        bnc_y = event.y
+    elif event.y < 0.95*bnc_y: 
+        tipo = "b+"
+        bnc_y = event.y
+    for sec in secuencias:
+        if sec.incv == cv:
+            if sec in dce_secs:
+                for dcesec in dce_secs:
+                    if tipo == "c+" and dcesec.alpha < 1:
+                        dcesec.adjust_img_serie(0.01,0)
+                    elif tipo == "c-" and dcesec.alpha >= 0.01:
+                        dcesec.adjust_img_serie(-0.01,0)
+                    elif tipo == "b+" and dcesec.beta < 100:
+                        dcesec.adjust_img_serie(0,5)
+                    elif tipo == "b-" and dcesec.beta >= 5:
+                        dcesec.adjust_img_serie(0,-5)
+            else:
+                if tipo == "c+" and sec.alpha < 1:
+                    sec.adjust_img_serie(0.01,0)
+                elif tipo == "c-" and sec.alpha >= 0.01:
+                    sec.adjust_img_serie(-0.01,0)
+                elif tipo == "b+" and sec.beta < 100:
+                    sec.adjust_img_serie(0,5)
+                elif tipo == "b-" and sec.beta >= 5:
+                    sec.adjust_img_serie(0,-5)
+                break
+    
+    refresh_canvas(sec)
+    
+def bnc_stop(event):
+    root.unbind("<Motion>")
+    root.unbind("<ButtonRelease-2>")
     
 def canvas_creator(layout: int):
-    global cv_master, img2cv, startupCVs, axis_cv, prostata_flag, lesion_flag, dce_flag
+    global cv_master, img2cv, startupCVs, axis_cv, prostata_flag, lesion_flag, dce_flag, bnc_pressed
     prostata_flag = False
     lesion_flag = False
     dce_flag = False
+    bnc_pressed = False
+    
     
     if startupCVs:   # asigno CONTROLES DE USUARIO
         
         root.bind("<Control-MouseWheel>", slice_selector)
         root.bind("<Shift-MouseWheel>", zoom_selector)
         root.bind("<Control-z>",go_back_1)
-        root.bind("<Right>",lambda event, arg="c+": bnc(event,arg))
-        root.bind("<Left>",lambda event, arg="c-": bnc(event,arg))
-        root.bind("<Up>",lambda event, arg="b+": bnc(event,arg))
-        root.bind("<Down>",lambda event, arg="b-": bnc(event,arg))
+        root.bind("<Button-2>",bnc_start)
         
     if ((not startupCVs) and (layout == layout_cv.get())): return    # si intento cambiar la cantidad, pero es la ya seleccionada no hago nada
      
@@ -1255,30 +1304,6 @@ def info_tab_gen():
 def info_tab_destroy(event):
     info_tab.destroy()
 
-def bnc(event,tipo: str):
-    for sec in secuencias:
-        if sec.incv == cv:
-            if sec in dce_secs:
-                for dcesec in dce_secs:
-                    if tipo == "c+" and dcesec.alpha < 0.5:
-                        dcesec.adjust_img_serie(0.005,0)
-                    elif tipo == "c-" and dcesec.alpha >= 0.01:
-                        dcesec.adjust_img_serie(-0.005,0)
-                    elif tipo == "b+" and dcesec.beta < 100:
-                        dcesec.adjust_img_serie(0,5)
-                    elif tipo == "b-" and dcesec.beta >= 5:
-                        dcesec.adjust_img_serie(0,-5)
-            else:
-                if tipo == "c+" and sec.alpha < 0.5:
-                    sec.adjust_img_serie(0.005,0)
-                elif tipo == "c-" and sec.alpha >= 0.01:
-                    sec.adjust_img_serie(-0.005,0)
-                elif tipo == "b+" and sec.beta < 100:
-                    sec.adjust_img_serie(0,5)
-                elif tipo == "b-" and sec.beta >= 5:
-                    sec.adjust_img_serie(0,-5)
-                break
-    refresh_canvas(sec) 
 
 def view_sec_gen(tipo: str):
     for sec in secuencias:
