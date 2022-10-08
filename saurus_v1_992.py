@@ -13,6 +13,8 @@ from pylatex import Document, PageStyle, Foot, MiniPage, VerticalSpace, SmallTex
 from pylatex.utils import NoEscape, bold, italic
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import ctypes
+ctypes.windll.shcore.SetProcessDpiAwareness(2)  #FIX DE DPI-WINDOWS - >100% resolución
 #from scipy.signal import savgol_filter
 
 ## OBJETOS
@@ -1869,6 +1871,5 @@ root.mainloop()
 Patient AGE -> habria q calcular con el patient date birth [0:4] (año y restarlo al actual o algo asi)
 Estudio realizado por  ? lo pone el médico o lo pongo abajo con el simbolioto para poner firma?
 Guardar estado de reporte -> observaciones, imagenes, rois, secuencias (sin cambiar layout porq se complica)
-(a verse de hacer) size layout dinamico que rehaga todas las secuencias y fixee los sizes de las secuencias y rois (con mediciones)
 
 """
