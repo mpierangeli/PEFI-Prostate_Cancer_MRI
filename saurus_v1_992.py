@@ -13,7 +13,7 @@ from pylatex import Document, PageStyle, Foot, MiniPage, VerticalSpace, SmallTex
 from pylatex.utils import NoEscape, bold, italic
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from scipy.signal import savgol_filter
+#from scipy.signal import savgol_filter
 
 ## OBJETOS
 
@@ -320,13 +320,14 @@ def menu_creator():
     portableviewmenu.add_command(label = "Sagital", command = lambda tipo="s": view_sec_gen(tipo))
     portableviewmenu.add_command(label = "Coronal", command = lambda tipo="c": view_sec_gen(tipo))
     portableviewmenu.add_command(label = "Axial", command = lambda tipo="a": view_sec_gen(tipo))
-    portablemenu.add_cascade(label = "Agregar Vista", menu = portableviewmenu)
+    portablemenu.add_cascade(label = "Proyecciones", menu = portableviewmenu)
     portablemenu.add_separator()
-    portablemenu.add_command(label="Curva DCE",command=dce_curve)
+    portablemenu.add_command(label="Curva DCE",command = dce_curve)
     portablemenu.add_separator()
     portablemenu.add_command(label = "Metadata", command = info_tab_gen)
     portablemenu.add_command(label = "Limpiar", command = clear_cv)
-    portablemenu.add_command(label = "Cargar Secuencia", command = sec_selector)
+    portablemenu.add_separator()
+    portablemenu.add_command(label = "Nueva Secuencia", command = sec_selector)
 
 def report_main():
     if report_flag.get():
@@ -879,10 +880,12 @@ def zone_selector(event):
 
 def bnc_start(event):
     global bnc_x, bnc_y
-    bnc_x = event.x
-    bnc_y = event.y
-    root.bind("<Motion>",bnc_control)
-    root.bind("<ButtonRelease-2>",bnc_stop)
+    if (type(event.widget) == Canvas):
+        bnc_x = event.x
+        bnc_y = event.y
+        root.bind("<Motion>",bnc_control)
+        root.bind("<ButtonRelease-2>",bnc_stop)
+        root.unbind("<MouseWheel>")
 def bnc_control(event):
     global bnc_x, bnc_y
     tipo = ""
@@ -919,25 +922,22 @@ def bnc_control(event):
                     sec.adjust_img_serie(0,5)
                 elif tipo == "b-" and sec.beta >= 5:
                     sec.adjust_img_serie(0,-5)
-                break
-    
-    refresh_canvas(sec)
-    
+            refresh_canvas(sec)
+            return        
 def bnc_stop(event):
     root.unbind("<Motion>")
     root.unbind("<ButtonRelease-2>")
+    root.bind("<MouseWheel>", slice_selector)
     
 def canvas_creator(layout: int):
-    global cv_master, img2cv, startupCVs, axis_cv, prostata_flag, lesion_flag, dce_flag, bnc_pressed
+    global cv_master, img2cv, startupCVs, axis_cv, prostata_flag, lesion_flag, dce_flag
     prostata_flag = False
     lesion_flag = False
-    dce_flag = False
-    bnc_pressed = False
-    
+    dce_flag = False    
     
     if startupCVs:   # asigno CONTROLES DE USUARIO
         
-        root.bind("<Control-MouseWheel>", slice_selector)
+        root.bind("<MouseWheel>", slice_selector)
         root.bind("<Shift-MouseWheel>", zoom_selector)
         root.bind("<Control-z>",go_back_1)
         root.bind("<Button-2>",bnc_start)
@@ -1028,6 +1028,11 @@ def clear_cv ():
         if obj.insec.incv == cv:
             obj.insec.incv.delete(obj.name)
     obj_master = [obj for obj in obj_master if obj.insec.incv != cv]  # CON ESTO BORRO EL OBJETO PERO NO EL CANVAS
+    for sec in secuencias:
+        if sec.incv == cv:
+            sec.load_img_serie()
+            refresh_canvas(sec)
+            return
 def focus_cv(event, arg: Canvas):
     global cv
     cv = arg
@@ -1271,12 +1276,13 @@ def slice_selector(event):
             break
 
 def zoom_selector(event):
-    for sec in secuencias:
-        if sec.incv == cv:
-            if event.delta > 0 and sec.zoom < 3: sec.zoom += 0.1
-            elif event.delta < 0 and sec.zoom > 1: sec.zoom -= 0.1
-            refresh_canvas(sec) 
-            break
+    if (type(event.widget) == Canvas):
+        for sec in secuencias:
+            if sec.incv == cv:
+                if event.delta > 0 and sec.zoom < 3: sec.zoom += 0.1
+                elif event.delta < 0 and sec.zoom > 1: sec.zoom -= 0.1
+                refresh_canvas(sec) 
+                return
     
 def info_tab_gen():
     global info_tab
