@@ -424,11 +424,12 @@ def validate2(P):
 def obs_setup(tipo: str):
     global obs_id,prostata_flag,lesion_flag,prosta,medidas
     prostata_flag = False
-    lesion_flag = True
+    
     if tipo == "new":
         observaciones.append(observacion(obs_id))
         obs_id += 1
         report_window.destroy()
+        lesion_flag = True
         steps_main(1)
     elif tipo == "edit":
         report_window.destroy()
