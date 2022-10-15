@@ -1,7 +1,6 @@
 from tkinter import *
-from tkinter import ttk
+from tkinter import ttk, filedialog, messagebox
 from PIL import Image, ImageTk, ImageGrab
-from tkinter import filedialog, messagebox
 from pydicom import dcmread
 from numpy import asarray, zeros, ogrid, sqrt
 import math
