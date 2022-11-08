@@ -1,1 +1,1 @@
--m nuitka --standalone  --plugin-enable=tk-inter --plugin-enable=numpy --include-module=pydicom --include-module=pylatex --include-module=scipy --include-data-dir=saurus_img=saurus_img saurus_v1_96.py
+-m nuitka --standalone  --plugin-enable=tk-inter --plugin-enable=numpy --include-module=pydicom --include-module=pylatex --include-module=scipy --include-data-dir=saurus_img=saurus_img saurus_v1_993.py
