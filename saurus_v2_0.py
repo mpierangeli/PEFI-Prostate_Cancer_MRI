@@ -13,7 +13,7 @@ from pylatex.utils import NoEscape, bold, italic
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import ctypes
-ctypes.windll.shcore.SetProcessDpiAwareness(2)  #FIX DE DPI-WINDOWS - >100% resolución
+ctypes.windll.shcore.SetProcessDpiAwareness(2)  #FIX DE DPI-WINDOWS -> 100% resolución
 
 ## OBJETOS
 
@@ -247,7 +247,7 @@ def on_closing():
 
 def windows_creator():
     
-    global main_frame, bot_frame, info_label, startupCVs,pb
+    global main_frame, bot_frame, info_label, startupCVs, pb
 
     main_frame = Frame(root, width=MF_W.get(), height=MF_H.get(), background="#222") 
     main_frame.grid(row=1, column=0)
@@ -266,9 +266,10 @@ def windows_creator():
     
     s = ttk.Style()
     s.theme_use('clam')
-    s.configure("bar.Horizontal.TProgressbar", troughcolor="#333", 
-                bordercolor="#222", background="#2CC", lightcolor="#2CC", 
-                darkcolor="#2CC")
+    s.configure("bar.Horizontal.TProgressbar", troughcolor="#333", bordercolor="#222", background="#2CC", lightcolor="#2CC",darkcolor="#2CC")
+    t = ttk.Style()
+    t.theme_use('clam')
+    t.configure("custom.TCombobox", bordercolor="#444", background="#2CC", lightcolor="#555", darkcolor="#555")
 
 def menu_creator():
     
@@ -554,9 +555,8 @@ def steps_main(step: int):
         info_general = Frame(steps_window,background="#555")
         info_general.pack(fill=X,ipadx=2, ipady=2,pady=(0,5))
         
-        Label(info_general, text="Paciente:     "+str(secuencias[0].dcm_serie[0].PatientName),bg="#555",font=("Roboto",10),fg="#FFF").pack(ipady=1,ipadx=20,anchor=W)
-        Label(info_general, text="Edad: XX años | Sexo: "+str(secuencias[0].dcm_serie[0].PatientSex),bg="#555",font=("Roboto",10),fg="#FFF").pack(ipady=1,ipadx=20,anchor=W)
-        Label(info_general, text="Peso: 90 kg | Altura: 180 cm | IMC: 23",bg="#555",font=("Roboto",10),fg="#FFF").pack(ipady=1,ipadx=20,anchor=W)
+        Label(info_general, text="Paciente: "+str(secuencias[0].dcm_serie[0].PatientName),bg="#555",font=("Roboto",10),fg="#FFF").pack(ipady=1,ipadx=20,anchor=W)
+        Label(info_general, text="Edad: "+str(secuencias[0].dcm_serie[0].PatientAge[:3])+" años | Sexo: "+str(secuencias[0].dcm_serie[0].PatientSex),bg="#555",font=("Roboto",10),fg="#FFF").pack(ipady=1,ipadx=20,anchor=W)
         Label(info_general, text="Volúmen Prostático: "+str(prosta.volumen)+" ml | Dimensiones: "+str(prosta.medidas[0])+"x"+str(prosta.medidas[1])+"x"+str(prosta.medidas[2])+" mm",bg="#555",font=("Roboto",10),fg="#FFF").pack(ipady=1,ipadx=20,anchor=W)
         
         Label(steps_window, text="Historial Clínico",bg="#444",font=("Roboto",11),fg="#FFF").pack(ipady=1,ipadx=20,anchor=W)
@@ -707,9 +707,6 @@ def steps_main(step: int):
         auxframe10.pack(anchor=W,pady=5)
         Label(auxframe10, text="Estudio realizado en: ",bg="#444",font=("Roboto",11),fg="#FFF",width=15).pack(side=LEFT,padx=10)
         instituciones = ["CEUNIM - UNSAM","Corporación Médica","Diagnóstico Tesla"]
-        t = ttk.Style()
-        t.theme_use('clam')
-        t.configure("custom.TCombobox", bordercolor="#444", background="#2CC", lightcolor="#555", darkcolor="#555")
         institu = ttk.Combobox(auxframe10, state="readonly", values = instituciones,width=40,style='custom.TCombobox')
         institu.pack(side=LEFT)
         
@@ -811,7 +808,6 @@ def edit_obs(n: int):
     b3.bind("<Leave>",lambda b=b3:colorOnFocus(b,False))
     b4.bind("<Enter>",lambda b=b4:colorOnFocus(b,True))
     b4.bind("<Leave>",lambda b=b4:colorOnFocus(b,False))
-    
 
 def confirm_edit(obs: observacion):
     obs.location = zona.get()
@@ -1122,28 +1118,29 @@ def patient_loader():
     obj_master = [] # vector de ROIs y mediciones
     
     pb = ttk.Progressbar(root,orient='horizontal',mode='determinate',length=300,style="bar.Horizontal.TProgressbar")
-    pb.place(relx=0.5,rely=0.5, height=25,anchor=CENTER)
+    pb.place(relx=0.5, rely=0.5, height=25, anchor=CENTER)
     
     paciente = sorted(os.listdir(filepath))
     for seq in paciente:
         pb.step(100/len(paciente))
         root.update_idletasks()
-        seq_path = os.listdir(os.path.join(filepath,seq))
-        for file in seq_path:
-            name, ext = os.path.splitext(file)
-            if (ext == ".IMA") or (ext == ".dcm"):
-                temp_dcm = dcmread(os.path.join(filepath,seq,file))
-                temp_uid = temp_dcm.SeriesInstanceUID
-                if  temp_uid not in sec_uids:
+        if(os.path.isdir(os.path.join(filepath,seq))):
+            seq_path = os.listdir(os.path.join(filepath,seq))
+            for file in seq_path:
+                name, ext = os.path.splitext(file)
+                if (ext == ".IMA") or (ext == ".dcm"):
+                    temp_dcm = dcmread(os.path.join(filepath,seq,file))
+                    temp_uid = temp_dcm.SeriesInstanceUID
+                    if  temp_uid not in sec_uids:
+                        try: 
+                            if temp_dcm.ContrastBolusAgent: dce_secs.append(secuencia(seq))
+                        except:
+                            secuencias.append(secuencia(seq))
+                        sec_uids.append(temp_uid)
                     try: 
-                        if temp_dcm.ContrastBolusAgent: dce_secs.append(secuencia(seq))
+                        if temp_dcm.ContrastBolusAgent: dce_secs[-1].add_dcm(temp_dcm)
                     except:
-                        secuencias.append(secuencia(seq))
-                    sec_uids.append(temp_uid)
-                try: 
-                    if temp_dcm.ContrastBolusAgent: dce_secs[-1].add_dcm(temp_dcm)
-                except:
-                    secuencias[-1].add_dcm(temp_dcm)
+                        secuencias[-1].add_dcm(temp_dcm)
                     
     if len(dce_secs):   secuencias.append(dce_secs[0])    # si hay dce muestro solo 1    
     
@@ -1668,6 +1665,9 @@ def generator (save_directory: str):
     doc.append(SmallText("Paciente: "))
     doc.append(SmallText(bold(str(secuencias[0].dcm_serie[0].PatientName))))
     doc.append("\n")
+    doc.append(SmallText("Edad: "))
+    doc.append(SmallText(bold(str(secuencias[0].dcm_serie[0].PatientAge[:3])+" años")))
+    doc.append("\n")
     doc.append(SmallText("Fecha estudio: "))
     doc.append(SmallText(bold(secuencias[0].dcm_serie[0].InstanceCreationDate[6:]+"/"+secuencias[0].dcm_serie[0].InstanceCreationDate[4:6]+"/"+secuencias[0].dcm_serie[0].InstanceCreationDate[0:4])))
     doc.append("\n")
@@ -1860,7 +1860,7 @@ MF_W = IntVar(value=screen_w)
 MF_H = IntVar(value=screen_h-100) # -100 por que 20 de botframe 20 menu 20 windows tab 40 windows taskbar
 CV_W = IntVar(value=0)
 CV_H = IntVar(value=0)
-info_text = StringVar(value="SAURUS V1.99")
+info_text = StringVar(value="SAURUS V2.0")
 info_cv = BooleanVar(value=False)
 axis_cv = BooleanVar(value=False)
 report_flag = BooleanVar(value=False)
