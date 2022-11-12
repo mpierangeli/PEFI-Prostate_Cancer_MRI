@@ -556,7 +556,7 @@ def steps_main(step: int):
         info_general.pack(fill=X,ipadx=2, ipady=2,pady=(0,5))
         
         Label(info_general, text="Paciente: "+str(secuencias[0].dcm_serie[0].PatientName),bg="#555",font=("Roboto",10),fg="#FFF").pack(ipady=1,ipadx=20,anchor=W)
-        Label(info_general, text="Edad: "+str(secuencias[0].dcm_serie[0].PatientAge[:3])+" años | Sexo: "+str(secuencias[0].dcm_serie[0].PatientSex),bg="#555",font=("Roboto",10),fg="#FFF").pack(ipady=1,ipadx=20,anchor=W)
+        Label(info_general, text="Edad: "+str(int(secuencias[0].dcm_serie[0].PatientAge[:3]))+" años | Sexo: "+str(secuencias[0].dcm_serie[0].PatientSex),bg="#555",font=("Roboto",10),fg="#FFF").pack(ipady=1,ipadx=20,anchor=W)
         Label(info_general, text="Volúmen Prostático: "+str(prosta.volumen)+" ml | Dimensiones: "+str(prosta.medidas[0])+"x"+str(prosta.medidas[1])+"x"+str(prosta.medidas[2])+" mm",bg="#555",font=("Roboto",10),fg="#FFF").pack(ipady=1,ipadx=20,anchor=W)
         
         Label(steps_window, text="Historial Clínico",bg="#444",font=("Roboto",11),fg="#FFF").pack(ipady=1,ipadx=20,anchor=W)
@@ -1666,7 +1666,7 @@ def generator (save_directory: str):
     doc.append(SmallText(bold(str(secuencias[0].dcm_serie[0].PatientName))))
     doc.append("\n")
     doc.append(SmallText("Edad: "))
-    doc.append(SmallText(bold(str(secuencias[0].dcm_serie[0].PatientAge[:3])+" años")))
+    doc.append(SmallText(bold(str(int(secuencias[0].dcm_serie[0].PatientAge[:3]))+" años")))
     doc.append("\n")
     doc.append(SmallText("Fecha estudio: "))
     doc.append(SmallText(bold(secuencias[0].dcm_serie[0].InstanceCreationDate[6:]+"/"+secuencias[0].dcm_serie[0].InstanceCreationDate[4:6]+"/"+secuencias[0].dcm_serie[0].InstanceCreationDate[0:4])))
@@ -1902,7 +1902,6 @@ root.mainloop()
 # COSAS Q FALTAN AGREGAR
 
 """
-Patient AGE -> habria q calcular con el patient date birth [0:4] (año y restarlo al actual o algo asi)
 Estudio realizado por  ? lo pone el médico o lo pongo abajo con el simbolioto para poner firma?
 Guardar estado de reporte -> observaciones, imagenes, rois, secuencias (sin cambiar layout porq se complica)
 
