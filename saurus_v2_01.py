@@ -364,14 +364,15 @@ def refresh_report():
     if len(observaciones)>0:
         obs_window = Frame(report_window,background="#333")
         obs_window.pack(fill=X)
-        if MF_H.get()>900: tabs = 5
-        elif MF_H.get()>800: tabs = 4
+        if screen_h > 900: tabs = 5
+        elif screen_h > 800: tabs = 4
         else: tabs = 3
         for i in range(int(ceil(len(observaciones)/tabs))):
-            b_tab = Button(tabs_window, text=str(i+1), font=("Roboto",12),bg="#2CC", bd=0, cursor="hand2", command=lambda new_sel_tab=i+1:change_report_page(new_sel_tab))
+            ff = "#2CC" if selected_tab == i+1 else "#000"
+            b_tab = Button(tabs_window, text=str(i+1), font=("Roboto",12),bg="#444", fg=ff, bd=0, cursor="hand2", command=lambda new_sel_tab=i+1:change_report_page(new_sel_tab))
             b_tab.pack(side=LEFT,ipadx=20,ipady=1,padx=(0,5))
-            b_tab.bind("<Enter>",lambda b=b_tab:colorOnFocus(b,True,"#F80","#2CC"))
-            b_tab.bind("<Leave>",lambda b=b_tab:colorOnFocus(b,False,"#F80","#2CC"))
+            b_tab.bind("<Enter>",lambda b=b_tab:colorOnFocus(b,True,"#666","#444"))
+            b_tab.bind("<Leave>",lambda b=b_tab:colorOnFocus(b,False,"#666","#444"))
             
         for n, obs in enumerate(observaciones[(selected_tab-1)*tabs:(selected_tab-1)*tabs+tabs]):
             mini_report = Frame(obs_window,background="#444")
@@ -568,8 +569,11 @@ def steps_main(step: int):
         observaciones[-1].info = info.get("1.0","end-1c")
         observaciones[-1].categoria = pirads_lesion(observaciones[-1])
         steps_levels.destroy()
-        selected_tab = 1
-        refresh_report()
+        if len(observaciones) == 1: 
+            selected_tab = 1
+            refresh_report()
+        else:
+            change_report_page(int(ceil(len(observaciones)/tabs)))
         
     elif step == 4:
         steps_levels = Toplevel(root,background="#444")
